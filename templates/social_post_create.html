@@ -6,137 +6,72 @@
 <title>Post erstellen</title>
 <link rel="stylesheet" href="/static/style.css"/>
 <style>
-/* ── Layout ── */
-.settings-layout { display:flex; gap:0; min-height:calc(100vh - 60px); }
-.settings-sidebar {
-  width:280px; min-width:240px; max-width:300px; flex-shrink:0;
-  border-right:1px solid var(--border); background:var(--bg);
-  display:flex; flex-direction:column; padding:20px 0 20px;
+/* ── Product combobox ── */
+.prod-combo { position: relative; }
+.prod-combo-input-wrap { display: flex; align-items: center; gap: 6px; }
+.prod-combo-input {
+  flex: 1; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+  font-size: .875rem; background: var(--card); color: var(--text); box-sizing: border-box;
 }
-.settings-content { flex:1; padding:28px 32px; overflow-y:auto; }
+.prod-combo-dropdown {
+  position: absolute; left: 0; right: 0; top: calc(100% + 2px);
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.13);
+  max-height: 320px; overflow-y: auto; z-index: 200;
+}
+.prod-combo-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px; cursor: pointer; font-size: .84rem;
+  border-bottom: 1px solid var(--border); transition: background .1s;
+}
+.prod-combo-item:last-child { border-bottom: none; }
+.prod-combo-item:hover, .prod-combo-item.active { background: var(--c-50); }
+.prod-combo-thumb {
+  width: 40px; height: 40px; border-radius: 6px;
+  object-fit: cover; flex-shrink: 0; background: var(--c-100);
+}
+.prod-combo-name { font-weight: 500; color: var(--text); }
+.prod-combo-id   { font-size: .72rem; color: var(--muted); margin-top: 1px; }
+.prod-combo-empty { padding: 16px; text-align: center; color: var(--muted); font-size: .83rem; }
+.prod-selected-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--c-50); border-radius: 6px; padding: 4px 8px;
+  font-size: .78rem; color: var(--muted); margin-top: 6px;
+}
+.prod-selected-badge img { width: 20px; height: 20px; border-radius: 3px; object-fit: cover; }
 
-/* ── Sidebar sections ── */
-.sidebar-section { padding:0 16px; margin-bottom:20px; }
-.sidebar-section-title {
-  font-size:.7rem; font-weight:700; color:var(--muted); text-transform:uppercase;
-  letter-spacing:.06em; padding:0 4px; margin-bottom:8px;
+/* ── Platform tabs in sidebar ── */
+.platform-tab-wrap { display: flex; gap: 2px; flex-direction: column; }
+.sidebar-item.pin-active  { color: #E60023 !important; background: #FFF0F0 !important; }
+.sidebar-item.ig-active   { color: #E1306C !important; background: #FFF0F7 !important; }
+
+/* ── Wider preview col for standalone page ── */
+.sm-preview-col-lg {
+  width: 320px; flex-shrink: 0;
+  position: sticky; top: 96px;
 }
 
-/* ── Platform toggle ── */
-.platform-toggle {
-  display:flex; border:1px solid var(--border); border-radius:10px; overflow:hidden;
-  margin-bottom:2px;
+/* ── Copy the exact action-panel style from product_edit ── */
+.settings-layout .action-panel-title {
+  background: none; padding: 0 12px 8px;
+  font-size: .68rem; font-weight: 700; letter-spacing: .6px;
+  text-transform: uppercase; color: var(--muted); gap: 7px;
 }
-.platform-btn {
-  flex:1; padding:9px 6px; font-size:.82rem; font-weight:600; cursor:pointer;
-  border:none; background:none; color:var(--muted); transition:all .15s;
-  display:flex; align-items:center; justify-content:center; gap:5px;
+.settings-layout .action-panel .action-btn-wrap { background: none; padding: 0; gap: 2px; }
+.settings-layout .action-panel .action-btn {
+  width: 100%; justify-content: flex-start; padding: 9px 12px;
+  border-radius: 8px; font-size: .85rem; font-weight: 500;
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  text-decoration: none; transition: color .15s, background .15s;
+  display: flex; align-items: center; gap: 9px;
 }
-.platform-btn.active { background:var(--btn); color:#fff; }
-
-/* ── Product picker ── */
-.product-search {
-  width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px;
-  font-size:.83rem; background:var(--card); color:var(--text); margin-bottom:8px;
-  box-sizing:border-box;
-}
-.product-list {
-  max-height:220px; overflow-y:auto; border:1px solid var(--border);
-  border-radius:8px; background:var(--card);
-}
-.product-item {
-  display:flex; align-items:center; gap:8px; padding:7px 10px; cursor:pointer;
-  border-bottom:1px solid var(--border); transition:background .1s; font-size:.82rem;
-}
-.product-item:last-child { border-bottom:none; }
-.product-item:hover { background:var(--c-50); }
-.product-item.selected { background:#EEF2FF; }
-.product-item img { width:32px; height:32px; object-fit:cover; border-radius:4px; flex-shrink:0; background:var(--c-100); }
-.product-item-name { flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-.product-item-id { font-size:.7rem; color:var(--muted); }
-
-/* ── Form fields ── */
-.spc-field { margin-bottom:14px; }
-.spc-field label { display:block; font-size:.78rem; font-weight:600; color:var(--muted); margin-bottom:4px; }
-.spc-field input, .spc-field textarea, .spc-field select {
-  width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px;
-  font-size:.875rem; background:var(--card); color:var(--text); box-sizing:border-box;
-}
-.spc-field textarea { resize:vertical; }
-
-/* ── Action panel ── */
-.action-panel { padding:0 16px; margin-top:auto; border-top:1px solid var(--border); padding-top:16px; }
-.action-btn {
-  width:100%; padding:9px 12px; border-radius:8px; font-size:.85rem; font-weight:500;
-  cursor:pointer; border:none; background:none; color:var(--muted);
-  display:flex; align-items:center; gap:8px; text-align:left; transition:background .1s;
-}
-.action-btn:hover { background:var(--c-50); color:var(--text); }
-.action-btn.btn-primary-action { background:#EEF2FF; color:var(--btn); font-weight:700; }
-.action-btn.btn-post { background:#E60023; color:#fff; font-weight:700; }
-.action-btn.btn-post:hover { background:#c0001d; }
-.action-btn.btn-ig-post { background:#E1306C; color:#fff; font-weight:700; }
-.action-btn.btn-ig-post:hover { background:#b31254; }
-
-/* ── Preview panel ── */
-.preview-panel { position:sticky; top:88px; }
-.preview-label { font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:12px; }
-
-/* ── Pinterest pin mock ── */
-.pin-mock {
-  width:100%; max-width:340px; margin-left:auto;
-  border-radius:16px; overflow:hidden;
-  background:var(--card); box-shadow:0 2px 12px rgba(0,0,0,.1); transition:box-shadow .15s;
-}
-.pin-mock-img-wrap { position:relative; width:100%; aspect-ratio:2/3; background:var(--c-100); overflow:hidden; }
-.pin-mock-img-wrap img { width:100%; height:100%; object-fit:cover; display:block; }
-.pin-mock-img-empty { width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:var(--c-300); }
-.pin-mock-save {
-  position:absolute; top:10px; right:10px; background:#E60023; color:#fff;
-  font-size:.75rem; font-weight:700; padding:6px 12px; border-radius:20px;
-  opacity:0; transition:opacity .15s;
-}
-.pin-mock:hover .pin-mock-save { opacity:1; }
-.pin-mock-body { padding:10px 14px 14px; }
-.pin-mock-board { display:flex; align-items:center; gap:5px; font-size:.72rem; color:var(--muted); margin-bottom:5px; }
-.pin-mock-title { font-size:.92rem; font-weight:700; color:var(--text); margin-bottom:4px; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-.pin-mock-desc { font-size:.78rem; color:var(--muted); line-height:1.4; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
-.pin-mock-link { display:flex; align-items:center; gap:4px; font-size:.72rem; color:var(--muted); margin-top:7px; }
-
-/* ── Instagram mock ── */
-.ig-mock {
-  width:100%; max-width:340px; margin-left:auto;
-  border-radius:12px; overflow:hidden;
-  background:var(--card); box-shadow:0 2px 12px rgba(0,0,0,.1);
-}
-.ig-mock-header { display:flex; align-items:center; gap:8px; padding:10px 12px; }
-.ig-mock-avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); flex-shrink:0; }
-.ig-mock-username { font-size:.82rem; font-weight:700; color:var(--text); }
-.ig-mock-img-wrap { width:100%; aspect-ratio:1/1; background:var(--c-100); overflow:hidden; }
-.ig-mock-img-wrap img { width:100%; height:100%; object-fit:cover; display:block; }
-.ig-mock-img-empty { width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:var(--c-300); }
-.ig-mock-actions { display:flex; gap:12px; padding:10px 12px 6px; }
-.ig-mock-action { color:var(--muted); display:flex; align-items:center; }
-.ig-mock-caption { padding:0 12px 6px; font-size:.8rem; color:var(--text); line-height:1.4; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
-.ig-mock-hashtags { padding:0 12px 12px; font-size:.78rem; color:#3897f0; line-height:1.4; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-
-/* ── Upload zone ── */
-.spc-upload {
-  border:2px dashed var(--border); border-radius:10px; padding:20px;
-  text-align:center; cursor:pointer; transition:border-color .15s; margin-bottom:14px;
-}
-.spc-upload:hover { border-color:var(--btn); }
-.spc-upload-hint { font-size:.8rem; color:var(--muted); }
-.spc-thumb-row { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
-.spc-thumb { width:52px; height:52px; object-fit:cover; border-radius:6px; }
-
-/* ── Status ── */
-.post-status { font-size:.85rem; margin-top:10px; min-height:20px; }
-
-/* ── Board select ── */
-.board-select-wrap { display:flex; gap:6px; align-items:center; }
-.board-select-wrap select { flex:1; }
-#spc-board-hint { font-size:.75rem; color:var(--muted); margin-top:3px; }
+.settings-layout .action-panel .action-btn:hover { color: var(--text); background: var(--c-100); }
+.settings-layout .action-panel .btn-primary.action-btn { color: var(--btn); background: #EEF2FF; font-weight: 600; }
+.settings-layout .action-panel .btn-primary.action-btn:hover { background: #dce5ff; }
+.settings-layout .action-panel .btn-post-pin.action-btn { color: #fff; background: #E60023; font-weight: 600; }
+.settings-layout .action-panel .btn-post-pin.action-btn:hover { background: #c0001d; }
+.settings-layout .action-panel .btn-post-ig.action-btn  { color: #fff; background: #E1306C; font-weight: 600; }
+.settings-layout .action-panel .btn-post-ig.action-btn:hover  { background: #b31254; }
 </style>
 </head>
 <body>
@@ -146,225 +81,322 @@
 
 <div class="settings-layout">
 
-  <!-- ══ LEFT SIDEBAR ══ -->
+  <!-- ══ Sidebar ══ -->
   <aside class="settings-sidebar">
-
-    <!-- Platform Toggle -->
-    <div class="sidebar-section">
-      <div class="sidebar-section-title">Plattform</div>
-      <div class="platform-toggle">
-        <button class="platform-btn active" id="btn-platform-pin" onclick="setPlatform('pinterest')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
-          Pinterest
-        </button>
-        <button class="platform-btn" id="btn-platform-ig" onclick="setPlatform('instagram')">
-          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.8"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg>
-          Instagram
-        </button>
-      </div>
-    </div>
-
-    <!-- Product Picker -->
-    <div class="sidebar-section">
-      <div class="sidebar-section-title">Produkt</div>
-      <input type="text" class="product-search" id="productSearch" placeholder="Suchen…" oninput="filterProducts()" />
-      <div class="product-list" id="productList">
-        <div style="padding:14px;text-align:center;color:var(--muted);font-size:.82rem;">Lädt…</div>
-      </div>
-      <span id="selectedProductHint" style="font-size:.74rem;color:var(--muted);display:none;margin-top:4px;display:block;"></span>
-    </div>
-
-    <!-- Pinterest Fields -->
-    <div class="sidebar-section" id="pane-pinterest">
-      <div class="sidebar-section-title">Pinterest · Inhalte</div>
-
-      <div class="spc-field">
-        <label>Board</label>
-        <div class="board-select-wrap">
-          <select id="spc-board-select" onchange="spcBoardChange(this)">
-            <option value="">— Board auswählen —</option>
-          </select>
-          <button type="button" class="btn-icon-sm" title="Neu laden" onclick="loadBoards(true)" style="flex-shrink:0;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-          </button>
-        </div>
-        <span id="spc-board-hint" style="font-size:.74rem;color:var(--muted);display:block;margin-top:3px;"></span>
-        <input type="hidden" id="spc-board-id" />
-      </div>
-
-      <div class="spc-field">
-        <label>Titel</label>
-        <input type="text" id="spc-pin-title" placeholder="Pin-Titel…" oninput="updatePreview()" />
-      </div>
-      <div class="spc-field">
-        <label>Beschreibung</label>
-        <textarea id="spc-pin-desc" rows="4" placeholder="Beschreibung…" oninput="updatePreview()"></textarea>
-      </div>
-      <div class="spc-field">
-        <label>Ziel-URL</label>
-        <input type="text" id="spc-pin-url" placeholder="https://…" oninput="updatePreview()" />
-      </div>
-      <div class="spc-field">
-        <label>Alt-Text <span style="font-weight:400;color:var(--muted);">(optional)</span></label>
-        <input type="text" id="spc-pin-alt" placeholder="Bildbeschreibung…" />
-      </div>
-    </div>
-
-    <!-- Instagram Fields -->
-    <div class="sidebar-section" id="pane-instagram" style="display:none;">
-      <div class="sidebar-section-title">Instagram · Inhalte</div>
-
-      <div class="spc-field">
-        <label>Caption</label>
-        <textarea id="spc-ig-caption" rows="4" placeholder="Caption…" oninput="updatePreview()"></textarea>
-      </div>
-      <div class="spc-field">
-        <label>Hashtags</label>
-        <textarea id="spc-ig-hashtags" rows="2" placeholder="#tag1 #tag2…" oninput="updatePreview()"></textarea>
-      </div>
-    </div>
-
-    <!-- Action Panel -->
-    <div class="action-panel">
-      <button class="action-btn btn-primary-action" onclick="generateWithAI()">
-        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        KI Texte generieren
+    <div class="settings-sidebar-title">Plattform</div>
+    <nav class="sidebar-nav">
+      <button class="sidebar-item active" id="tab-pin" onclick="setPlatform('pinterest', this)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+        Pinterest
       </button>
-      <button class="action-btn" id="btn-post" onclick="doPost()">
-        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Posten
+      <button class="sidebar-item" id="tab-ig" onclick="setPlatform('instagram', this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.6"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg>
+        Instagram
       </button>
-      <div class="post-status" id="post-status"></div>
+    </nav>
+
+    <div class="sidebar-preview" id="sidebarProductPreview" style="display:none;">
+      <img id="sidebarProductImg" src="" alt="" />
     </div>
 
+    <div class="action-panel" style="margin-top:auto;">
+      <div class="action-panel-title">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Aktionen
+      </div>
+      <div class="action-btn-wrap">
+        <button class="action-btn btn-primary" onclick="generateWithAI()">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          KI Texte generieren
+        </button>
+        <button class="action-btn btn-post-pin" id="btn-post" onclick="doPost()">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span id="btn-post-label">Pin posten</span>
+        </button>
+      </div>
+      <div id="post-status" style="padding:6px 12px;font-size:.82rem;min-height:24px;"></div>
+    </div>
   </aside>
 
-  <!-- ══ RIGHT CONTENT ══ -->
-  <main class="settings-content">
+  <!-- ══ Content ══ -->
+  <div class="settings-content">
 
-    <!-- Image Upload -->
-    <div style="margin-bottom:24px;">
-      <div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;">Bild</div>
-      <div class="spc-upload" id="spcUploadZone" onclick="document.getElementById('spcFileInput').click()">
-        <input type="file" id="spcFileInput" accept=".jpg,.jpeg,.png,.webp" multiple style="display:none" onchange="handleUpload(this)" />
-        <div id="spcThumbRow" class="spc-thumb-row" style="justify-content:center;"></div>
-        <div class="spc-upload-hint" id="spcUploadHint">
-          <svg width="22" height="22" fill="none" viewBox="0 0 24 24" style="display:block;margin:0 auto 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Bild hochladen oder hierher ziehen
+    <!-- Product picker -->
+    <div class="settings-card" style="margin-bottom:20px;">
+      <div class="settings-card-header">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Produkt auswählen
+      </div>
+      <div class="settings-card-body">
+        <div class="prod-combo" id="prodCombo">
+          <div class="prod-combo-input-wrap">
+            <input type="text" class="prod-combo-input" id="prodComboInput"
+              placeholder="Produkt suchen…"
+              autocomplete="off"
+              oninput="prodComboFilter()"
+              onfocus="prodComboOpen()"
+              onblur="setTimeout(prodComboClose, 200)" />
+          </div>
+          <div class="prod-combo-dropdown" id="prodComboDropdown" style="display:none;">
+            <div class="prod-combo-empty">Lädt…</div>
+          </div>
+          <div id="prodSelectedBadge" style="display:none;" class="prod-selected-badge">
+            <img id="prodSelectedImg" src="" alt="" />
+            <span id="prodSelectedName"></span>
+          </div>
+          <input type="hidden" id="prodSelectedId" />
         </div>
       </div>
     </div>
 
-    <!-- Preview -->
-    <div class="preview-panel">
-      <div class="preview-label" id="preview-label">Vorschau · Pinterest Pin</div>
+    <!-- ══ Pinterest Pane ══ -->
+    <div id="pane-pinterest">
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#E60023"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+          Pinterest Pin
+          <button class="btn-icon-sm" style="margin-left:auto;width:auto;padding:4px 10px;border-radius:4px;font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:5px;" onclick="generateWithAI()">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Texte generieren
+          </button>
+        </div>
+        <div class="settings-card-body">
+          <div class="sm-post-layout">
+            <div class="sm-post-fields">
+              <div class="settings-grid">
 
-      <!-- Pinterest preview -->
-      <div id="preview-pinterest">
-        <div class="pin-mock">
-          <div class="pin-mock-img-wrap">
-            <img id="spc-pin-img" src="" style="display:none;" alt="" />
-            <div class="pin-mock-img-empty" id="spc-pin-empty">
-              <svg width="40" height="40" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                <div class="field-with-regen settings-field-full">
+                  <label>Board</label>
+                  <div style="display:flex;gap:6px;align-items:center;">
+                    <select id="spc-board-select" onchange="spcBoardChange(this)"
+                      style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--card);color:var(--text);cursor:pointer;">
+                      <option value="">— Board auswählen —</option>
+                    </select>
+                    <button type="button" class="btn-icon-sm" title="Boards neu laden" onclick="loadBoards(true)" style="flex-shrink:0;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    </button>
+                  </div>
+                  <span class="settings-hint" id="spc-board-hint">Boards werden geladen…</span>
+                  <input type="hidden" id="spc-board-id" />
+                </div>
+
+                <div class="field-with-regen">
+                  <label>Ziel-URL</label>
+                  <div class="field-input-row">
+                    <input type="text" id="spc-pin-url" placeholder="https://…" oninput="updatePinPreview()" />
+                  </div>
+                </div>
+
+                <div class="field-with-regen settings-field-full">
+                  <label>Titel</label>
+                  <div class="field-input-row">
+                    <input type="text" id="spc-pin-title" placeholder="Pin-Titel…" oninput="updatePinPreview()" />
+                  </div>
+                </div>
+
+                <div class="field-with-regen settings-field-full">
+                  <label>Beschreibung</label>
+                  <div class="field-input-row">
+                    <textarea id="spc-pin-desc" rows="4" placeholder="Beschreibung…" oninput="updatePinPreview()"></textarea>
+                  </div>
+                </div>
+
+                <div class="field-with-regen">
+                  <label>Alt-Text <span class="opt-badge">optional</span></label>
+                  <div class="field-input-row">
+                    <input type="text" id="spc-pin-alt" placeholder="Bildbeschreibung…" />
+                  </div>
+                </div>
+
+              </div>
             </div>
-            <div class="pin-mock-save">Merken</div>
+
+            <!-- Pinterest Preview -->
+            <div class="sm-preview-col-lg">
+              <div class="sm-preview-label">Vorschau · Pinterest Pin</div>
+              <div class="pin-mock">
+                <div class="pin-mock-img-wrap">
+                  <img id="pin-prev-img" src="" style="display:none;" alt="" />
+                  <div class="pin-mock-img-empty" id="pin-prev-empty">
+                    <svg width="36" height="36" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.4"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                  </div>
+                  <div class="pin-mock-save">Merken</div>
+                </div>
+                <div class="pin-mock-body">
+                  <div class="pin-mock-board">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="#E60023"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+                    <span id="pin-prev-board">Board</span>
+                  </div>
+                  <div class="pin-mock-title" id="pin-prev-title">Titel erscheint hier</div>
+                  <div class="pin-mock-desc"  id="pin-prev-desc">Beschreibung erscheint hier…</div>
+                  <div class="pin-mock-link">
+                    <svg width="10" height="10" fill="none" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                    <span id="pin-prev-link">link.com</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div><!-- /sm-post-layout -->
+
+          <!-- Upload & Post -->
+          <div class="sp-post-divider">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Pin abschicken
           </div>
-          <div class="pin-mock-body">
-            <div class="pin-mock-board">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="#E60023"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
-              <span id="spc-prev-board">Board</span>
-            </div>
-            <div class="pin-mock-title" id="spc-prev-title">Titel erscheint hier</div>
-            <div class="pin-mock-desc" id="spc-prev-desc">Beschreibung erscheint hier…</div>
-            <div class="pin-mock-link">
-              <svg width="10" height="10" fill="none" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-              <span id="spc-prev-link">link.com</span>
+          <div class="sp-upload-zone" onclick="document.getElementById('pinFileInput').click()">
+            <input type="file" id="pinFileInput" accept=".jpg,.jpeg,.png,.webp" multiple style="display:none" onchange="spPreview(this,'pin')"/>
+            <div id="pinPreviewRow" class="sp-preview-row"></div>
+            <div id="pinUploadHint" class="sp-upload-hint">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Bild hochladen · max. 4 Dateien
             </div>
           </div>
         </div>
       </div>
+    </div><!-- /pane-pinterest -->
 
-      <!-- Instagram preview -->
-      <div id="preview-instagram" style="display:none;">
-        <div class="ig-mock">
-          <div class="ig-mock-header">
-            <div class="ig-mock-avatar"></div>
-            <div class="ig-mock-username">Dekoire</div>
+    <!-- ══ Instagram Pane ══ -->
+    <div id="pane-instagram" style="display:none;">
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.6"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg>
+          Instagram Post
+          <button class="btn-icon-sm" style="margin-left:auto;width:auto;padding:4px 10px;border-radius:4px;font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:5px;" onclick="generateWithAI()">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Texte generieren
+          </button>
+        </div>
+        <div class="settings-card-body">
+          <div class="sm-post-layout">
+            <div class="sm-post-fields">
+              <div class="settings-grid">
+
+                <div class="field-with-regen settings-field-full">
+                  <label>Caption</label>
+                  <div class="field-input-row">
+                    <textarea id="spc-ig-caption" rows="5" placeholder="Caption…" oninput="updateIgPreview()"></textarea>
+                  </div>
+                </div>
+
+                <div class="field-with-regen settings-field-full">
+                  <label>Hashtags</label>
+                  <div class="field-input-row">
+                    <textarea id="spc-ig-hashtags" rows="3" placeholder="#tag1 #tag2…" oninput="updateIgPreview()"></textarea>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Instagram Preview -->
+            <div class="sm-preview-col-lg">
+              <div class="sm-preview-label">Vorschau · Instagram Post</div>
+              <div class="ig-mock">
+                <div class="ig-mock-header">
+                  <div class="ig-mock-avatar">D</div>
+                  <div class="ig-mock-meta">
+                    <div class="ig-mock-username">dekoire</div>
+                    <div class="ig-mock-location" id="ig-prev-location"></div>
+                  </div>
+                  <span class="ig-mock-more">···</span>
+                </div>
+                <div class="ig-mock-img-wrap">
+                  <img id="ig-prev-img" src="" style="display:none;" alt="" />
+                  <div class="ig-mock-img-empty" id="ig-prev-empty">
+                    <svg width="36" height="36" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.4"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                  </div>
+                </div>
+                <div class="ig-mock-actions">
+                  <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="1.6"/></svg>
+                  <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.6"/></svg>
+                  <svg width="22" height="22" fill="none" viewBox="0 0 24 24" class="ig-save" style="margin-left:auto;"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.6"/></svg>
+                </div>
+                <div class="ig-mock-caption" id="ig-prev-caption"><strong>dekoire</strong> Caption erscheint hier…</div>
+                <div class="ig-mock-hashtags" id="ig-prev-hashtags"></div>
+              </div>
+            </div>
+          </div><!-- /sm-post-layout -->
+
+          <!-- Upload & Post -->
+          <div class="sp-post-divider">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Post abschicken
           </div>
-          <div class="ig-mock-img-wrap">
-            <img id="spc-ig-img" src="" style="display:none;" alt="" />
-            <div class="ig-mock-img-empty" id="spc-ig-empty">
-              <svg width="40" height="40" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          <div class="sp-upload-zone" onclick="document.getElementById('igFileInput').click()">
+            <input type="file" id="igFileInput" accept=".jpg,.jpeg,.png,.webp" multiple style="display:none" onchange="spPreview(this,'ig')"/>
+            <div id="igPreviewRow" class="sp-preview-row"></div>
+            <div id="igUploadHint" class="sp-upload-hint">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Bild hochladen · max. 4 Dateien
             </div>
           </div>
-          <div class="ig-mock-actions">
-            <span class="ig-mock-action"><svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="1.6"/></svg></span>
-            <span class="ig-mock-action"><svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.6"/></svg></span>
-            <span class="ig-mock-action" style="margin-left:auto;"><svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.6"/></svg></span>
-          </div>
-          <div class="ig-mock-caption" id="spc-ig-prev-caption">Caption erscheint hier…</div>
-          <div class="ig-mock-hashtags" id="spc-ig-prev-hashtags"></div>
         </div>
       </div>
+    </div><!-- /pane-instagram -->
 
-    </div>
-  </main>
-</div>
+  </div><!-- /settings-content -->
+</div><!-- /settings-layout -->
 
 <script>
-let _platform  = 'pinterest';
-let _products  = [];
-let _selProduct = null;
-let _uploadedBlob = null;
-let _uploadedFiles = [];
-let _boards    = [];
+let _platform   = 'pinterest';
+let _products   = [];
+let _prodLoaded = false;
+let _boards     = [];
 let _boardsLoaded = false;
+let _selProduct  = null;
+let _spFiles     = { pin: [], ig: [] };
+let _uploadedBlob = { pin: null, ig: null };
 
-// ── Platform switch ──
-function setPlatform(p) {
+// ── Platform ──
+function setPlatform(p, btn) {
   _platform = p;
-  document.getElementById('btn-platform-pin').classList.toggle('active', p === 'pinterest');
-  document.getElementById('btn-platform-ig').classList.toggle('active', p === 'instagram');
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
   document.getElementById('pane-pinterest').style.display  = p === 'pinterest' ? '' : 'none';
   document.getElementById('pane-instagram').style.display  = p === 'instagram'  ? '' : 'none';
-  document.getElementById('preview-pinterest').style.display = p === 'pinterest' ? '' : 'none';
-  document.getElementById('preview-instagram').style.display = p === 'instagram'  ? '' : 'none';
-  document.getElementById('preview-label').textContent =
-    p === 'pinterest' ? 'Vorschau · Pinterest Pin' : 'Vorschau · Instagram Post';
-  const postBtn = document.getElementById('btn-post');
-  postBtn.style.background = p === 'pinterest' ? '#E60023' : '#E1306C';
-  postBtn.style.color = '#fff';
-  updatePreview();
+  const postBtn   = document.getElementById('btn-post');
+  const postLabel = document.getElementById('btn-post-label');
+  postBtn.className = `action-btn btn-post-${p === 'pinterest' ? 'pin' : 'ig'}`;
+  postLabel.textContent = p === 'pinterest' ? 'Pin posten' : 'Post posten';
 }
 
-// ── Products ──
+// ── Product combobox ──
 async function loadProducts() {
   try {
-    const res  = await fetch('/api/products/list');
-    _products  = await res.json();
-    renderProductList(_products);
+    const res = await fetch('/api/products/list');
+    _products = await res.json();
+    _prodLoaded = true;
+    prodComboFilter();
   } catch(e) {
-    document.getElementById('productList').innerHTML =
-      `<div style="padding:12px;color:#DC2626;font-size:.8rem;">Fehler: ${e.message}</div>`;
+    document.getElementById('prodComboDropdown').innerHTML =
+      `<div class="prod-combo-empty" style="color:#DC2626;">Fehler: ${e.message}</div>`;
   }
 }
 
-function filterProducts() {
-  const q = document.getElementById('productSearch').value.toLowerCase().trim();
-  renderProductList(q ? _products.filter(p =>
-    (p.titel||'').toLowerCase().includes(q) || (p.dekoire_id||'').toLowerCase().includes(q)
-  ) : _products);
+function prodComboOpen() {
+  if (!_prodLoaded) loadProducts();
+  document.getElementById('prodComboDropdown').style.display = '';
+  prodComboFilter();
 }
-
-function renderProductList(list) {
-  const el = document.getElementById('productList');
-  if (!list.length) { el.innerHTML = '<div style="padding:12px;text-align:center;color:var(--muted);font-size:.82rem;">Keine Produkte</div>'; return; }
-  el.innerHTML = list.map(p => `
-    <div class="product-item ${_selProduct?.id === p.id ? 'selected' : ''}" onclick="selectProduct(${JSON.stringify(p.id)})">
-      <img src="${p.image_url || ''}" onerror="this.style.display='none'" />
+function prodComboClose() {
+  document.getElementById('prodComboDropdown').style.display = 'none';
+}
+function prodComboFilter() {
+  const q   = (document.getElementById('prodComboInput').value || '').toLowerCase().trim();
+  const dd  = document.getElementById('prodComboDropdown');
+  const list = q
+    ? _products.filter(p => (p.titel||'').toLowerCase().includes(q) || (p.dekoire_id||'').toLowerCase().includes(q))
+    : _products;
+  if (!list.length) {
+    dd.innerHTML = `<div class="prod-combo-empty">${_prodLoaded ? 'Keine Ergebnisse' : 'Lädt…'}</div>`;
+    return;
+  }
+  dd.innerHTML = list.slice(0, 50).map(p => `
+    <div class="prod-combo-item" onmousedown="selectProduct(${JSON.stringify(p.id)})">
+      <img class="prod-combo-thumb" src="${p.image_url||''}" onerror="this.style.opacity='.3'" />
       <div>
-        <div class="product-item-name">${p.titel || '(kein Titel)'}</div>
-        <div class="product-item-id">${p.dekoire_id || ''}</div>
+        <div class="prod-combo-name">${p.titel || '(kein Titel)'}</div>
+        <div class="prod-combo-id">${p.dekoire_id || ''}</div>
       </div>
     </div>`).join('');
 }
@@ -372,53 +404,49 @@ function renderProductList(list) {
 function selectProduct(id) {
   _selProduct = _products.find(p => p.id === id);
   if (!_selProduct) return;
-  renderProductList(_products);
 
-  // Fill fields
-  if (_platform === 'pinterest' || true) {
-    _set('spc-pin-title',    _selProduct.pin_titel        || _selProduct.titel || '');
-    _set('spc-pin-desc',     _selProduct.pin_beschreibung || '');
-    _set('spc-pin-url',      _selProduct.pin_ziel_url     || '');
-    _set('spc-pin-alt',      _selProduct.pin_alt_text     || '');
-    // pre-select board if saved
-    if (_selProduct.pin_board_id) {
-      document.getElementById('spc-board-id').value = _selProduct.pin_board_id;
-      const sel = document.getElementById('spc-board-select');
-      if (sel) { for (let o of sel.options) { if (o.value === _selProduct.pin_board_id) { o.selected = true; break; } } }
-    }
-    _set('spc-ig-caption',   _selProduct.ig_description   || '');
-    _set('spc-ig-hashtags',  _selProduct.ig_tags          || '');
+  // Update input & badge
+  document.getElementById('prodComboInput').value = _selProduct.titel || _selProduct.dekoire_id || '';
+  const badge = document.getElementById('prodSelectedBadge');
+  document.getElementById('prodSelectedImg').src  = _selProduct.image_url || '';
+  document.getElementById('prodSelectedName').textContent = _selProduct.titel || '';
+  document.getElementById('prodSelectedId').value = id;
+  badge.style.display = 'inline-flex';
+  prodComboClose();
+
+  // Sidebar preview
+  if (_selProduct.image_url) {
+    document.getElementById('sidebarProductImg').src = _selProduct.image_url;
+    document.getElementById('sidebarProductPreview').style.display = '';
   }
 
-  // Set preview image
-  if (_selProduct.image_url && !_uploadedBlob) {
-    _setImg('spc-pin-img', 'spc-pin-empty', _selProduct.image_url);
-    _setImg('spc-ig-img',  'spc-ig-empty',  _selProduct.image_url);
+  // Fill Pinterest fields
+  _set('spc-pin-title', _selProduct.pin_titel        || _selProduct.titel || '');
+  _set('spc-pin-desc',  _selProduct.pin_beschreibung || '');
+  _set('spc-pin-url',   _selProduct.pin_ziel_url     || '');
+  _set('spc-pin-alt',   _selProduct.pin_alt_text     || '');
+
+  // Fill Instagram fields
+  _set('spc-ig-caption',  _selProduct.ig_description || '');
+  _set('spc-ig-hashtags', _selProduct.ig_tags        || '');
+
+  // Pre-select board
+  if (_selProduct.pin_board_id) {
+    document.getElementById('spc-board-id').value = _selProduct.pin_board_id;
+    const sel = document.getElementById('spc-board-select');
+    for (let o of sel.options) { if (o.value === _selProduct.pin_board_id) { o.selected = true; break; } }
+    const hint = document.getElementById('spc-board-hint');
+    if (hint && _selProduct.pin_board) { hint.textContent = `✓ ${_selProduct.pin_board} · ID: ${_selProduct.pin_board_id}`; hint.style.color = '#16a34a'; }
   }
 
-  document.getElementById('selectedProductHint').textContent = `✓ ${_selProduct.titel || _selProduct.id}`;
-  updatePreview();
-}
-
-// ── Image upload ──
-function handleUpload(input) {
-  const files = Array.from(input.files).slice(0, 4);
-  _uploadedFiles = files;
-  const row  = document.getElementById('spcThumbRow');
-  const hint = document.getElementById('spcUploadHint');
-  row.innerHTML = '';
-  files.forEach(f => {
-    const img = document.createElement('img');
-    img.className = 'spc-thumb';
-    img.src = URL.createObjectURL(f);
-    row.appendChild(img);
-  });
-  hint.style.display = files.length ? 'none' : '';
-  if (files.length) {
-    _uploadedBlob = URL.createObjectURL(files[0]);
-    _setImg('spc-pin-img', 'spc-pin-empty', _uploadedBlob);
-    _setImg('spc-ig-img',  'spc-ig-empty',  _uploadedBlob);
+  // Set preview image from product
+  if (_selProduct.image_url) {
+    _setImg('pin-prev-img', 'pin-prev-empty', _selProduct.image_url);
+    _setImg('ig-prev-img',  'ig-prev-empty',  _selProduct.image_url);
   }
+
+  updatePinPreview();
+  updateIgPreview();
 }
 
 // ── Boards ──
@@ -430,7 +458,10 @@ async function loadBoards(force = false) {
   try {
     const res  = await fetch('/api/pinterest/boards');
     const data = await res.json();
-    if (data.error) { if (hint) { hint.textContent = '⚠ ' + data.error; hint.style.color = '#DC2626'; } return; }
+    if (data.error) {
+      if (hint) { hint.textContent = '⚠ ' + data.error; hint.style.color = '#DC2626'; }
+      return;
+    }
     _boards = data.boards || [];
     _boardsLoaded = true;
     const cur = document.getElementById('spc-board-id').value;
@@ -442,9 +473,10 @@ async function loadBoards(force = false) {
       sel.appendChild(o);
     });
     if (hint) {
-      hint.style.color = 'var(--muted)';
+      hint.style.color = cur && _boards.find(b=>b.id===cur) ? '#16a34a' : 'var(--muted)';
       hint.textContent = cur && _boards.find(b=>b.id===cur)
-        ? `✓ ID: ${cur}` : `${_boards.length} Boards geladen`;
+        ? `✓ ${_boards.find(b=>b.id===cur).name} · ID: ${cur}`
+        : `${_boards.length} Boards geladen`;
     }
   } catch(e) { if (hint) hint.textContent = '⚠ ' + e.message; }
 }
@@ -455,60 +487,84 @@ function spcBoardChange(sel) {
   document.getElementById('spc-board-id').value = id;
   const hint = document.getElementById('spc-board-hint');
   if (hint) { hint.textContent = id ? `✓ ${name} · ID: ${id}` : ''; hint.style.color = '#16a34a'; }
-  _txt('spc-prev-board', name || 'Board');
+  _txt('pin-prev-board', name || 'Board');
 }
 
-// ── Preview ──
-function updatePreview() {
-  _txt('spc-prev-title', _val('spc-pin-title') || 'Titel erscheint hier');
-  _txt('spc-prev-desc',  _val('spc-pin-desc')  || 'Beschreibung erscheint hier…');
+// ── Upload ──
+function spPreview(input, prefix) {
+  const files = Array.from(input.files).slice(0,4);
+  _spFiles[prefix] = files;
+  const row  = document.getElementById(`${prefix}PreviewRow`);
+  const hint = document.getElementById(`${prefix}UploadHint`);
+  row.innerHTML = '';
+  files.forEach(f => {
+    const img = document.createElement('img');
+    img.className = 'sp-preview-thumb';
+    img.src = URL.createObjectURL(f);
+    row.appendChild(img);
+  });
+  hint.style.display = files.length ? 'none' : '';
+  if (files.length) {
+    const blob = URL.createObjectURL(files[0]);
+    _uploadedBlob[prefix] = blob;
+    if (prefix === 'pin') _setImg('pin-prev-img', 'pin-prev-empty', blob);
+    if (prefix === 'ig')  _setImg('ig-prev-img',  'ig-prev-empty',  blob);
+  }
+}
+
+// ── Previews ──
+function updatePinPreview() {
+  const src = _uploadedBlob.pin || (_selProduct?.image_url) || '';
+  _setImg('pin-prev-img', 'pin-prev-empty', src);
+  _txt('pin-prev-title', _val('spc-pin-title') || 'Titel erscheint hier');
+  _txt('pin-prev-desc',  _val('spc-pin-desc')  || 'Beschreibung erscheint hier…');
   const url = _val('spc-pin-url');
-  _txt('spc-prev-link', url ? url.replace(/^https?:\/\//,'').split('/')[0] : 'link.com');
-  _txt('spc-ig-prev-caption',  _val('spc-ig-caption')  || 'Caption erscheint hier…');
-  _txt('spc-ig-prev-hashtags', _val('spc-ig-hashtags'));
+  _txt('pin-prev-link', url ? url.replace(/^https?:\/\//,'').split('/')[0] : 'link.com');
+}
+
+function updateIgPreview() {
+  const src = _uploadedBlob.ig || (_selProduct?.image_url) || '';
+  _setImg('ig-prev-img', 'ig-prev-empty', src);
+  const cap = _val('spc-ig-caption');
+  document.getElementById('ig-prev-caption').innerHTML = `<strong>dekoire</strong> ${cap || 'Caption erscheint hier…'}`;
+  _txt('ig-prev-hashtags', _val('spc-ig-hashtags'));
 }
 
 // ── AI Generate ──
 async function generateWithAI() {
   if (!_selProduct) { alert('Bitte zuerst ein Produkt auswählen.'); return; }
   const status = document.getElementById('post-status');
-  status.style.color = 'var(--muted)';
-  status.textContent = '✨ KI generiert Texte…';
+  status.style.color = 'var(--muted)'; status.textContent = '✨ Generiert…';
   try {
-    const res  = await fetch(`/api/product/${_selProduct.id}/regen`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ field: _platform === 'pinterest' ? 'pin_all' : 'ig_all', context: {} })
+    const field = _platform === 'pinterest' ? 'pin_all' : 'ig_all';
+    const res   = await fetch(`/api/product/${_selProduct.id}/regen`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ field, context: {} })
     });
     const data = await res.json();
     if (data.pin_titel)        _set('spc-pin-title', data.pin_titel);
     if (data.pin_beschreibung) _set('spc-pin-desc',  data.pin_beschreibung);
-    if (data.ig_description)   _set('spc-ig-caption', data.ig_description);
+    if (data.ig_description)   _set('spc-ig-caption',  data.ig_description);
     if (data.ig_tags)          _set('spc-ig-hashtags', data.ig_tags);
-    updatePreview();
-    status.style.color = '#16a34a';
-    status.textContent = '✓ Texte generiert';
-  } catch(e) {
-    status.style.color = '#DC2626';
-    status.textContent = '❌ ' + e.message;
-  }
+    updatePinPreview(); updateIgPreview();
+    status.style.color = '#16a34a'; status.textContent = '✓ Texte generiert';
+  } catch(e) { status.style.color = '#DC2626'; status.textContent = '❌ ' + e.message; }
 }
 
 // ── Post ──
 async function doPost() {
-  if (!_selProduct)         { alert('Bitte ein Produkt auswählen.'); return; }
-  if (!_uploadedFiles.length) { alert('Bitte ein Bild hochladen.'); return; }
+  if (!_selProduct) { alert('Bitte ein Produkt auswählen.'); return; }
+  const files = _spFiles[_platform === 'pinterest' ? 'pin' : 'ig'];
+  if (!files.length) { alert('Bitte ein Bild hochladen.'); return; }
   if (_platform === 'pinterest' && !document.getElementById('spc-board-id').value)
     { alert('Bitte ein Board auswählen.'); return; }
 
   const status = document.getElementById('post-status');
-  status.style.color = 'var(--muted)';
-  status.textContent = '📤 Postet…';
+  status.style.color = 'var(--muted)'; status.textContent = '📤 Postet…';
 
   const fd = new FormData();
   fd.append('platform', _platform);
-  _uploadedFiles.forEach(f => fd.append('images', f));
-
+  files.forEach(f => fd.append('images', f));
   if (_platform === 'pinterest') {
     fd.append('pin_title',       _val('spc-pin-title'));
     fd.append('pin_description', _val('spc-pin-desc'));
@@ -524,31 +580,27 @@ async function doPost() {
     const res  = await fetch(`/api/product/${_selProduct.id}/social/post`, { method:'POST', body: fd });
     const data = await res.json();
     if (!data.success) { status.style.color='#DC2626'; status.textContent='❌ '+(data.error||'Fehler'); return; }
-    if (data.status === 'sent') {
-      status.style.color = '#059669';
-      status.innerHTML = '✅ Erfolgreich gepostet!'
-        + (data.post_url ? ` <a href="${data.post_url}" target="_blank" rel="noopener" style="color:#059669;font-weight:600;text-decoration:underline;margin-left:6px;">→ Zum Post</a>` : '');
-    } else {
-      status.style.color = '#D97706'; status.textContent = '⏰ Geplant!';
-    }
+    status.style.color = '#059669';
+    status.innerHTML = '✅ Erfolgreich gepostet!'
+      + (data.post_url ? ` <a href="${data.post_url}" target="_blank" rel="noopener" style="color:#059669;font-weight:600;text-decoration:underline;margin-left:6px;">→ Zum Post</a>` : '');
   } catch(e) { status.style.color='#DC2626'; status.textContent='❌ '+e.message; }
 }
 
 // ── Helpers ──
-function _val(id)    { return (document.getElementById(id)?.value || '').trim(); }
-function _set(id, v) { const e = document.getElementById(id); if (e) e.value = v; }
-function _txt(id, v) { const e = document.getElementById(id); if (e) e.textContent = v; }
+function _val(id)    { return (document.getElementById(id)?.value||'').trim(); }
+function _set(id, v) { const e=document.getElementById(id); if(e) e.value=v; }
+function _txt(id, v) { const e=document.getElementById(id); if(e) e.textContent=v; }
 function _setImg(imgId, emptyId, src) {
-  const img = document.getElementById(imgId), empty = document.getElementById(emptyId);
-  if (!img || !empty) return;
-  if (src) { img.src = src; img.style.display = ''; empty.style.display = 'none'; }
-  else     { img.style.display = 'none'; empty.style.display = ''; }
+  const img=document.getElementById(imgId), empty=document.getElementById(emptyId);
+  if(!img||!empty) return;
+  if(src){img.src=src;img.style.display='';empty.style.display='none';}
+  else{img.style.display='none';empty.style.display='';}
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   loadProducts();
   loadBoards();
-  setPlatform('pinterest');
+  setPlatform('pinterest', document.getElementById('tab-pin'));
 });
 </script>
 
