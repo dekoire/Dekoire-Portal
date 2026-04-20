@@ -1038,11 +1038,14 @@ def api_dashboard_stats():
             stats["products_etsy"]  = sum(1 for r in rows if r.get("etsy_title","").strip())
         except Exception:
             pass
-    # Social post counts
+    # Social post counts (ok = posted/scheduled, fail = error/failed)
     try:
         all_posts = _all_social_posts()
-        stats["posts_pinterest"] = sum(1 for p in all_posts if p.get("platform") == "pinterest")
-        stats["posts_instagram"] = sum(1 for p in all_posts if p.get("platform") == "instagram")
+        for plat, key in (("pinterest","pin"), ("instagram","ig")):
+            plat_posts = [p for p in all_posts if p.get("platform") == plat]
+            stats[f"posts_{key}_ok"]   = sum(1 for p in plat_posts if p.get("status") in ("posted","scheduled","success"))
+            stats[f"posts_{key}_fail"] = sum(1 for p in plat_posts if p.get("status") in ("error","failed"))
+            stats[f"posts_{key}_total"]= len(plat_posts)
     except Exception:
         pass
     return jsonify(stats)

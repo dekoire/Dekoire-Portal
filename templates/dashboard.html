@@ -140,53 +140,69 @@
   border-radius: 20px;
 }
 
-/* Quick View */
-.qv-grid {
+/* Quick View + main row */
+.dash-main-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  margin-bottom: 32px;
+  align-items: flex-start;
+  gap: 28px;
 }
-.qv-card {
+.dash-main-content {
+  flex: 1;
+  min-width: 0;
+}
+.qv-panel {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 18px 20px;
+  padding: 14px 16px;
+  width: 200px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 88px;
+}
+.qv-panel-title {
+  font-size: .65rem;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.qv-row {
   display: flex;
   align-items: center;
-  gap: 14px;
-  min-width: 170px;
-  flex: 1 1 170px;
-  max-width: 220px;
+  gap: 9px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
 }
-.qv-card-wide {
-  flex: 2 1 340px;
-  max-width: 460px;
-}
-.qv-icon {
-  width: 42px; height: 42px;
-  border-radius: 10px;
+.qv-row:last-child { border-bottom: none; }
+.qv-dot {
+  width: 28px; height: 28px;
+  border-radius: 7px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.qv-body { display: flex; flex-direction: column; gap: 3px; }
-.qv-value {
-  font-size: 1.55rem;
-  font-weight: 800;
-  color: var(--text);
-  line-height: 1;
-  min-height: 1.6rem;
-}
-.qv-label {
-  font-size: .73rem;
+.qv-dot svg { width: 14px; height: 14px; }
+.qv-info { flex: 1; min-width: 0; }
+.qv-row-label {
+  font-size: .7rem;
   color: var(--muted);
-  font-weight: 500;
-  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.qv-muted { font-size: .7rem; color: var(--muted); }
+.qv-row-val {
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+.qv-ok  { color: #16a34a; }
+.qv-err { color: #dc2626; }
+.qv-sep { color: var(--muted); font-weight: 400; }
 .qv-spinner {
   display: inline-block;
-  width: 16px; height: 16px;
+  width: 12px; height: 12px;
   border: 2px solid var(--border);
   border-top-color: var(--btn);
   border-radius: 50%;
@@ -194,18 +210,6 @@
   vertical-align: middle;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-.qv-token-bar {
-  height: 7px;
-  background: var(--c-100);
-  border-radius: 99px;
-  overflow: hidden;
-}
-.qv-token-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #7C3AED, #a78bfa);
-  border-radius: 99px;
-  transition: width .6s ease;
-}
 
 /* External Apps */
 .ext-app-grid {
@@ -298,97 +302,27 @@
 
 <div class="dashboard-body">
 
-  <div class="dashboard-greeting" style="display:flex;align-items:center;gap:16px;">
-    {% if current_user_profile_image %}
-      <img src="{{ current_user_profile_image }}" alt="Profilbild"
-           style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--border);flex-shrink:0;">
-    {% else %}
-      <div style="width:52px;height:52px;border-radius:50%;background:#EEF2FF;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--btn);">
-        <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      </div>
-    {% endif %}
-    <div>
-      <h2 style="margin:0 0 2px;">Hi, {{ current_user_name }} 👋</h2>
-      <p style="margin:0;font-size:.82rem;color:var(--muted);">{{ current_user_email }}</p>
-    </div>
-  </div>
+  <div class="dash-main-row">
 
-  <!-- ── Quick View ── -->
-  <div class="dashboard-section-label">Quick View</div>
-  <div class="qv-grid" id="qvGrid">
-    <div class="qv-card" id="qv-products-total">
-      <div class="qv-icon" style="background:#EEF2FF;color:var(--btn);">
-        <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-          <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M2 17l10 5 10-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="qv-body">
-        <div class="qv-value" id="qv-val-products-total"><span class="qv-spinner"></span></div>
-        <div class="qv-label">Produkte angelegt</div>
-      </div>
-    </div>
-    <div class="qv-card" id="qv-products-etsy">
-      <div class="qv-icon" style="background:#FFF7ED;color:#EA580C;">
-        <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-          <path d="M16 10a4 4 0 0 1-8 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="qv-body">
-        <div class="qv-value" id="qv-val-products-etsy"><span class="qv-spinner"></span></div>
-        <div class="qv-label">Produkte auf Etsy</div>
-      </div>
-    </div>
-    <div class="qv-card" id="qv-posts-pinterest">
-      <div class="qv-icon" style="background:#FFF5F5;color:#E60023;">
-        <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-          <path d="M12 2C6.477 2 2 6.477 2 12c0 4.236 2.636 7.855 6.356 9.312-.088-.791-.167-2.005.035-2.868.181-.78 1.172-4.97 1.172-4.97s-.299-.598-.299-1.482c0-1.388.806-2.428 1.808-2.428.853 0 1.267.641 1.267 1.408 0 .858-.546 2.141-.828 3.33-.236.995.499 1.806 1.476 1.806 1.771 0 2.994-2.31 2.994-5.04 0-2.074-1.414-3.63-3.964-3.63-2.888 0-4.695 2.16-4.695 4.58 0 .832.245 1.417.63 1.877.175.207.2.29.136.529l-.191.766c-.061.24-.248.326-.455.237-1.279-.524-1.872-1.935-1.872-3.524 0-2.624 2.228-5.836 6.661-5.836 3.565 0 5.94 2.602 5.94 5.393 0 3.71-2.09 6.511-5.152 6.511-1.034 0-2.009-.561-2.342-1.19l-.637 2.457c-.23.877-.853 1.977-1.272 2.647A9.984 9.984 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      <div class="qv-body">
-        <div class="qv-value" id="qv-val-posts-pinterest"><span class="qv-spinner"></span></div>
-        <div class="qv-label">Pinterest Posts</div>
-      </div>
-    </div>
-    <div class="qv-card" id="qv-posts-instagram">
-      <div class="qv-icon" style="background:#FFF0F5;color:#E1306C;">
-        <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-          <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.7"/>
-          <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.7"/>
-          <circle cx="17.5" cy="6.5" r="1.3" fill="currentColor"/>
-        </svg>
-      </div>
-      <div class="qv-body">
-        <div class="qv-value" id="qv-val-posts-instagram"><span class="qv-spinner"></span></div>
-        <div class="qv-label">Instagram Posts</div>
-      </div>
-    </div>
-    <div class="qv-card qv-card-wide" id="qv-claude-tokens">
-      <div class="qv-icon" style="background:#F5F3FF;color:#7C3AED;">
-        <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-          <path d="M12 2a9 9 0 0 1 9 9c0 3.18-1.65 5.97-4.13 7.6L15 21H9l-1.87-2.4A9 9 0 0 1 12 2z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M9 17v1a3 3 0 0 0 6 0v-1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-        </svg>
-      </div>
-      <div class="qv-body" style="flex:1;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-          <div class="qv-label" style="margin:0;">Claude API · Tokens</div>
-          <a href="https://console.anthropic.com" target="_blank" rel="noopener" style="font-size:.72rem;color:var(--btn);text-decoration:none;">Console ↗</a>
-        </div>
-        <div class="qv-token-bar">
-          <div class="qv-token-fill" id="qv-token-fill" style="width:0%"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-top:5px;">
-          <span class="qv-muted" id="qv-token-label">Verbrauch nicht direkt abrufbar · Anthropic Console öffnen</span>
-        </div>
-      </div>
-    </div>
-  </div>
+    <!-- ── Main content ── -->
+    <div class="dash-main-content">
 
-  <div class="dashboard-section-label" style="margin-top:32px;">Produktmanagement</div>
+      <div class="dashboard-greeting" style="display:flex;align-items:center;gap:16px;">
+        {% if current_user_profile_image %}
+          <img src="{{ current_user_profile_image }}" alt="Profilbild"
+               style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--border);flex-shrink:0;">
+        {% else %}
+          <div style="width:52px;height:52px;border-radius:50%;background:#EEF2FF;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--btn);">
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </div>
+        {% endif %}
+        <div>
+          <h2 style="margin:0 0 2px;">Hi, {{ current_user_name }} 👋</h2>
+          <p style="margin:0;font-size:.82rem;color:var(--muted);">{{ current_user_email }}</p>
+        </div>
+      </div>
+
+      <div class="dashboard-section-label">Produktmanagement</div>
   <div class="dashboard-grid" data-grid-id="produktmanagement">
 
     <!-- Produkt anlegen -->
@@ -554,27 +488,77 @@
   </div>
   {% endif %}
 
+    </div><!-- /dash-main-content -->
+
+    <!-- ── Quick View panel (right, sticky) ── -->
+    <div class="qv-panel">
+      <div class="qv-panel-title">Quick View</div>
+      <div class="qv-row">
+        <div class="qv-dot" style="background:#EEF2FF;color:var(--btn);">
+          <svg fill="none" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="qv-info">
+          <div class="qv-row-label">Produkte</div>
+          <div class="qv-row-val" id="qv-val-products-total"><span class="qv-spinner"></span></div>
+        </div>
+      </div>
+      <div class="qv-row">
+        <div class="qv-dot" style="background:#FFF7ED;color:#EA580C;">
+          <svg fill="none" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 10a4 4 0 0 1-8 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="qv-info">
+          <div class="qv-row-label">Auf Etsy</div>
+          <div class="qv-row-val" id="qv-val-products-etsy"><span class="qv-spinner"></span></div>
+        </div>
+      </div>
+      <div class="qv-row">
+        <div class="qv-dot" style="background:#FFF5F5;color:#E60023;">
+          <svg fill="none" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.236 2.636 7.855 6.356 9.312-.088-.791-.167-2.005.035-2.868.181-.78 1.172-4.97 1.172-4.97s-.299-.598-.299-1.482c0-1.388.806-2.428 1.808-2.428.853 0 1.267.641 1.267 1.408 0 .858-.546 2.141-.828 3.33-.236.995.499 1.806 1.476 1.806 1.771 0 2.994-2.31 2.994-5.04 0-2.074-1.414-3.63-3.964-3.63-2.888 0-4.695 2.16-4.695 4.58 0 .832.245 1.417.63 1.877.175.207.2.29.136.529l-.191.766c-.061.24-.248.326-.455.237-1.279-.524-1.872-1.935-1.872-3.524 0-2.624 2.228-5.836 6.661-5.836 3.565 0 5.94 2.602 5.94 5.393 0 3.71-2.09 6.511-5.152 6.511-1.034 0-2.009-.561-2.342-1.19l-.637 2.457c-.23.877-.853 1.977-1.272 2.647A9.984 9.984 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="qv-info">
+          <div class="qv-row-label">Pinterest</div>
+          <div class="qv-row-val" id="qv-val-posts-pinterest"><span class="qv-spinner"></span></div>
+        </div>
+      </div>
+      <div class="qv-row">
+        <div class="qv-dot" style="background:#FFF0F5;color:#E1306C;">
+          <svg fill="none" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.8"/><circle cx="17.5" cy="6.5" r="1.3" fill="currentColor"/></svg>
+        </div>
+        <div class="qv-info">
+          <div class="qv-row-label">Instagram</div>
+          <div class="qv-row-val" id="qv-val-posts-instagram"><span class="qv-spinner"></span></div>
+        </div>
+      </div>
+      <div class="qv-row">
+        <div class="qv-dot" style="background:#F5F3FF;color:#7C3AED;">
+          <svg fill="none" viewBox="0 0 24 24"><path d="M12 2a9 9 0 0 1 9 9c0 3.18-1.65 5.97-4.13 7.6L15 21H9l-1.87-2.4A9 9 0 0 1 12 2z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 17v1a3 3 0 0 0 6 0v-1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </div>
+        <div class="qv-info">
+          <div class="qv-row-label">Claude API</div>
+          <div class="qv-row-val"><a href="https://console.anthropic.com" target="_blank" rel="noopener" style="font-size:.72rem;color:var(--btn);font-weight:600;text-decoration:none;">Console ↗</a></div>
+        </div>
+      </div>
+    </div><!-- /qv-panel -->
+
+  </div><!-- /dash-main-row -->
+
 </div>
 
 <script>
 /* ── Quick View stats ── */
 async function loadQvStats() {
+  const dash = (v) => (v === null || v === undefined) ? '–' : v;
+  const setHtml = (id, html) => { const el = document.getElementById('qv-val-' + id); if (el) el.innerHTML = html; };
   try {
-    const r = await fetch('/api/dashboard/stats');
-    const d = await r.json();
-    const set = (id, val) => {
-      const el = document.getElementById('qv-val-' + id);
-      if (el) el.textContent = (val === null || val === undefined) ? '–/–' : val;
-    };
-    set('products-total', d.products_total);
-    set('products-etsy',  d.products_etsy);
-    set('posts-pinterest', d.posts_pinterest);
-    set('posts-instagram', d.posts_instagram);
+    const d = await fetch('/api/dashboard/stats').then(r => r.json());
+    setHtml('products-total', `<span>${dash(d.products_total)}</span>`);
+    setHtml('products-etsy',  `<span>${dash(d.products_etsy)}</span>`);
+    const pinOk   = dash(d.posts_pin_ok),   pinFail   = dash(d.posts_pin_fail);
+    const igOk    = dash(d.posts_ig_ok),    igFail    = dash(d.posts_ig_fail);
+    setHtml('posts-pinterest', `<span class="qv-ok">${pinOk}</span><span class="qv-sep"> / </span><span class="qv-err">${pinFail}</span>`);
+    setHtml('posts-instagram', `<span class="qv-ok">${igOk}</span><span class="qv-sep"> / </span><span class="qv-err">${igFail}</span>`);
   } catch(e) {
-    ['products-total','products-etsy','posts-pinterest','posts-instagram'].forEach(id => {
-      const el = document.getElementById('qv-val-' + id);
-      if (el) el.textContent = '–/–';
-    });
+    ['products-total','products-etsy','posts-pinterest','posts-instagram'].forEach(id => setHtml(id, '–'));
   }
 }
 loadQvStats();
