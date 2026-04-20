@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Alle Produkte – {{ header_title }}</title>
+<link rel="stylesheet" href="/static/style.css" />
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+/* ── Layout ── */
+.pl-wrap {
+  max-width: 96%;
+  margin: 0 auto;
+  padding: 28px 20px 60px;
+}
+.pl-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.pl-topbar h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+  flex: 1 1 auto;
+}
+.pl-count {
+  font-size: .78rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ── Buttons ── */
+.pl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius);
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  transition: background .15s, color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.pl-btn:hover { background: var(--c-50); }
+.pl-btn.pl-btn-primary { background: var(--btn); color: #fff; border-color: var(--btn); }
+.pl-btn.pl-btn-primary:hover { background: var(--btn-h); border-color: var(--btn-h); }
+.pl-btn.pl-btn-danger { background: var(--error); color: #fff; border-color: var(--error); }
+.pl-btn.pl-btn-danger:hover { background: #DC2626; border-color: #DC2626; }
+.pl-btn.pl-btn-success { background: var(--success); color: #fff; border-color: var(--success); }
+.pl-btn.pl-btn-success:hover { background: #059669; border-color: #059669; }
+
+/* ── Bulk bar ── */
+.pl-bulk-bar {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  background: var(--c-50);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  margin-bottom: 12px;
+}
+.pl-bulk-bar.visible { display: flex; }
+.pl-bulk-label {
+  font-size: .83rem;
+  font-weight: 600;
+  color: var(--btn);
+  flex: 1;
+}
+
+/* ── Filter panel ── */
+.pl-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.pl-search {
+  flex: 1 1 220px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: .85rem;
+  background: var(--card);
+  color: var(--text);
+}
+.pl-filter-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  display: none;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.pl-filter-panel.open { display: flex; }
+.pl-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 140px;
+}
+.pl-filter-group label {
+  font-size: .72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--muted);
+}
+.pl-filter-group select,
+.pl-filter-group input[type="date"] {
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: .83rem;
+  background: var(--card);
+  color: var(--text);
+}
+
+/* ── Table ── */
+.pl-table-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.pl-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+}
+.pl-table th {
+  background: var(--c-50);
+  font-size: .70rem;
+  font-weight: 700;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  user-select: none;
+}
+.pl-table th.sortable { cursor: pointer; }
+.pl-table th.sortable:hover { color: var(--text); }
+.pl-table th .sort-arrow { margin-left: 4px; opacity: .4; font-size: .7rem; }
+.pl-table th.sort-asc .sort-arrow::after { content: "▲"; opacity: 1; }
+.pl-table th.sort-desc .sort-arrow::after { content: "▼"; opacity: 1; }
+.pl-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: .83rem;
+  vertical-align: middle;
+}
+.pl-table th:hover { background: var(--c-100); }
+.pl-table tr:last-child td { border-bottom: none; }
+.pl-table tr.pl-row { cursor: pointer; transition: background .12s; }
+.pl-table tr.pl-row:hover { background: var(--c-50); }
+.pl-table tr.pl-hidden { display: none; }
+
+/* ── Checkbox cell ── */
+.pl-cb-cell {
+  width: 36px;
+  text-align: center;
+  padding: 10px 8px;
+}
+.pl-cb-cell input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--btn);
+}
+
+/* ── Thumbnail ── */
+.pl-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: block;
+}
+.pl-thumb-empty {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: var(--hover);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+/* ── Title cell ── */
+.pl-title { font-weight: 600; font-size: .86rem; color: var(--text); }
+.pl-sub { font-size: .73rem; color: var(--muted); margin-top: 2px; }
+
+/* ── Orientation badge ── */
+.orient-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: .70rem;
+  font-weight: 600;
+  background: var(--c-100);
+  color: var(--c-600);
+}
+.orient-badge.querformat  { background: #DBEAFE; color: #1D4ED8; }
+.orient-badge.hochformat  { background: #FCE7F3; color: #9D174D; }
+.orient-badge.quadratisch { background: #D1FAE5; color: #065F46; }
+
+/* ── Date cell ── */
+.pl-date { font-size: .82rem; font-weight: 500; }
+.pl-time { font-size: .72rem; color: var(--muted); margin-top: 2px; }
+
+/* ── Campaign pills ── */
+.camp-pills { display: flex; gap: 5px; flex-wrap: wrap; }
+.camp-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+.camp-pill.ig { background: #FCE7F3; color: #9D174D; }
+.camp-pill.pin { background: #FEE2E2; color: #991B1B; }
+.camp-pill.none { background: #F3F4F6; color: #9CA3AF; font-weight: 500; font-size: .68rem; }
+
+/* ── Action icons ── */
+.pl-actions { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.pl-icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--c-50);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  transition: background .13s, color .13s, border-color .13s;
+  padding: 0;
+}
+.pl-icon-btn:hover { background: var(--btn); color: #fff; border-color: var(--btn); }
+.pl-icon-btn.danger:hover { background: var(--error); color: #fff; border-color: var(--error); }
+
+/* ── Delete modal ── */
+.pl-modal-back {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.35);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+.pl-modal-back.open { display: flex; }
+.pl-modal {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 28px 28px 22px;
+  max-width: 400px;
+  width: 90%;
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 32px rgba(0,0,0,.15);
+}
+.pl-modal h3 { margin: 0 0 10px; font-size: 1.05rem; }
+.pl-modal p { font-size: .87rem; color: var(--muted); margin: 0 0 20px; }
+.pl-modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+</style>
+</head>
+<body>
+{% set header_back_href = '/' %}
+{% set header_back_label = 'Dashboard' %}
+{% set header_dropdown_home = true %}
+{% include 'includes/header.html' %}
+
+<div class="pl-wrap">
+
+  <!-- Top bar -->
+  <div class="pl-topbar">
+    <div>
+      <h2>Alle Produkte</h2>
+      <div class="pl-count" id="pl-count">{{ rows|length }} Produkte</div>
+    </div>
+    <button class="pl-btn" onclick="toggleFilter()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      Filter
+    </button>
+    <button class="pl-btn pl-btn-primary" onclick="window.location.href='/new'">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Neues Produkt
+    </button>
+  </div>
+
+  <!-- Bulk action bar -->
+  <div class="pl-bulk-bar" id="pl-bulk-bar">
+    <span class="pl-bulk-label" id="pl-bulk-label">0 ausgewählt</span>
+    <button class="pl-btn pl-btn-success" onclick="exportSelected()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Excel exportieren
+    </button>
+    <button class="pl-btn pl-btn-danger" onclick="openBulkDelete()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      Löschen
+    </button>
+    <button class="pl-btn" onclick="deselectAll()">Abwählen</button>
+  </div>
+
+  <!-- Search + filter toggle -->
+  <div class="pl-filter-row">
+    <input class="pl-search" id="pl-search" type="search" placeholder="Suche nach Titel, ID, Stil …" oninput="applyFilters()" />
+    <button class="pl-btn" onclick="exportAll()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Alle exportieren
+    </button>
+  </div>
+
+  <!-- Filter panel -->
+  <div class="pl-filter-panel" id="pl-filter-panel">
+    <div class="pl-filter-group">
+      <label>Ausrichtung</label>
+      <select id="f-ausrichtung" onchange="applyFilters()">
+        <option value="">Alle</option>
+        <option value="Querformat">Querformat</option>
+        <option value="Hochformat">Hochformat</option>
+        <option value="Quadratisch">Quadratisch</option>
+      </select>
+    </div>
+    <div class="pl-filter-group">
+      <label>Instagram</label>
+      <select id="f-ig" onchange="applyFilters()">
+        <option value="">Alle</option>
+        <option value="1">Hat IG-Post</option>
+        <option value="0">Kein IG-Post</option>
+      </select>
+    </div>
+    <div class="pl-filter-group">
+      <label>Pinterest</label>
+      <select id="f-pin" onchange="applyFilters()">
+        <option value="">Alle</option>
+        <option value="1">Hat Pin</option>
+        <option value="0">Kein Pin</option>
+      </select>
+    </div>
+    <div class="pl-filter-group">
+      <label>Von</label>
+      <input type="date" id="f-date-from" onchange="applyFilters()" />
+    </div>
+    <div class="pl-filter-group">
+      <label>Bis</label>
+      <input type="date" id="f-date-to" onchange="applyFilters()" />
+    </div>
+    <button class="pl-btn" onclick="resetFilters()" style="align-self:flex-end">Zurücksetzen</button>
+  </div>
+
+  <!-- Table -->
+  <div class="pl-table-wrap">
+    <table class="pl-table" id="pl-table">
+      <thead>
+        <tr>
+          <th class="pl-cb-cell">
+            <input type="checkbox" id="pl-cb-all" onchange="toggleAll(this)" title="Alle auswählen" />
+          </th>
+          <th style="width:58px"></th>
+          <th class="sortable" data-col="titel" onclick="sortBy('titel',this)">Titel <span class="sort-arrow"></span></th>
+          <th class="sortable" data-col="orient" onclick="sortBy('orient',this)">Ausrichtung <span class="sort-arrow"></span></th>
+          <th class="sortable" data-col="date" onclick="sortBy('date',this)">Angelegt <span class="sort-arrow"></span></th>
+          <th>Kampagnen</th>
+          <th style="width:80px">Aktionen</th>
+        </tr>
+      </thead>
+      <tbody id="pl-tbody">
+        {% for row in rows %}
+        {% set sp = row.get('_sp', {'ig':0,'pin':0}) %}
+        {% set created = row.get('created_at','') %}
+        {% set date_part = created[:10] if created else '' %}
+        {% set time_part = created[11:16] if created|length > 10 else '' %}
+        {% set ausrichtung = row.get('ausrichtung','') %}
+        <tr class="pl-row"
+            data-id="{{ row.get('id','') }}"
+            data-titel="{{ row.get('titel','') | lower }}"
+            data-orient="{{ ausrichtung | lower }}"
+            data-date="{{ date_part }}"
+            data-ig="{{ '1' if sp.ig > 0 else '0' }}"
+            data-pin="{{ '1' if sp.pin > 0 else '0' }}"
+            onclick="rowClick(event, '{{ row.get('id','') }}')"
+        >
+          <td class="pl-cb-cell" onclick="event.stopPropagation()">
+            <input type="checkbox" class="pl-cb" value="{{ row.get('id','') }}" onchange="onCbChange()" />
+          </td>
+          <td style="padding:8px 10px;">
+            {% if row.get('image_url') %}
+            <img class="pl-thumb" src="{{ row.get('image_url','') }}" alt="" loading="lazy" />
+            {% else %}
+            <div class="pl-thumb-empty">🖼</div>
+            {% endif %}
+          </td>
+          <td>
+            <div class="pl-title">{{ row.get('titel','–') }}</div>
+            <div class="pl-sub">{{ row.get('id','') }} {% if row.get('kunstart') %}· {{ row.get('kunstart','') }}{% endif %}</div>
+          </td>
+          <td>
+            {% if ausrichtung %}
+            <span class="orient-badge {{ ausrichtung | lower }}">{{ ausrichtung }}</span>
+            {% else %}
+            <span style="color:var(--muted);font-size:.78rem">–</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if date_part %}
+            <div class="pl-date">{{ date_part }}</div>
+            <div class="pl-time">{{ time_part }}</div>
+            {% else %}
+            <span style="color:var(--muted)">–</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="camp-pills">
+              {% if sp.ig > 0 %}
+              <span class="camp-pill ig">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="17.5" cy="6.5" r="1.2"/></svg>
+                IG ×{{ sp.ig }}
+              </span>
+              {% endif %}
+              {% if sp.pin > 0 %}
+              <span class="camp-pill pin">
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 3.27 2.09 6.07 5 7.19V22h2v-3.93c.33.06.66.09 1 .09s.67-.03 1-.09V22h2v-5.81c2.91-1.12 5-3.92 5-7.19 0-3.87-3.13-7-7-7zm0 12c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+                Pin ×{{ sp.pin }}
+              </span>
+              {% endif %}
+              {% if sp.ig == 0 and sp.pin == 0 %}
+              <span class="camp-pill none">Keine</span>
+              {% endif %}
+            </div>
+          </td>
+          <td onclick="event.stopPropagation()">
+            <div class="pl-actions">
+              <button class="pl-icon-btn danger" title="Löschen" onclick="openSingleDelete('{{ row.get('id','') }}','{{ row.get('titel','Produkt') | replace("'","\\'") }}')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+              </button>
+              <button class="pl-icon-btn" title="Bearbeiten" onclick="window.location.href='/product/{{ row.get('id','') }}'">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">Keine Produkte vorhanden.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top:10px;font-size:.78rem;color:var(--muted)" id="pl-visible-count"></div>
+</div>
+
+<!-- Delete modal -->
+<div class="pl-modal-back" id="pl-modal-back" onclick="closeModal(event)">
+  <div class="pl-modal" onclick="event.stopPropagation()">
+    <h3 id="pl-modal-title">Produkt löschen?</h3>
+    <p id="pl-modal-body">Dieser Vorgang kann nicht rückgängig gemacht werden.</p>
+    <div class="pl-modal-actions">
+      <button class="pl-btn" onclick="closeModal()">Abbrechen</button>
+      <button class="pl-btn pl-btn-danger" id="pl-modal-confirm" onclick="confirmDelete()">Löschen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── State ── */
+let _sortCol = 'date', _sortDir = 'desc';
+let _deleteIds = [];
+let _deleteBulk = false;
+
+/* ── Filter toggle ── */
+function toggleFilter() {
+  document.getElementById('pl-filter-panel').classList.toggle('open');
+}
+
+/* ── Apply filters ── */
+function applyFilters() {
+  const q       = document.getElementById('pl-search').value.toLowerCase().trim();
+  const orient  = document.getElementById('f-ausrichtung').value.toLowerCase();
+  const igF     = document.getElementById('f-ig').value;
+  const pinF    = document.getElementById('f-pin').value;
+  const dateFrom= document.getElementById('f-date-from').value;
+  const dateTo  = document.getElementById('f-date-to').value;
+
+  let visible = 0;
+  document.querySelectorAll('#pl-tbody .pl-row').forEach(tr => {
+    const titel  = tr.dataset.titel  || '';
+    const oriVal = tr.dataset.orient || '';
+    const date   = tr.dataset.date   || '';
+    const ig     = tr.dataset.ig;
+    const pin    = tr.dataset.pin;
+
+    let show = true;
+    if (q && !titel.includes(q) && !(tr.dataset.id||'').toLowerCase().includes(q)) show = false;
+    if (orient && oriVal !== orient) show = false;
+    if (igF  && ig  !== igF)  show = false;
+    if (pinF && pin !== pinF) show = false;
+    if (dateFrom && date && date < dateFrom) show = false;
+    if (dateTo   && date && date > dateTo)   show = false;
+
+    tr.classList.toggle('pl-hidden', !show);
+    if (show) visible++;
+  });
+
+  document.getElementById('pl-visible-count').textContent =
+    visible + ' von {{ rows|length }} Produkten sichtbar';
+}
+
+function resetFilters() {
+  document.getElementById('pl-search').value = '';
+  document.getElementById('f-ausrichtung').value = '';
+  document.getElementById('f-ig').value = '';
+  document.getElementById('f-pin').value = '';
+  document.getElementById('f-date-from').value = '';
+  document.getElementById('f-date-to').value = '';
+  applyFilters();
+}
+
+/* ── Sort ── */
+function sortBy(col, th) {
+  if (_sortCol === col) {
+    _sortDir = _sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    _sortCol = col;
+    _sortDir = 'asc';
+  }
+  document.querySelectorAll('.pl-table th.sortable').forEach(h => {
+    h.classList.remove('sort-asc','sort-desc');
+  });
+  th.classList.add(_sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+
+  const tbody = document.getElementById('pl-tbody');
+  const rows  = Array.from(tbody.querySelectorAll('tr.pl-row'));
+  rows.sort((a, b) => {
+    let va = a.dataset[col] || '';
+    let vb = b.dataset[col] || '';
+    const cmp = va.localeCompare(vb, 'de', { numeric: true });
+    return _sortDir === 'asc' ? cmp : -cmp;
+  });
+  rows.forEach(r => tbody.appendChild(r));
+}
+
+/* ── Row click ── */
+function rowClick(e, id) {
+  if (e.target.closest('.pl-cb-cell') || e.target.closest('.pl-actions')) return;
+  window.location.href = '/product/' + id;
+}
+
+/* ── Checkbox logic ── */
+function toggleAll(cb) {
+  document.querySelectorAll('#pl-tbody .pl-row:not(.pl-hidden) .pl-cb').forEach(c => {
+    c.checked = cb.checked;
+  });
+  onCbChange();
+}
+
+function deselectAll() {
+  document.querySelectorAll('.pl-cb, #pl-cb-all').forEach(c => c.checked = false);
+  onCbChange();
+}
+
+function onCbChange() {
+  const selected = getSelectedIds();
+  const bar = document.getElementById('pl-bulk-bar');
+  const label = document.getElementById('pl-bulk-label');
+  if (selected.length > 0) {
+    bar.classList.add('visible');
+    label.textContent = selected.length + ' ausgewählt';
+  } else {
+    bar.classList.remove('visible');
+  }
+  const allVis = document.querySelectorAll('#pl-tbody .pl-row:not(.pl-hidden) .pl-cb');
+  const allChecked = allVis.length > 0 && Array.from(allVis).every(c => c.checked);
+  document.getElementById('pl-cb-all').checked = allChecked;
+}
+
+function getSelectedIds() {
+  return Array.from(document.querySelectorAll('.pl-cb:checked')).map(c => c.value);
+}
+
+/* ── Delete ── */
+function openSingleDelete(id, name) {
+  _deleteIds = [id];
+  _deleteBulk = false;
+  document.getElementById('pl-modal-title').textContent = 'Produkt löschen?';
+  document.getElementById('pl-modal-body').textContent =
+    '"' + name + '" wird unwiderruflich gelöscht.';
+  document.getElementById('pl-modal-back').classList.add('open');
+}
+
+function openBulkDelete() {
+  const ids = getSelectedIds();
+  if (!ids.length) return;
+  _deleteIds = ids;
+  _deleteBulk = true;
+  document.getElementById('pl-modal-title').textContent = ids.length + ' Produkte löschen?';
+  document.getElementById('pl-modal-body').textContent =
+    'Diese ' + ids.length + ' Produkte werden unwiderruflich gelöscht.';
+  document.getElementById('pl-modal-back').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('pl-modal-back')) return;
+  document.getElementById('pl-modal-back').classList.remove('open');
+  _deleteIds = [];
+}
+
+async function confirmDelete() {
+  const btn = document.getElementById('pl-modal-confirm');
+  btn.disabled = true;
+  btn.textContent = 'Löscht …';
+  try {
+    const res = await fetch('/api/products/bulk-delete', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ ids: _deleteIds })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      _deleteIds.forEach(id => {
+        const row = document.querySelector(`tr[data-id="${id}"]`);
+        if (row) row.remove();
+      });
+      document.getElementById('pl-modal-back').classList.remove('open');
+      deselectAll();
+      const remaining = document.querySelectorAll('#pl-tbody .pl-row').length;
+      document.getElementById('pl-count').textContent = remaining + ' Produkte';
+    } else {
+      alert('Fehler beim Löschen: ' + (data.error || 'Unbekannt'));
+    }
+  } catch (err) {
+    alert('Verbindungsfehler: ' + err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Löschen';
+  }
+}
+
+/* ── Export ── */
+async function exportAll() {
+  const allIds = Array.from(document.querySelectorAll('#pl-tbody .pl-row')).map(r => r.dataset.id);
+  await downloadXlsx(allIds, 'alle-produkte');
+}
+
+async function exportSelected() {
+  const ids = getSelectedIds();
+  if (!ids.length) return;
+  await downloadXlsx(ids, 'ausgewaehlte-produkte');
+}
+
+async function downloadXlsx(ids, filename) {
+  try {
+    const res = await fetch('/api/products/export', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ ids })
+    });
+    const data = await res.json();
+    if (!data.ok || !data.rows) { alert('Export fehlgeschlagen.'); return; }
+
+    const rows = data.rows;
+    if (!rows.length) { alert('Keine Daten zum Exportieren.'); return; }
+
+    const keys = Object.keys(rows[0]).filter(k => !k.startsWith('_'));
+    const wsData = [keys, ...rows.map(r => keys.map(k => r[k] ?? ''))];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Produkte');
+    XLSX.writeFile(wb, filename + '.xlsx');
+  } catch (err) {
+    alert('Export-Fehler: ' + err);
+  }
+}
+
+/* ── Init sort indicator ── */
+document.querySelector(`th[data-col="date"]`)?.classList.add('sort-desc');
+
+/* ── User menu ── */
+function toggleUserMenu() {
+  document.getElementById('userDropdown').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('userMenu')?.contains(e.target))
+    document.getElementById('userDropdown')?.classList.remove('open');
+});
+async function doLogout() {
+  await fetch('/auth/logout', { method: 'POST' });
+  window.location.href = '/login';
+}
+</script>
+{% include 'includes/footer.html' %}
+</body>
+</html>

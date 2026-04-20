@@ -1,0 +1,1847 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Einstellungen – {{ header_title }}</title>
+<link rel="stylesheet" href="/static/style.css" />
+<style>
+/* ── Settings layout ── */
+.settings-layout {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 28px 24px 60px;
+  box-sizing: border-box;
+  flex: 1;
+  min-height: calc(100vh - 120px);
+}
+
+/* ── Sidebar ── */
+.settings-sidebar {
+  width: 210px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 24px;
+  align-self: flex-start;
+}
+.settings-sidebar-title {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 12px 8px;
+}
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: .85rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  background: none;
+  border: none;
+  text-align: left;
+  width: 100%;
+  transition: color .15s, background .15s;
+}
+.sidebar-item:hover { color: var(--text); background: var(--c-100); }
+.sidebar-item.active { color: var(--btn); background: #EEF2FF; font-weight: 600; }
+.sidebar-item svg { flex-shrink: 0; opacity: .7; }
+.sidebar-item.active svg { opacity: 1; }
+
+/* ── Content area ── */
+.settings-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.settings-pane { display: none; flex-direction: column; gap: 20px; }
+.settings-pane.active { display: flex; }
+
+/* ── Toast (repositioned for sidebar layout) ── */
+.settings-toast {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 999;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: .875rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+}
+
+/* ── External Apps ── */
+.ea-list-row:last-of-type { border-bottom: none !important; }
+.ea-preset-btn:hover { border-color: var(--btn) !important; }
+/* drag handle in list */
+.ea-drag-handle {
+  cursor: grab;
+  color: var(--c-300);
+  font-size: 16px;
+  padding: 0 4px;
+  user-select: none;
+  line-height: 1;
+  letter-spacing: -1px;
+  flex-shrink: 0;
+}
+.ea-drag-handle:hover { color: var(--muted); }
+.ea-drag-handle:active { cursor: grabbing; }
+.ea-list-row.ea-dragging { opacity: .35; }
+.ea-list-row.ea-drop-target { border-top: 2px solid var(--btn) !important; }
+
+/* sidebar-group-label → now in style.css */
+
+/* ── Save bar ── */
+.settings-save-bar {
+  bottom: 0;
+  backdrop-filter: blur(8px);
+  padding: 14px 0;
+  display: flex;
+  justify-content: flex-end;
+}
+</style>
+</head>
+<body>
+
+{% set header_back_href = '/' %}
+{% set header_back_label = 'Zurück' %}
+{% set header_active = 'settings' %}
+{% include 'includes/header.html' %}
+
+<div id="saveToast" class="settings-toast" style="display:none;"></div>
+
+<div class="settings-layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="settings-sidebar">
+    <nav class="sidebar-nav">
+
+      <div class="sidebar-group-label">Allgemein</div>
+      <button class="sidebar-item active" onclick="showPane('pagetexts',this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="4" rx="1" stroke="currentColor" stroke-width="1.6"/><path d="M3 11h18M3 16h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Erscheinungsbild &amp; Texte
+      </button>
+      <button class="sidebar-item" onclick="showPane('general',this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.6"/></svg>
+        KI &amp; Analyse
+      </button>
+
+      <div class="sidebar-group-label">Zugangsdaten</div>
+      <button class="sidebar-item" onclick="showPane('credentials',this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        API Keys &amp; Tokens
+      </button>
+
+      <div class="sidebar-group-label">System</div>
+      <button class="sidebar-item" onclick="showPane('database',this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3" stroke="currentColor" stroke-width="1.6"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5" stroke="currentColor" stroke-width="1.6"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3" stroke="currentColor" stroke-width="1.6"/></svg>
+        Datenbank &amp; Export
+      </button>
+      <button class="sidebar-item" onclick="showPane('notifications',this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Benachrichtigungen
+      </button>
+
+      <div class="sidebar-group-label">Inhalt</div>
+      <button class="sidebar-item" onclick="showPane('social',this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><circle cx="18" cy="19" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Social Media
+      </button>
+      <button class="sidebar-item" id="nav-shops" onclick="showPane('shops',this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M16 10a4 4 0 0 1-8 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Shops
+      </button>
+      <button class="sidebar-item" id="nav-extapps" onclick="showPane('extapps',this);loadExtApps()">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>
+        External Apps
+      </button>
+
+      <div class="sidebar-group-label">Verwaltung</div>
+      <button class="sidebar-item" onclick="showPane('users',this);loadUsers()">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Nutzer
+      </button>
+
+    </nav>
+  </aside>
+
+  <!-- ── Main content ── -->
+  <div class="settings-content">
+
+    <!-- ══ Erscheinungsbild merged into Seitentexte – placeholder div removed ══ -->
+
+    <!-- ══ Allgemein ══ -->
+    <div class="settings-pane" id="pane-general">
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.6"/></svg>
+          KI &amp; Ausgabe
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field">
+              <label>Claude Modell</label>
+              <select id="s-model">
+                <option value="claude-opus-4-5"           {% if cfg.get('model','') == 'claude-opus-4-5'           %}selected{% endif %}>claude-opus-4-5</option>
+                <option value="claude-sonnet-4-5"         {% if cfg.get('model','') == 'claude-sonnet-4-5'         %}selected{% endif %}>claude-sonnet-4-5</option>
+                <option value="claude-haiku-4-5-20251001" {% if cfg.get('model','') == 'claude-haiku-4-5-20251001' %}selected{% endif %}>claude-haiku-4-5</option>
+              </select>
+            </div>
+            <div class="settings-field">
+              <label>Ausgabesprache</label>
+              <select id="s-language">
+                <option value="English"  {% if cfg.get('output_language','') == 'English'  %}selected{% endif %}>English</option>
+                <option value="Deutsch"  {% if cfg.get('output_language','') == 'Deutsch'  %}selected{% endif %}>Deutsch</option>
+                <option value="Français" {% if cfg.get('output_language','') == 'Français' %}selected{% endif %}>Français</option>
+              </select>
+            </div>
+            <div class="settings-field">
+              <label>Max. dominante Farben</label>
+              <input type="number" id="s-max-colors" min="1" max="10" value="{{ cfg.get('max_colors', 3) }}" />
+            </div>
+            <div class="settings-field">
+              <label>Excel-Ausgabedatei</label>
+              <input type="text" id="s-output-file" value="{{ cfg.get('output_file', 'image_analysis.xlsx') }}" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Credentials ══ -->
+    <div class="settings-pane" id="pane-credentials">
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M15 7h3a5 5 0 0 1 0 10h-3m-6 0H6A5 5 0 0 1 6 7h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Anthropic API Key
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field settings-field-full">
+              <label>API Key</label>
+              <div class="pw-wrap">
+                <input type="password" id="s-api-key" placeholder="sk-ant-… (leer = unverändert)" />
+                <div class="pw-actions">
+                  <button type="button" class="pw-btn" onclick="togglePw('s-api-key',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-api-key',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+                </div>
+              </div>
+              <span class="settings-hint">Leer lassen, um den gespeicherten Key beizubehalten.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Authentifizierung
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field">
+              <label>Admin E-Mail</label>
+              <input type="email" id="s-admin-email" value="{{ cfg.get('admin_email','') }}" />
+            </div>
+            <div class="settings-field settings-field-full">
+              <label>Admin Passwort</label>
+              <div class="pw-wrap">
+                <input type="password" id="s-admin-password" placeholder="Leer = nicht ändern" />
+                <div class="pw-actions">
+                  <button type="button" class="pw-btn" onclick="togglePw('s-admin-password',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-admin-password',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+                </div>
+              </div>
+              <span class="settings-hint">Fallback wenn kein Supabase konfiguriert.</span>
+            </div>
+            <div class="settings-field settings-field-full">
+              <label>Session Secret Key</label>
+              <div class="pw-wrap">
+                <input type="password" id="s-secret-key" placeholder="Leer = nicht ändern" />
+                <div class="pw-actions">
+                  <button type="button" class="pw-btn" onclick="togglePw('s-secret-key',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-secret-key',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+                </div>
+              </div>
+              <span class="settings-hint">Serverneustart erforderlich nach Änderung.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3" stroke="currentColor" stroke-width="1.6"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5" stroke="currentColor" stroke-width="1.6"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3" stroke="currentColor" stroke-width="1.6"/></svg>
+          Supabase
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field settings-field-full">
+              <label>URL</label>
+              <input type="text" id="s-sb-url" value="{{ cfg.get('supabase',{}).get('url','') }}" placeholder="https://your-project.supabase.co" />
+            </div>
+            <div class="settings-field settings-field-full">
+              <label>Anon / Publishable Key</label>
+              <div class="pw-wrap">
+                <input type="password" id="s-sb-key" value="{{ cfg.get('supabase',{}).get('anon_key','') }}" placeholder="sb_publishable_…" />
+                <div class="pw-actions">
+                  <button type="button" class="pw-btn" onclick="togglePw('s-sb-key',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-sb-key',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+                </div>
+              </div>
+            </div>
+            <div class="settings-field settings-field-full">
+              <label>Service Role Key</label>
+              <div class="pw-wrap">
+                <input type="password" id="s-sb-service-key" value="{{ cfg.get('supabase',{}).get('service_role_key','') }}" placeholder="sb_secret_…" />
+                <div class="pw-actions">
+                  <button type="button" class="pw-btn" onclick="togglePw('s-sb-service-key',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-sb-service-key',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+                </div>
+              </div>
+              <span class="settings-hint">Dashboard → Project Settings → API</span>
+            </div>
+            <div class="settings-field settings-field-full">
+              <label>Database Password</label>
+              <div class="pw-wrap">
+                <input type="password" id="s-sb-db-password" value="{{ cfg.get('supabase',{}).get('db_password','') }}" placeholder="Dein Datenbankpasswort" />
+                <div class="pw-actions">
+                  <button type="button" class="pw-btn" onclick="togglePw('s-sb-db-password',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-sb-db-password',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+                </div>
+              </div>
+              <span class="settings-hint">Dashboard → Project Settings → Database</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
+          Instagram API
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field settings-field-full">
+              <label>Access Token</label>
+              <div class="pw-wrap">
+                <input type="password" id="s-ig-post-token" value="{{ cfg.get('instagram_posting',{}).get('access_token','') }}" placeholder="EAA…" autocomplete="off"/>
+                <div class="pw-actions">
+                  <button type="button" class="pw-btn" onclick="togglePw('s-ig-post-token',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-ig-post-token',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+                </div>
+              </div>
+              <span class="settings-hint">Graph API long-lived User Access Token (Facebook Developer Console)</span>
+            </div>
+            <div class="settings-field">
+              <label>User ID</label>
+              <input type="text" id="s-ig-post-userid" value="{{ cfg.get('instagram_posting',{}).get('user_id','') }}" placeholder="17841400000000000" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.236 2.636 7.855 6.356 9.312-.088-.791-.167-2.005.035-2.868.181-.78 1.172-4.97 1.172-4.97s-.299-.598-.299-1.482c0-1.388.806-2.428 1.808-2.428.853 0 1.267.641 1.267 1.408 0 .858-.546 2.141-.828 3.33-.236.995.499 1.806 1.476 1.806 1.771 0 2.994-2.31 2.994-5.04 0-2.074-1.414-3.63-3.964-3.63-2.888 0-4.695 2.16-4.695 4.58 0 .832.245 1.417.63 1.877.175.207.2.29.136.529l-.191.766c-.061.24-.248.326-.455.237-1.279-.524-1.872-1.935-1.872-3.524 0-2.624 2.228-5.836 6.661-5.836 3.565 0 5.94 2.602 5.94 5.393 0 3.71-2.09 6.511-5.152 6.511-1.034 0-2.009-.561-2.342-1.19l-.637 2.457c-.23.877-.853 1.977-1.272 2.647A9.984 9.984 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Pinterest API
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field settings-field-full">
+              <label>Access Token</label>
+              <div class="pw-wrap">
+                <input type="password" id="s-pin-post-token" value="{{ cfg.get('pinterest_posting',{}).get('access_token','') }}" placeholder="pina_…" autocomplete="off"/>
+                <div class="pw-actions">
+                  <button type="button" class="pw-btn" onclick="togglePw('s-pin-post-token',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-pin-post-token',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+                </div>
+              </div>
+              <span class="settings-hint">
+                Pinterest Developer Console → deine App → <strong>Generate Access Token</strong>.<br/>
+                Benötigte Scopes: <code style="font-size:.75rem;background:var(--c-50);padding:1px 4px;border-radius:4px;">boards:read</code>
+                <code style="font-size:.75rem;background:var(--c-50);padding:1px 4px;border-radius:4px;">pins:write</code>
+                <code style="font-size:.75rem;background:var(--c-50);padding:1px 4px;border-radius:4px;">pins:read</code> — alle drei auswählen.
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Shopify ── -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M16 4s-.4-2-2-2c-1.3 0-2.1 1-2.5 2H16zm-4.5 0C11 4.7 10 6 10 6H7l-1 14h12L17 6h-3s-.1-1.3-2.5-2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Shopify
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field settings-field-full">
+              <label>Store URL</label>
+              <input type="text" id="s-shopify-url" value="{{ shopify_cfg.get('store_url','') }}" placeholder="https://my-shop.myshopify.com" />
+            </div>
+            <div class="settings-field settings-field-full">
+              <label>API Key</label>
+              <div class="pw-wrap">
+                <input type="password" id="s-shopify-key" value="{{ shopify_cfg.get('api_key','') }}" placeholder="API-Key …" autocomplete="off"/>
+                <div class="pw-actions">
+                  <button type="button" class="pw-btn" onclick="togglePw('s-shopify-key',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-shopify-key',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+                </div>
+              </div>
+            </div>
+            <div class="settings-field settings-field-full">
+              <label>API Password</label>
+              <div class="pw-wrap">
+                <input type="password" id="s-shopify-pass" value="{{ shopify_cfg.get('api_password','') }}" placeholder="shppa_…" autocomplete="off"/>
+                <div class="pw-actions">
+                  <button type="button" class="pw-btn" onclick="togglePw('s-shopify-pass',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-shopify-pass',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Etsy ── -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><text x="6" y="16" font-size="9" font-weight="700" fill="currentColor" font-family="sans-serif">E</text></svg>
+          Etsy
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field settings-field-full">
+              <label>API Key</label>
+              <div class="pw-wrap">
+                <input type="password" id="s-etsy-key" value="{{ etsy_cfg.get('api_key','') }}" placeholder="Etsy API Key …" autocomplete="off"/>
+                <div class="pw-actions">
+                  <button type="button" class="pw-btn" onclick="togglePw('s-etsy-key',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-etsy-key',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+                </div>
+              </div>
+            </div>
+            <div class="settings-field">
+              <label>Shop ID</label>
+              <input type="text" id="s-etsy-shopid" value="{{ etsy_cfg.get('shop_id','') }}" placeholder="z.B. 12345678" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Amazon ── -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M3 17c3.6 1.8 11.4 3 18-1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M19 19c.6-.6 1-1.3 1-2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M6 4h12l1 9H5L6 4z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Amazon
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field">
+              <label>Seller ID</label>
+              <input type="text" id="s-amazon-sellerid" value="{{ amazon_cfg.get('seller_id','') }}" placeholder="A1B2C3D4E5F6G7" />
+            </div>
+            <div class="settings-field">
+              <label>Marketplace</label>
+              <select id="s-amazon-marketplace">
+                {% set mp = amazon_cfg.get('marketplace','amazon.de') %}
+                <option value="amazon.de"    {% if mp == 'amazon.de'    %}selected{% endif %}>amazon.de</option>
+                <option value="amazon.com"   {% if mp == 'amazon.com'   %}selected{% endif %}>amazon.com</option>
+                <option value="amazon.co.uk" {% if mp == 'amazon.co.uk' %}selected{% endif %}>amazon.co.uk</option>
+                <option value="amazon.fr"    {% if mp == 'amazon.fr'    %}selected{% endif %}>amazon.fr</option>
+                <option value="amazon.es"    {% if mp == 'amazon.es'    %}selected{% endif %}>amazon.es</option>
+                <option value="amazon.it"    {% if mp == 'amazon.it'    %}selected{% endif %}>amazon.it</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══ Datenbank & Export ══ -->
+    <div class="settings-pane" id="pane-database">
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3" stroke="currentColor" stroke-width="1.6"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5" stroke="currentColor" stroke-width="1.6"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3" stroke="currentColor" stroke-width="1.6"/></svg>
+          Supabase Storage &amp; Tabelle
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field">
+              <label>Storage Bucket</label>
+              <input type="text" id="s-sb-bucket" value="{{ cfg.get('supabase',{}).get('storage_bucket','images') }}" placeholder="images" />
+            </div>
+            <div class="settings-field">
+              <label>Datenbanktabelle</label>
+              <input type="text" id="s-sb-table" value="{{ cfg.get('supabase',{}).get('table_name','image_analyses') }}" placeholder="image_analyses" />
+            </div>
+          </div>
+          <p class="settings-hint" style="margin-top:10px;">
+            Service Role Key + DB Password unter <em>Credentials</em> hinterlegen, dann einmalig
+            <code>python3 setup_supabase.py</code> ausführen.
+          </p>
+          <details style="margin-top:14px;">
+            <summary style="cursor:pointer;font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;">SQL – Tabelle anlegen</summary>
+            <pre class="settings-sql">CREATE TABLE image_analyses (
+  id               uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  created_at       timestamptz DEFAULT now(),
+  dekoire_id       text,
+  neuer_dateiname  text,
+  mj_id            text,
+  dateiname        text,
+  titel            text,
+  beschreibung     text,
+  dominante_farben text,
+  ausrichtung      text,
+  breite_px        integer,
+  hoehe_px         integer,
+  seitenverhaeltnis text,
+  ist_fotografie   boolean,
+  kunstart         text,
+  epoche           text,
+  tags             text,
+  pin_titel        text,
+  pin_beschreibung text,
+  pin_ziel_url     text,
+  pin_alt_text     text,
+  pin_board        text,
+  pin_media_url    text,
+  ig_title         text,
+  ig_description   text,
+  ig_tags          text,
+  ig_location      text,
+  image_url        text
+);
+ALTER TABLE image_analyses ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "insert_anon" ON image_analyses FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "select_anon" ON image_analyses FOR SELECT TO anon USING (true);
+CREATE POLICY "insert_auth" ON image_analyses FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "select_auth" ON image_analyses FOR SELECT TO authenticated USING (true);</pre>
+          </details>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M16 12l-4 4m0 0-4-4m4 4V4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Export-Einstellungen
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field settings-field-full">
+              <label>Final Files Ordner</label>
+              <input type="text" id="s-final-folder" value="{{ cfg.get('export',{}).get('final_files_folder','Final Files') }}" placeholder="Final Files" />
+              <span class="settings-hint">Beim Export wird ein Unterordner <code>ID_Titel/</code> mit dem Bild angelegt.</span>
+            </div>
+            <div class="settings-field">
+              <label>Ordner beim Export anlegen</label>
+              <select id="s-create-folder">
+                <option value="true"  {% if cfg.get('export',{}).get('create_folder', True) %}selected{% endif %}>Ja</option>
+                <option value="false" {% if not cfg.get('export',{}).get('create_folder', True) %}selected{% endif %}>Nein</option>
+              </select>
+            </div>
+            <div class="settings-field">
+              <label>In Supabase speichern</label>
+              <select id="s-save-supabase">
+                <option value="true"  {% if cfg.get('export',{}).get('save_to_supabase', True) %}selected{% endif %}>Ja</option>
+                <option value="false" {% if not cfg.get('export',{}).get('save_to_supabase', True) %}selected{% endif %}>Nein</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ Social Media ══ -->
+    <div class="settings-pane" id="pane-social">
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M12 7c-2.76 0-5 2.24-5 5 0 2.12 1.31 3.94 3.17 4.69-.04-.38-.08-.98.02-1.4.09-.38.6-2.54.6-2.54s-.15-.31-.15-.76c0-.71.41-1.24.92-1.24.44 0 .65.33.65.72 0 .44-.28 1.1-.43 1.71-.12.51.25.93.75.93.9 0 1.59-.95 1.59-2.32 0-1.21-.87-2.06-2.12-2.06-1.44 0-2.29 1.08-2.29 2.2 0 .44.17.9.38 1.16.04.05.05.1.03.15l-.14.58c-.02.09-.08.11-.17.07-.63-.3-1.02-1.22-1.02-1.97 0-1.6 1.16-3.07 3.34-3.07 1.75 0 3.11 1.25 3.11 2.91 0 1.74-1.09 3.13-2.61 3.13-.51 0-.99-.26-1.15-.58l-.31 1.18c-.11.44-.42.99-.63 1.32.47.15.98.22 1.49.22 2.76 0 5-2.24 5-5s-2.24-5-5-5z" fill="currentColor"/></svg>
+          Pinterest
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field settings-field-full">
+              <label>Standard Ziel-URL</label>
+              <input type="text" id="s-pin-url" value="{{ cfg.get('pinterest',{}).get('target_url','https://dekoire.com') }}" />
+            </div>
+          </div>
+          <div class="settings-field" style="margin-top:12px;">
+            <label>Boards (eine pro Zeile)</label>
+            <textarea id="s-pin-boards" class="settings-textarea" rows="10">{{ '\n'.join(cfg.get('pinterest',{}).get('boards',[])) }}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
+          Instagram
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field settings-field-full">
+              <label>Standard-Standort</label>
+              <input type="text" id="s-ig-default-loc" value="{{ cfg.get('instagram',{}).get('default_location','Stuttgart') }}" />
+            </div>
+          </div>
+          <div class="settings-field" style="margin-top:12px;">
+            <label>Standorte (eine pro Zeile)</label>
+            <textarea id="s-ig-locations" class="settings-textarea" rows="10">{{ '\n'.join(cfg.get('instagram',{}).get('locations',[])) }}</textarea>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══ Shops ══ -->
+    <div class="settings-pane" id="pane-shops">
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M16 10a4 4 0 0 1-8 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Shopify – Inhalt synchronisieren
+        </div>
+        <div class="settings-card-body">
+          <p class="settings-hint" style="margin-bottom:12px;">API-Zugangsdaten hinterlegst du unter <strong>Zugangsdaten → Shop APIs</strong>.</p>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <button class="btn btn-primary" onclick="syncShopify()" id="btnSyncShopify">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Shopify synchronisieren
+            </button>
+            <span id="shopify-sync-status" style="font-size:.82rem;color:var(--muted);"></span>
+          </div>
+          <div class="settings-grid">
+            <div class="settings-field settings-field-full">
+              <label>Kollektionen <span class="opt-badge">eine pro Zeile</span></label>
+              <textarea id="s-shopify-colls" class="settings-textarea" rows="5">{{ '\n'.join(shopify_collections) }}</textarea>
+            </div>
+            <div class="settings-field settings-field-full">
+              <label>Produkttypen <span class="opt-badge">eine pro Zeile</span></label>
+              <textarea id="s-shopify-types" class="settings-textarea" rows="5">{{ '\n'.join(shopify_product_types) }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Etsy – Inhalt synchronisieren
+        </div>
+        <div class="settings-card-body">
+          <p class="settings-hint" style="margin-bottom:12px;">API-Zugangsdaten hinterlegst du unter <strong>Zugangsdaten → Shop APIs</strong>.</p>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <button class="btn btn-primary" onclick="syncEtsy()" id="btnSyncEtsy">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Etsy synchronisieren
+            </button>
+            <span id="etsy-sync-status" style="font-size:.82rem;color:var(--muted);"></span>
+          </div>
+          <div class="settings-field">
+            <label style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);">Synced Versandprofile</label>
+            <div id="etsy-profiles-list" style="margin-top:8px;font-size:.83rem;color:var(--muted);">
+              {% if etsy_shipping_profiles %}
+                {% for p in etsy_shipping_profiles %}<div style="padding:5px 0;border-bottom:1px solid var(--border);">{{ p.title }} <span style="color:var(--c-300);font-size:.75rem;">(ID: {{ p.id }})</span></div>{% endfor %}
+              {% else %}
+                <span>Noch keine Profile synchronisiert.</span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Amazon – Kategorien
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field settings-field-full">
+              <label>Kategorien <span class="opt-badge">eine pro Zeile, manuell pflegen</span></label>
+              <textarea id="s-amazon-cats" class="settings-textarea" rows="6">{{ '\n'.join(amazon_categories) }}</textarea>
+            </div>
+          </div>
+          <div style="margin-top:12px;display:flex;align-items:center;gap:12px;">
+            <button class="btn btn-primary" onclick="saveAmazonCats()">Kategorien speichern</button>
+            <span id="amazon-save-status" style="font-size:.82rem;color:var(--muted);"></span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pane-shops -->
+
+    <!-- ══ User Management ══ -->
+    <div class="settings-pane" id="pane-users">
+
+      <!-- Add user form -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.6"/><line x1="19" y1="8" x2="19" y2="14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="22" y1="11" x2="16" y2="11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Neuen User anlegen
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field">
+              <label>Vorname</label>
+              <input type="text" id="nu-vorname" class="settings-input" placeholder="Max" />
+            </div>
+            <div class="settings-field">
+              <label>Nachname</label>
+              <input type="text" id="nu-nachname" class="settings-input" placeholder="Mustermann" />
+            </div>
+            <div class="settings-field">
+              <label>E-Mail</label>
+              <input type="email" id="nu-email" class="settings-input" placeholder="max@dekoire.com" />
+            </div>
+            <div class="settings-field">
+              <label>Passwort</label>
+              <input type="password" id="nu-password" class="settings-input" placeholder="Mindestens 6 Zeichen" />
+            </div>
+          </div>
+          <div style="margin-top:14px;">
+            <button class="btn btn-primary" onclick="createUser()" id="createUserBtn">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              User erstellen
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- User list -->
+      <div class="settings-card">
+        <div class="settings-card-header" style="gap:12px;">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Bestehende User
+          <span id="userCount" style="font-size:.75rem;color:var(--muted);font-weight:400;"></span>
+          <div class="products-search-wrap" style="margin-left:auto;">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <input type="text" id="userSearch" placeholder="Suche nach Name, E-Mail …" oninput="filterUsers()" style="width:220px;" />
+          </div>
+        </div>
+        <div style="padding:0;overflow-x:auto;">
+          <table class="user-table" id="userTable" style="display:none;">
+            <thead>
+              <tr>
+                <th>Bild</th>
+                <th>Name</th>
+                <th>E-Mail</th>
+                <th>Erstellt</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="userTbody"></tbody>
+          </table>
+          <div id="userListEmpty" style="display:none;padding:40px;text-align:center;color:var(--muted);font-size:.85rem;">
+            Keine User gefunden.
+          </div>
+          <div id="userListLoading" style="padding:32px;text-align:center;color:var(--muted);font-size:.85rem;">
+            Lade User…
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pane-users -->
+
+    <!-- ══ Benachrichtigungen ══ -->
+    <div class="settings-pane" id="pane-notifications">
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Discord Webhook
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field settings-field-full">
+              <label>Webhook URL</label>
+              <div class="pw-wrap">
+                <input type="password" id="s-discord-webhook"
+                       value="{{ cfg.get('notifications',{}).get('discord_webhook','') }}"
+                       placeholder="https://discord.com/api/webhooks/…" />
+                <div class="pw-actions">
+                  <button type="button" class="pw-btn" onclick="togglePw('s-discord-webhook',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-discord-webhook',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+                </div>
+              </div>
+              <span class="settings-hint">
+                Discord → Servereinstellungen → Integrationen → Webhooks → Neuer Webhook → URL kopieren.<br/>
+                Wird beim Speichern eines Produkts (Anlegen &amp; Editieren) automatisch benachrichtigt.
+              </span>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;">
+            <button class="btn btn-primary" onclick="testDiscordWebhook()">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Test-Nachricht senden
+            </button>
+          </div>
+
+          <div style="margin-top:20px;">
+            <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Was wird gesendet?</div>
+            <div style="display:flex;flex-direction:column;gap:5px;font-size:.82rem;color:var(--text);">
+              <div style="display:flex;gap:8px;align-items:flex-start;">
+                <span>🎨</span><span><strong>Produkt anlegen</strong> — Alle Bilddaten: Titel, Beschreibung, Tags, Farben, Ausrichtung, DPI, Aufnahmedatum + Speicher-Status (Excel, Ordner, Supabase)</span>
+              </div>
+              <div style="display:flex;gap:8px;align-items:flex-start;">
+                <span>✏️</span><span><strong>Produkt editieren</strong> — Geänderte Felder mit Vorher/Nachher-Vergleich + Speicher-Status</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Discord Webhook – Social Media
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field settings-field-full">
+              <label>Webhook URL</label>
+              <div class="pw-wrap">
+                <input type="password" id="s-campaigns-discord"
+                       value="{{ cfg.get('social_posting',{}).get('discord_webhook_campaigns','') }}"
+                       placeholder="https://discord.com/api/webhooks/…" autocomplete="off"/>
+                <div class="pw-actions">
+                  <button type="button" class="pw-btn" onclick="togglePw('s-campaigns-discord',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-campaigns-discord',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+                </div>
+              </div>
+              <span class="settings-hint">Wird automatisch benachrichtigt, wenn eine Social-Media-Kampagne (Pinterest, Instagram) gepostet oder geplant wird.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pane-notifications -->
+
+    <!-- ══ External Apps ══ -->
+    <div class="settings-pane" id="pane-extapps">
+
+      <!-- Add / Edit form -->
+      <div class="settings-card" id="extAppFormCard">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span id="extAppFormTitle">Neue App hinzufügen</span>
+        </div>
+        <div class="settings-card-body">
+          <input type="hidden" id="ea-edit-id" value="" />
+          <div class="settings-grid">
+            <div class="settings-field">
+              <label>Name</label>
+              <input type="text" id="ea-name" class="settings-input" placeholder="GitHub" />
+            </div>
+            <div class="settings-field">
+              <label>URL</label>
+              <input type="text" id="ea-url" class="settings-input" placeholder="https://github.com" />
+            </div>
+            <div class="settings-field">
+              <label>Hintergrundfarbe</label>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input type="color" id="ea-bgcolor" value="#EEF2FF" style="width:40px;height:36px;border:1px solid var(--border);border-radius:6px;padding:2px;cursor:pointer;" />
+                <input type="text" id="ea-bgcolor-txt" value="#EEF2FF" maxlength="7" style="width:90px;" oninput="syncColor('txt')" />
+              </div>
+            </div>
+            <div class="settings-field">
+              <label>Icon-Typ</label>
+              <select id="ea-icon-type" onchange="toggleIconType()">
+                <option value="favicon">Favicon (auto)</option>
+                <option value="preset">Preset-Icon</option>
+                <option value="upload">Bild hochladen</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Favicon preview -->
+          <div id="ea-favicon-preview" style="margin-top:12px;display:flex;align-items:center;gap:10px;">
+            <div id="ea-favicon-box" style="width:44px;height:44px;border-radius:10px;background:#EEF2FF;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+              <img id="ea-favicon-img" src="" alt="" style="width:28px;height:28px;object-fit:contain;" />
+            </div>
+            <span style="font-size:.8rem;color:var(--muted);">Favicon wird automatisch von der URL geladen.</span>
+          </div>
+
+          <!-- Preset icon picker -->
+          <div id="ea-preset-picker" style="display:none;margin-top:12px;">
+            <label style="font-size:.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:8px;">Icon wählen</label>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;" id="ea-preset-grid">
+              {% for key in icon_presets %}
+              <button type="button" class="ea-preset-btn" data-key="{{ key }}" onclick="selectPreset('{{ key }}')"
+                style="width:44px;height:44px;border-radius:10px;border:2px solid var(--border);background:#EEF2FF;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#00235C;transition:border-color .15s;"
+                title="{{ key }}">
+                {{ icon_svgs[key] | safe }}
+              </button>
+              {% endfor %}
+            </div>
+            <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
+              <label style="font-size:.78rem;font-weight:600;color:var(--muted);">Icon-Farbe</label>
+              <input type="color" id="ea-icon-color" value="#FFFFFF" style="width:36px;height:32px;border:1px solid var(--border);border-radius:6px;padding:2px;cursor:pointer;" onchange="updatePresetPreview()" />
+              <input type="text" id="ea-icon-color-txt" value="#FFFFFF" maxlength="7" style="width:80px;font-size:.82rem;" oninput="syncIconColor('txt')" />
+            </div>
+            <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:.78rem;color:var(--muted);">Vorschau:</span>
+              <div id="ea-preset-preview-box" style="width:44px;height:44px;border-radius:10px;background:#EEF2FF;display:flex;align-items:center;justify-content:center;color:#FFFFFF;"></div>
+            </div>
+          </div>
+
+          <!-- Upload picker -->
+          <div id="ea-upload-picker" style="display:none;margin-top:12px;">
+            <label style="font-size:.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:8px;">Bild hochladen</label>
+            <input type="file" id="ea-icon-file" accept="image/*" onchange="previewUpload()" />
+            <div style="margin-top:10px;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:.78rem;color:var(--muted);">Vorschau:</span>
+              <div id="ea-upload-preview-box" style="width:44px;height:44px;border-radius:10px;background:#EEF2FF;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+                <img id="ea-upload-preview-img" src="" alt="" style="width:40px;height:40px;object-fit:contain;display:none;" />
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;display:flex;gap:10px;">
+            <button class="btn btn-primary" onclick="saveExtApp()" id="saveExtAppBtn">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <span id="saveExtAppBtnLabel">App hinzufügen</span>
+            </button>
+            <button class="btn" id="cancelEditBtn" style="display:none;" onclick="cancelEditExtApp()">Abbrechen</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- App list -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>
+          Deine Apps
+          <span id="extAppCount" style="font-size:.75rem;color:var(--muted);font-weight:400;"></span>
+        </div>
+        <div class="settings-card-body" id="extAppList" style="padding-top:6px;">
+          <div id="extAppListLoading" style="color:var(--muted);font-size:.85rem;padding:12px 0;">Lade Apps…</div>
+          <div id="extAppListEmpty" style="display:none;color:var(--muted);font-size:.85rem;padding:12px 0;">Noch keine Apps angelegt.</div>
+        </div>
+      </div>
+
+    </div><!-- /pane-extapps -->
+
+    <!-- ══ Erscheinungsbild & Seitentexte ══ -->
+    <div class="settings-pane active" id="pane-pagetexts">
+
+      <!-- Header & Branding -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="4" rx="1" stroke="currentColor" stroke-width="1.6"/><path d="M3 11h18M3 16h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Header &amp; Branding
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field">
+              <label>App-Titel</label>
+              <input type="text" id="s-header-title" value="{{ cfg.get('header_title','') }}" />
+            </div>
+            <div class="settings-field">
+              <label>Untertitel</label>
+              <input type="text" id="s-header-subtitle" value="{{ cfg.get('header_subtitle','') }}" />
+            </div>
+            <div class="settings-field">
+              <label>Header Logo (Dateiname in assets/)</label>
+              <input type="text" id="s-header-logo" value="{{ cfg.get('header_logo','') }}" placeholder="logo-white.png" />
+            </div>
+            <div class="settings-field">
+              <label>Login Logo (Dateiname in assets/)</label>
+              <input type="text" id="s-login-logo" value="{{ cfg.get('login_logo','dekoire-dark.png') }}" placeholder="dekoire-dark.png" />
+            </div>
+            <div class="settings-field settings-field-full">
+              <label>Login Untertitel</label>
+              <input type="text" id="s-login-subtitle" value="{{ cfg.get('login_subtitle','Bitte melde dich an, um fortzufahren.') }}" />
+              <span class="settings-hint">Text unterhalb des Logos auf der Login-Seite.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="3" y="17" width="18" height="4" rx="1" stroke="currentColor" stroke-width="1.6"/><path d="M3 7h18M3 12h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Footer
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field">
+              <label>Footer Logo <span class="opt-badge">Dateiname in assets/</span></label>
+              <input type="text" id="s-footer-logo" value="{{ cfg.get('footer_logo','logo-light.png') }}" placeholder="logo-light.png" />
+              <span class="settings-hint">Wird im dunklen Footer angezeigt. Empfohlen: helles / weißes Logo.</span>
+            </div>
+            <div class="settings-field">
+              <label>Footer Firmenname</label>
+              <input type="text" id="s-footer-company" value="{{ cfg.get('footer_company','dekoire.com') }}" placeholder="dekoire.com" />
+              <span class="settings-hint">Erscheint als „© 2025 …" unten links im Footer.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% set pt = page_texts %}
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Login-Seite
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field">
+              <label>Titel</label>
+              <input type="text" id="pt-login-title" value="{{ pt.get('login',{}).get('title', cfg.get('header_title','Image Analyzer')) }}" />
+            </div>
+            <div class="settings-field">
+              <label>Untertitel</label>
+              <input type="text" id="pt-login-subtitle" value="{{ pt.get('login',{}).get('subtitle', cfg.get('login_subtitle','')) }}" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Produkt anlegen (index)
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field">
+              <label>Titel</label>
+              <input type="text" id="pt-index-title" value="{{ pt.get('index',{}).get('title','Produkt anlegen') }}" />
+            </div>
+            <div class="settings-field">
+              <label>Untertitel</label>
+              <input type="text" id="pt-index-subtitle" value="{{ pt.get('index',{}).get('subtitle','') }}" placeholder="Optionaler Untertitel …" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M9 9h6M9 12h6M9 15h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Alle Produkte (products)
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field">
+              <label>Titel</label>
+              <input type="text" id="pt-products-title" value="{{ pt.get('products',{}).get('title','Alle Produkte') }}" />
+            </div>
+            <div class="settings-field">
+              <label>Untertitel</label>
+              <input type="text" id="pt-products-subtitle" value="{{ pt.get('products',{}).get('subtitle','') }}" placeholder="Optionaler Untertitel …" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Produkt bearbeiten (product_edit)
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field">
+              <label>Titel</label>
+              <input type="text" id="pt-productedit-title" value="{{ pt.get('product_edit',{}).get('title','Produkt bearbeiten') }}" />
+            </div>
+            <div class="settings-field">
+              <label>Untertitel</label>
+              <input type="text" id="pt-productedit-subtitle" value="{{ pt.get('product_edit',{}).get('subtitle','') }}" placeholder="Optionaler Untertitel …" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pane-pagetexts -->
+
+    <!-- ══ DB-Config ══ -->
+    <div class="settings-pane" id="pane-dbconfig">
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3" stroke="currentColor" stroke-width="1.6"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5" stroke="currentColor" stroke-width="1.6"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3" stroke="currentColor" stroke-width="1.6"/></svg>
+          Status
+        </div>
+        <div class="settings-card-body">
+          <div id="db-config-status" style="display:flex;align-items:center;gap:10px;padding:10px 0;">
+            <div class="spinner" style="width:16px;height:16px;border-width:2px;"></div>
+            <span style="color:var(--muted);font-size:.85rem;">Prüfe DB-Status …</span>
+          </div>
+          <button class="btn btn-primary" style="margin-top:12px;" onclick="syncConfigToDb()">
+            <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Jetzt zu DB synchronisieren
+          </button>
+          <p class="settings-hint" style="margin-top:8px;">Überträgt die aktuelle config.yaml vollständig in die Supabase-Datenbank. Danach wird die DB bei jedem Speichern automatisch aktualisiert.</p>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><polyline points="8 6 2 12 8 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          SQL – Tabelle anlegen
+        </div>
+        <div class="settings-card-body">
+          <p class="settings-hint" style="margin-bottom:12px;">Führe dieses SQL einmalig im Supabase SQL-Editor aus, um die Config-Tabelle anzulegen:</p>
+          <pre style="background:var(--c-50);border:1px solid var(--border);border-radius:8px;padding:14px 16px;font-size:.78rem;overflow-x:auto;line-height:1.6;color:var(--c-700);">CREATE TABLE IF NOT EXISTS app_config (
+  id      INT PRIMARY KEY DEFAULT 1,
+  config  JSONB NOT NULL DEFAULT '{}',
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- RLS: allow service_role full access (default)
+-- Nur service_role_key darf lesen/schreiben
+ALTER TABLE app_config ENABLE ROW LEVEL SECURITY;</pre>
+          <button class="btn" style="margin-top:10px;background:var(--c-100);border:1px solid var(--border);" onclick="navigator.clipboard.writeText(document.querySelector('#pane-dbconfig pre').textContent);showToast('SQL kopiert!',true)">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            SQL kopieren
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /pane-dbconfig -->
+
+    <!-- ── Save bar ── -->
+    <div class="settings-save-bar">
+      <button class="btn btn-primary settings-save-btn" onclick="saveSettings()">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M17 21v-8H7v8M7 3v5h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        Einstellungen speichern
+      </button>
+    </div>
+
+  </div><!-- /settings-content -->
+</div><!-- /settings-layout -->
+
+<script>
+/* ── Sidebar navigation ── */
+function showPane(name, btn) {
+  document.querySelectorAll('.settings-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('pane-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ── Password helpers ── */
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.title = inp.type === 'password' ? 'Anzeigen' : 'Verbergen';
+  btn.style.color = inp.type === 'text' ? 'var(--btn)' : '';
+}
+function copyPw(id, btn) {
+  const val = document.getElementById(id).value;
+  if (!val) return;
+  navigator.clipboard.writeText(val).then(() => {
+    btn.classList.add('copied');
+    setTimeout(() => btn.classList.remove('copied'), 1500);
+  });
+}
+
+/* ── User menu ── */
+function toggleUserMenu() {
+  document.getElementById('userDropdown').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('userMenu')?.contains(e.target))
+    document.getElementById('userDropdown')?.classList.remove('open');
+});
+async function doLogout() {
+  await fetch('/auth/logout', {method:'POST'});
+  window.location.href = '/login';
+}
+
+/* ── Toast ── */
+function showToast(msg, ok) {
+  const t = document.getElementById('saveToast');
+  t.textContent = msg;
+  t.className = 'settings-toast ' + (ok ? 'ok' : 'err');
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 3500);
+}
+
+/* ── Save ── */
+async function saveSettings() {
+  const apiKey  = document.getElementById('s-api-key').value.trim();
+  const admPass = document.getElementById('s-admin-password').value;
+  const secKey  = document.getElementById('s-secret-key').value;
+
+  const payload = {
+    header_title:    document.getElementById('s-header-title').value.trim(),
+    header_subtitle: document.getElementById('s-header-subtitle').value.trim(),
+    header_logo:     document.getElementById('s-header-logo').value.trim(),
+    login_logo:      document.getElementById('s-login-logo').value.trim(),
+    login_subtitle:  document.getElementById('s-login-subtitle').value.trim(),
+    footer_logo:     document.getElementById('s-footer-logo').value.trim(),
+    footer_company:  document.getElementById('s-footer-company').value.trim(),
+    model:           document.getElementById('s-model').value,
+    output_language: document.getElementById('s-language').value,
+    max_colors:      parseInt(document.getElementById('s-max-colors').value) || 3,
+    output_file:     document.getElementById('s-output-file').value.trim(),
+    admin_email:     document.getElementById('s-admin-email').value.trim(),
+    supabase: {
+      url:              document.getElementById('s-sb-url').value.trim(),
+      anon_key:         document.getElementById('s-sb-key').value.trim(),
+      service_role_key: document.getElementById('s-sb-service-key').value.trim(),
+      db_password:      document.getElementById('s-sb-db-password').value.trim(),
+      storage_bucket:   document.getElementById('s-sb-bucket').value.trim(),
+      table_name:       document.getElementById('s-sb-table').value.trim(),
+    },
+    export: {
+      final_files_folder: document.getElementById('s-final-folder').value.trim(),
+      create_folder:      document.getElementById('s-create-folder').value === 'true',
+      save_to_supabase:   document.getElementById('s-save-supabase').value === 'true',
+    },
+    pinterest: {
+      target_url: document.getElementById('s-pin-url').value.trim(),
+      boards: document.getElementById('s-pin-boards').value
+        .split('\n').map(s => s.trim()).filter(Boolean),
+    },
+    instagram: {
+      default_location: document.getElementById('s-ig-default-loc').value.trim(),
+      locations: document.getElementById('s-ig-locations').value
+        .split('\n').map(s => s.trim()).filter(Boolean),
+    },
+    notifications: {
+      discord_webhook: document.getElementById('s-discord-webhook').value.trim(),
+    },
+    instagram_posting: {
+      access_token: document.getElementById('s-ig-post-token').value.trim(),
+      user_id:      document.getElementById('s-ig-post-userid').value.trim(),
+    },
+    pinterest_posting: {
+      access_token: document.getElementById('s-pin-post-token').value.trim(),
+    },
+    social_posting: {
+      discord_webhook_campaigns: document.getElementById('s-campaigns-discord').value.trim(),
+    },
+    page_texts: {
+      login: {
+        title:    document.getElementById('pt-login-title').value.trim(),
+        subtitle: document.getElementById('pt-login-subtitle').value.trim(),
+      },
+      index: {
+        title:    document.getElementById('pt-index-title').value.trim(),
+        subtitle: document.getElementById('pt-index-subtitle').value.trim(),
+      },
+      products: {
+        title:    document.getElementById('pt-products-title').value.trim(),
+        subtitle: document.getElementById('pt-products-subtitle').value.trim(),
+      },
+      product_edit: {
+        title:    document.getElementById('pt-productedit-title').value.trim(),
+        subtitle: document.getElementById('pt-productedit-subtitle').value.trim(),
+      },
+    },
+    shops: {
+      shopify: {
+        store_url:    document.getElementById('s-shopify-url')?.value.trim()  || '',
+        api_key:      document.getElementById('s-shopify-key')?.value.trim()  || '',
+        api_password: document.getElementById('s-shopify-pass')?.value.trim() || '',
+        synced_collections:   (document.getElementById('s-shopify-colls')?.value || '').split('\n').map(s=>s.trim()).filter(Boolean),
+        synced_product_types: (document.getElementById('s-shopify-types')?.value || '').split('\n').map(s=>s.trim()).filter(Boolean),
+      },
+      etsy: {
+        api_key: document.getElementById('s-etsy-key')?.value.trim()    || '',
+        shop_id: document.getElementById('s-etsy-shopid')?.value.trim() || '',
+        synced_shipping_profiles: [],
+      },
+      amazon: {
+        marketplace: document.getElementById('s-amazon-marketplace')?.value || 'amazon.de',
+        seller_id:   document.getElementById('s-amazon-sellerid')?.value.trim() || '',
+        synced_categories: (document.getElementById('s-amazon-cats')?.value || '').split('\n').map(s=>s.trim()).filter(Boolean),
+      },
+    },
+  };
+
+  if (apiKey)  payload.anthropic_api_key = apiKey;
+  if (admPass) payload.admin_password    = admPass;
+  if (secKey)  payload.app_secret_key    = secKey;
+
+  try {
+    const res  = await fetch('/api/config', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.success) showToast('Einstellungen gespeichert.', true);
+    else              showToast('Fehler: ' + data.error, false);
+  } catch {
+    showToast('Verbindungsfehler.', false);
+  }
+}
+
+/* ── User Management ── */
+let _usersCache = [];
+
+async function loadUsers() {
+  const loading = document.getElementById('userListLoading');
+  const table   = document.getElementById('userTable');
+  const empty   = document.getElementById('userListEmpty');
+  loading.style.display = 'block';
+  table.style.display   = 'none';
+  empty.style.display   = 'none';
+  try {
+    const res  = await fetch('/api/users');
+    const data = await res.json();
+    if (data.error) { loading.textContent = 'Fehler: ' + data.error; return; }
+    _usersCache = data;
+    loading.style.display = 'none';
+    document.getElementById('userCount').textContent = data.length + ' User';
+    if (!data.length) { empty.style.display = 'block'; return; }
+    const tbody = document.getElementById('userTbody');
+    tbody.innerHTML = data.map(u => {
+      const name = [u.vorname, u.nachname].filter(Boolean).join(' ') || '—';
+      const avatar = u.profile_image_url
+        ? `<img src="${u.profile_image_url}?t=${Date.now()}" class="ut-avatar-img" alt="">`
+        : `<div class="ut-avatar-placeholder"><svg width="18" height="18" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></div>`;
+      return `<tr data-search="${(u.vorname+' '+u.nachname+' '+u.email).toLowerCase()}">
+        <td>
+          <div class="ut-avatar" onclick="document.getElementById('uimg-${u.id}').click()" title="Profilbild ändern">
+            ${avatar}
+            <div class="ut-avatar-overlay">📷</div>
+          </div>
+          <input type="file" id="uimg-${u.id}" accept="image/*" style="display:none" onchange="uploadProfileImage('${u.id}',this)" />
+        </td>
+        <td>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input class="user-inline-input" id="uvorname-${u.id}" value="${u.vorname}" placeholder="Vorname" />
+            <input class="user-inline-input" id="unachname-${u.id}" value="${u.nachname}" placeholder="Nachname" />
+          </div>
+        </td>
+        <td style="color:var(--muted);font-size:.82rem;">${u.email}</td>
+        <td style="color:var(--muted);font-size:.78rem;white-space:nowrap;">${u.created_at}</td>
+        <td style="text-align:right;">
+          <button class="btn-save-user" onclick="saveUserProfile('${u.id}')">Speichern</button>
+        </td>
+      </tr>`;
+    }).join('');
+    table.style.display = 'table';
+  } catch(e) {
+    loading.textContent = 'Fehler: ' + e.message;
+  }
+}
+
+function filterUsers() {
+  const q     = document.getElementById('userSearch').value.toLowerCase();
+  const rows  = document.querySelectorAll('#userTbody tr');
+  let visible = 0;
+  rows.forEach(row => {
+    const match = !q || row.dataset.search.includes(q);
+    row.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  document.getElementById('userCount').textContent = visible + ' User';
+  document.getElementById('userListEmpty').style.display = visible === 0 ? 'block' : 'none';
+}
+
+async function saveUserProfile(userId) {
+  const vorname  = document.getElementById('uvorname-' + userId)?.value || '';
+  const nachname = document.getElementById('unachname-' + userId)?.value || '';
+  const res  = await fetch(`/api/users/${userId}/profile`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({vorname, nachname}),
+  });
+  const data = await res.json();
+  showToast(data.success ? 'Profil gespeichert.' : 'Fehler: ' + data.error, !!data.success);
+}
+
+async function uploadProfileImage(userId, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('image', file);
+  const res  = await fetch(`/api/users/${userId}/profile-image`, {method:'POST', body:fd});
+  const data = await res.json();
+  if (data.success) { showToast('Profilbild gespeichert.', true); loadUsers(); }
+  else showToast('Fehler: ' + data.error, false);
+}
+
+async function createUser() {
+  const btn      = document.getElementById('createUserBtn');
+  const vorname  = document.getElementById('nu-vorname').value.trim();
+  const nachname = document.getElementById('nu-nachname').value.trim();
+  const email    = document.getElementById('nu-email').value.trim();
+  const password = document.getElementById('nu-password').value;
+  if (!email || !password) { showToast('E-Mail und Passwort erforderlich.', false); return; }
+  btn.disabled = true;
+  try {
+    const res  = await fetch('/api/users', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({vorname, nachname, email, password}),
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(`User ${email} erstellt.`, true);
+      ['nu-vorname','nu-nachname','nu-email','nu-password'].forEach(id => document.getElementById(id).value = '');
+      loadUsers();
+    } else {
+      showToast('Fehler: ' + data.error, false);
+    }
+  } catch(e) { showToast('Verbindungsfehler.', false); }
+  finally { btn.disabled = false; }
+}
+
+/* ── Discord test ── */
+async function testDiscordWebhook() {
+  const url = document.getElementById('s-discord-webhook').value.trim();
+  if (!url) { showToast('Bitte zuerst Webhook URL eingeben und speichern.', false); return; }
+  // Save first, then test
+  await saveSettings();
+  try {
+    const res  = await fetch('/api/notify/discord', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        type: 'create',
+        payload: {
+          dekoire_id: 'TEST-001', dateiname: 'test-image.jpg',
+          titel: 'Test Benachrichtigung', beschreibung: 'Dies ist eine Test-Nachricht von Image Analyzer.',
+          kunstart: 'Fotografie', epoche: 'Contemporary',
+          dominante_farben: ['Blau', 'Weiß'], tags: ['test', 'notification'],
+          breite_px: 4000, hoehe_px: 3000, ausrichtung: 'Horizontal',
+          seitenverhaeltnis: '4:3', datei_groesse_kb: 8192, aufnahmedatum: new Date().toLocaleDateString('de-DE'),
+        },
+        result: {image_url: '', folder: 'Final Files/TEST-001_Test'},
+        changes: [],
+      }),
+    });
+    const data = await res.json();
+    if (data.success) showToast('✅ Test-Nachricht gesendet!', true);
+    else if (data.skipped) showToast('Webhook URL nicht konfiguriert.', false);
+    else showToast('Fehler: ' + data.error, false);
+  } catch(e) { showToast('Verbindungsfehler: ' + e.message, false); }
+}
+
+/* ══ External Apps ══ */
+const ICON_SVG_MAP = {{ icon_svgs | tojson | safe }};
+let _selectedPreset = '';
+let _uploadedIconUrl = '';
+let _editingAppId = '';
+
+function toggleIconType() {
+  const type = document.getElementById('ea-icon-type').value;
+  document.getElementById('ea-favicon-preview').style.display = type === 'favicon' ? 'flex' : 'none';
+  document.getElementById('ea-preset-picker').style.display   = type === 'preset'  ? 'block' : 'none';
+  document.getElementById('ea-upload-picker').style.display   = type === 'upload'  ? 'block' : 'none';
+  if (type === 'favicon') updateFaviconPreview();
+}
+
+function updateFaviconPreview() {
+  const url = document.getElementById('ea-url').value.trim();
+  const domain = url.replace(/^https?:\/\//, '').split('/')[0];
+  const img = document.getElementById('ea-favicon-img');
+  const box = document.getElementById('ea-favicon-box');
+  if (domain) {
+    img.src = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+    img.style.display = 'block';
+  } else {
+    img.style.display = 'none';
+  }
+  box.style.background = document.getElementById('ea-bgcolor').value;
+}
+
+document.getElementById('ea-url').addEventListener('input', () => {
+  if (document.getElementById('ea-icon-type').value === 'favicon') updateFaviconPreview();
+});
+
+function syncColor(from) {
+  const picker = document.getElementById('ea-bgcolor');
+  const txt    = document.getElementById('ea-bgcolor-txt');
+  if (from === 'txt') {
+    const v = txt.value;
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) picker.value = v;
+  } else {
+    txt.value = picker.value;
+  }
+  updatePresetPreview();
+  updateFaviconPreview();
+  document.getElementById('ea-favicon-box').style.background = picker.value;
+}
+document.getElementById('ea-bgcolor').addEventListener('input', () => syncColor('picker'));
+
+function syncIconColor(from) {
+  const picker = document.getElementById('ea-icon-color');
+  const txt    = document.getElementById('ea-icon-color-txt');
+  if (from === 'txt') {
+    const v = txt.value;
+    if (/^#[0-9a-fA-F]{6}$/.test(v)) picker.value = v;
+  } else {
+    txt.value = picker.value;
+  }
+  updatePresetPreview();
+}
+document.getElementById('ea-icon-color').addEventListener('input', () => syncIconColor('picker'));
+
+function selectPreset(key) {
+  _selectedPreset = key;
+  document.querySelectorAll('.ea-preset-btn').forEach(b => {
+    b.style.borderColor = b.dataset.key === key ? 'var(--btn)' : 'var(--border)';
+  });
+  updatePresetPreview();
+}
+
+function updatePresetPreview() {
+  const box   = document.getElementById('ea-preset-preview-box');
+  const color = document.getElementById('ea-icon-color').value;
+  const bg    = document.getElementById('ea-bgcolor').value;
+  box.style.background = bg;
+  box.style.color      = color;
+  box.innerHTML = _selectedPreset && ICON_SVG_MAP[_selectedPreset]
+    ? `<span style="display:flex;align-items:center;width:22px;height:22px;">${ICON_SVG_MAP[_selectedPreset]}</span>`
+    : '';
+}
+
+function previewUpload() {
+  const file = document.getElementById('ea-icon-file').files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('ea-upload-preview-img');
+    img.src = e.target.result;
+    img.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function loadExtApps() {
+  const list    = document.getElementById('extAppList');
+  const loading = document.getElementById('extAppListLoading');
+  const empty   = document.getElementById('extAppListEmpty');
+  loading.style.display = 'block';
+  empty.style.display   = 'none';
+  try {
+    const res  = await fetch('/api/external-apps');
+    const apps = await res.json();
+    loading.style.display = 'none';
+    document.getElementById('extAppCount').textContent = apps.length + ' Apps';
+    if (!apps.length) { empty.style.display = 'block'; return; }
+
+    // Remove previously rendered app rows (keep loading/empty divs)
+    list.querySelectorAll('.ea-list-row').forEach(r => r.remove());
+
+    apps.forEach(a => {
+      const domain = (a.url || '').replace(/^https?:\/\//, '').split('/')[0];
+      let iconHtml = '';
+      if (a.icon_type === 'preset' && ICON_SVG_MAP[a.icon_preset]) {
+        iconHtml = `<span style="display:flex;align-items:center;width:20px;height:20px;color:${a.icon_color||'#fff'}">${ICON_SVG_MAP[a.icon_preset]}</span>`;
+      } else if (a.icon_type === 'upload' && a.icon_url) {
+        iconHtml = `<img src="${a.icon_url}" style="width:22px;height:22px;object-fit:contain;" />`;
+      } else {
+        iconHtml = `<img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" style="width:22px;height:22px;" onerror="this.style.display='none'" />`;
+      }
+
+      const row = document.createElement('div');
+      row.className = 'ea-list-row';
+      row.dataset.appId = a.id;
+      row.draggable = true;
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);';
+      row.innerHTML = `
+        <span class="ea-drag-handle" title="Ziehen zum Sortieren">⠿</span>
+        <div style="width:36px;height:36px;border-radius:8px;background:${a.bg_color||'#EEF2FF'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          ${iconHtml}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:.85rem;">${a.name}</div>
+          <div style="font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px;">${a.url}</div>
+        </div>
+        <button onclick="editExtApp(${JSON.stringify(a).replace(/"/g,'&quot;')})"
+          style="background:none;border:1px solid var(--border);cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:6px;display:flex;align-items:center;gap:4px;font-size:.72rem;font-weight:600;white-space:nowrap;" title="Bearbeiten">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Bearbeiten
+        </button>
+        <a href="${a.url}" target="_blank" style="color:var(--muted);text-decoration:none;padding:4px;border-radius:4px;display:flex;" title="Öffnen">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <button onclick="deleteExtApp('${a.id}')" style="background:none;border:none;cursor:pointer;color:#DC2626;padding:4px;border-radius:4px;display:flex;" title="Löschen">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>`;
+
+      // ── drag events on the row ──
+      row.addEventListener('dragstart', e => {
+        _eaDragEl = row;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', a.id);
+        requestAnimationFrame(() => row.classList.add('ea-dragging'));
+      });
+      row.addEventListener('dragend', () => {
+        row.classList.remove('ea-dragging');
+        list.querySelectorAll('.ea-drop-target').forEach(el => el.classList.remove('ea-drop-target'));
+        _eaSaveOrder();
+      });
+      row.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (!_eaDragEl || _eaDragEl === row) return;
+        list.querySelectorAll('.ea-drop-target').forEach(el => el.classList.remove('ea-drop-target'));
+        const box = row.getBoundingClientRect();
+        if (e.clientY < box.top + box.height / 2) {
+          list.insertBefore(_eaDragEl, row);
+        } else {
+          list.insertBefore(_eaDragEl, row.nextSibling || empty);
+        }
+        row.classList.add('ea-drop-target');
+      });
+      row.addEventListener('drop', e => e.preventDefault());
+
+      list.insertBefore(row, empty);
+    });
+  } catch(e) {
+    loading.textContent = 'Fehler: ' + e.message;
+  }
+}
+
+let _eaDragEl = null;
+async function _eaSaveOrder() {
+  const rows  = document.querySelectorAll('#extAppList .ea-list-row');
+  const ids   = [...rows].map(r => r.dataset.appId).filter(Boolean);
+  try {
+    await fetch('/api/external-apps/reorder', {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify(ids),
+    });
+    showToast('Reihenfolge gespeichert.', true);
+  } catch(e) { showToast('Fehler beim Speichern.', false); }
+}
+
+function editExtApp(a) {
+  // Scroll form into view
+  document.getElementById('extAppFormCard')?.scrollIntoView({behavior:'smooth', block:'start'});
+
+  // Populate form
+  document.getElementById('ea-edit-id').value       = a.id;
+  document.getElementById('ea-name').value           = a.name  || '';
+  document.getElementById('ea-url').value            = a.url   || '';
+  document.getElementById('ea-bgcolor').value        = a.bg_color   || '#EEF2FF';
+  document.getElementById('ea-bgcolor-txt').value    = a.bg_color   || '#EEF2FF';
+  document.getElementById('ea-icon-color').value     = a.icon_color || '#FFFFFF';
+  document.getElementById('ea-icon-color-txt').value = a.icon_color || '#FFFFFF';
+  document.getElementById('ea-icon-type').value      = a.icon_type  || 'favicon';
+
+  // Set preset selection
+  _selectedPreset  = a.icon_preset || '';
+  _uploadedIconUrl = a.icon_url    || '';
+  document.querySelectorAll('.ea-preset-btn').forEach(b => {
+    b.style.borderColor = b.dataset.key === _selectedPreset ? 'var(--btn)' : 'var(--border)';
+  });
+
+  toggleIconType();
+  updatePresetPreview();
+  updateFaviconPreview();
+
+  // Update form labels
+  document.getElementById('extAppFormTitle').textContent    = 'App bearbeiten';
+  document.getElementById('saveExtAppBtnLabel').textContent = 'Änderungen speichern';
+  document.getElementById('cancelEditBtn').style.display    = '';
+}
+
+async function saveExtApp() {
+  const btn      = document.getElementById('saveExtAppBtn');
+  const name     = document.getElementById('ea-name').value.trim();
+  const url      = document.getElementById('ea-url').value.trim();
+  const iconType = document.getElementById('ea-icon-type').value;
+  const bgColor  = document.getElementById('ea-bgcolor').value;
+  const iconColor= document.getElementById('ea-icon-color').value;
+  const editId   = document.getElementById('ea-edit-id').value;
+
+  if (!name || !url) { showToast('Name und URL erforderlich.', false); return; }
+  btn.disabled = true;
+
+  try {
+    let iconUrl = '';
+    // Upload icon file first if needed
+    if (iconType === 'upload') {
+      const file = document.getElementById('ea-icon-file').files[0];
+      if (file) {
+        const fd = new FormData();
+        fd.append('icon', file);
+        if (editId) fd.append('app_id', editId);
+        const upRes  = await fetch('/api/external-apps/upload-icon', {method:'POST', body:fd});
+        const upData = await upRes.json();
+        if (!upData.success) { showToast('Icon-Upload fehlgeschlagen.', false); return; }
+        iconUrl = upData.icon_url;
+      } else {
+        // Keep existing if editing without new file
+        iconUrl = _uploadedIconUrl;
+      }
+    }
+
+    const payload = {
+      name, url, icon_type: iconType,
+      icon_preset: _selectedPreset,
+      icon_color:  iconColor,
+      icon_url:    iconUrl,
+      bg_color:    bgColor,
+    };
+
+    let endpoint = '/api/external-apps';
+    let method   = 'POST';
+    if (editId) { endpoint = `/api/external-apps/${editId}`; }
+
+    const res  = await fetch(endpoint, {
+      method, headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.success || data.app) {
+      showToast(editId ? 'App aktualisiert.' : 'App hinzugefügt.', true);
+      resetExtAppForm();
+      loadExtApps();
+    } else {
+      showToast('Fehler: ' + (data.error || 'Unbekannt'), false);
+    }
+  } catch(e) { showToast('Verbindungsfehler.', false); }
+  finally { btn.disabled = false; }
+}
+
+async function deleteExtApp(appId) {
+  if (!confirm('App wirklich löschen?')) return;
+  try {
+    const res  = await fetch(`/api/external-apps/${appId}`, {method:'DELETE'});
+    const data = await res.json();
+    if (data.success) { showToast('App gelöscht.', true); loadExtApps(); }
+    else showToast('Fehler: ' + data.error, false);
+  } catch { showToast('Verbindungsfehler.', false); }
+}
+
+function resetExtAppForm() {
+  _selectedPreset  = '';
+  _uploadedIconUrl = '';
+  _editingAppId    = '';
+  document.getElementById('ea-edit-id').value    = '';
+  document.getElementById('ea-name').value        = '';
+  document.getElementById('ea-url').value         = '';
+  document.getElementById('ea-bgcolor').value     = '#EEF2FF';
+  document.getElementById('ea-bgcolor-txt').value = '#EEF2FF';
+  document.getElementById('ea-icon-color').value     = '#FFFFFF';
+  document.getElementById('ea-icon-color-txt').value = '#FFFFFF';
+  document.getElementById('ea-icon-type').value   = 'favicon';
+  document.getElementById('ea-icon-file').value   = '';
+  document.getElementById('ea-upload-preview-img').src = '';
+  document.getElementById('ea-upload-preview-img').style.display = 'none';
+  document.querySelectorAll('.ea-preset-btn').forEach(b => b.style.borderColor = 'var(--border)');
+  document.getElementById('ea-preset-preview-box').innerHTML = '';
+  document.getElementById('extAppFormTitle').textContent   = 'Neue App hinzufügen';
+  document.getElementById('saveExtAppBtnLabel').textContent = 'App hinzufügen';
+  document.getElementById('cancelEditBtn').style.display   = 'none';
+  toggleIconType();
+}
+
+function cancelEditExtApp() { resetExtAppForm(); }
+
+// Handle URL → hash navigation to ext apps pane
+if (window.location.hash === '#external-apps') {
+  const btn = document.getElementById('nav-extapps');
+  if (btn) { btn.click(); }
+}
+
+async function checkDbStatus() {
+  const box = document.getElementById('db-config-status');
+  box.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div><span style="color:var(--muted);font-size:.85rem;">Prüfe DB-Status …</span>';
+  try {
+    const res  = await fetch('/api/config/db-status');
+    const data = await res.json();
+    if (data.available) {
+      const d = data.updated_at ? new Date(data.updated_at).toLocaleString('de-DE') : '–';
+      box.innerHTML = `<span style="color:#059669;font-size:1.1rem;">✓</span><span style="font-size:.85rem;"><strong style="color:#059669;">Verbunden</strong> – Zuletzt synchronisiert: ${d}</span>`;
+    } else {
+      box.innerHTML = `<span style="color:#DC2626;font-size:1.1rem;">✗</span><span style="font-size:.85rem;color:#DC2626;"><strong>Nicht verfügbar</strong> – ${data.reason || ''}</span>`;
+    }
+  } catch(e) {
+    box.innerHTML = `<span style="color:#DC2626;">Fehler: ${e.message}</span>`;
+  }
+}
+
+async function syncConfigToDb() {
+  try {
+    const res  = await fetch('/api/config/sync-to-db', {method:'POST'});
+    const data = await res.json();
+    if (data.success) { showToast('Config erfolgreich zu DB synchronisiert!', true); checkDbStatus(); }
+    else showToast('Fehler: ' + (data.error || '?'), false);
+  } catch(e) { showToast('Netzwerkfehler: ' + e.message, false); }
+}
+
+/* ── Shop Sync helpers ── */
+async function syncShopify() {
+  const btn = document.getElementById('btnSyncShopify');
+  const status = document.getElementById('shopify-sync-status');
+  btn.disabled = true; status.textContent = 'Synchronisiere …';
+  // Save credentials first
+  await saveSettings();
+  try {
+    const res  = await fetch('/api/sync/shopify', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+    const data = await res.json();
+    if (data.error) { status.textContent = 'Fehler: ' + data.error; return; }
+    document.getElementById('s-shopify-colls').value = (data.collections || []).join('\n');
+    document.getElementById('s-shopify-types').value = (data.product_types || []).join('\n');
+    status.textContent = `✓ ${(data.collections||[]).length} Kollektionen, ${(data.product_types||[]).length} Typen`;
+  } catch(e) { status.textContent = 'Fehler: ' + e.message; }
+  finally { btn.disabled = false; }
+}
+
+async function syncEtsy() {
+  const btn = document.getElementById('btnSyncEtsy');
+  const status = document.getElementById('etsy-sync-status');
+  btn.disabled = true; status.textContent = 'Synchronisiere …';
+  await saveSettings();
+  try {
+    const res  = await fetch('/api/sync/etsy', { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{}' });
+    const data = await res.json();
+    if (data.error) { status.textContent = 'Fehler: ' + data.error; return; }
+    const profiles = data.shipping_profiles || [];
+    const listEl = document.getElementById('etsy-profiles-list');
+    listEl.innerHTML = profiles.length
+      ? profiles.map(p => `<div style="padding:4px 0;border-bottom:1px solid var(--border);">${p.title} <span style="color:var(--c-300);font-size:.75rem;">(ID: ${p.id})</span></div>`).join('')
+      : '<span>Keine Profile gefunden.</span>';
+    status.textContent = `✓ ${profiles.length} Versandprofile`;
+  } catch(e) { status.textContent = 'Fehler: ' + e.message; }
+  finally { btn.disabled = false; }
+}
+
+async function saveAmazonCats() {
+  const status = document.getElementById('amazon-save-status');
+  status.textContent = 'Speichere …';
+  const cats = (document.getElementById('s-amazon-cats')?.value || '').split('\n').map(s=>s.trim()).filter(Boolean);
+  try {
+    const res  = await fetch('/api/sync/amazon', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ categories: cats }),
+    });
+    const data = await res.json();
+    status.textContent = data.success ? `✓ ${cats.length} Kategorien gespeichert` : 'Fehler: ' + data.error;
+  } catch(e) { status.textContent = 'Fehler: ' + e.message; }
+}
+</script>
+{% include 'includes/footer.html' %}
+</body>
+</html>

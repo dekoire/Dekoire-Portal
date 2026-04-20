@@ -1,0 +1,47 @@
+<footer class="app-footer">
+  <div class="app-footer-inner">
+
+    <!-- Logo -->
+    <div class="footer-logo-col">
+      <img src="/assets/{{ footer_logo }}"
+           alt="Logo"
+           class="footer-logo-img"
+           onerror="this.style.display='none'" />
+    </div>
+
+    <!-- Nav links -->
+    <nav class="footer-nav">
+      <a href="/app">Produkt anlegen</a>
+      <a href="/products">Alle Produkte</a>
+      <a href="/shops">Shop Produkte</a>
+      <a href="/social/instagram">Instagram</a>
+      <a href="/social/pinterest">Pinterest</a>
+    </nav>
+
+    <!-- External apps as text pills -->
+    <div class="footer-apps" id="footerAppsBar"></div>
+
+  </div>
+
+  <div class="app-footer-bottom">
+    <span>© 2025 {{ footer_company }}</span>
+    <span class="footer-tagline">A Company with Dedication ❤️</span>
+  </div>
+</footer>
+
+<script>
+(function loadFooterApps() {
+  fetch('/api/external-apps')
+    .then(r => r.json())
+    .then(apps => {
+      if (!Array.isArray(apps) || !apps.length) return;
+      const bar = document.getElementById('footerAppsBar');
+      if (!bar) return;
+      bar.innerHTML = apps.map(a =>
+        `<a href="${a.url || '#'}" target="_blank" rel="noopener"
+            class="footer-app-btn">${a.name || '–'}</a>`
+      ).join('');
+    })
+    .catch(() => {});
+})();
+</script>

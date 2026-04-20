@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>{{ header_title }}</title>
+<link rel="stylesheet" href="/static/style.css" />
+<style>
+.dashboard-body {
+  min-height: calc(100vh - 64px);
+  padding: 40px 32px 60px;
+}
+.dashboard-greeting {
+  margin-bottom: 32px;
+}
+.dashboard-greeting h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 4px;
+}
+.dashboard-greeting p {
+  color: var(--muted);
+  font-size: .9rem;
+  margin: 0;
+}
+.dashboard-section-label {
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 220px));
+  gap: 16px;
+}
+.dashboard-tile {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow .18s, border-color .18s, transform .18s;
+  position: relative;
+  overflow: hidden;
+}
+.dashboard-tile:hover {
+  box-shadow: 0 8px 28px rgba(0,0,0,.09);
+  border-color: var(--c-200);
+  transform: translateY(-2px);
+}
+.dashboard-tile:active { transform: translateY(0); }
+/* drag states */
+.dashboard-tile.tile-dragging,
+.ext-app-tile.tile-dragging {
+  opacity: .35;
+  transform: scale(.97);
+  cursor: grabbing !important;
+}
+.dashboard-tile.tile-drop-target {
+  border-color: var(--btn);
+  box-shadow: 0 0 0 2px #818CF840;
+}
+.ext-app-tile.tile-drop-target {
+  border-color: var(--btn);
+  box-shadow: 0 0 0 2px #818CF840;
+}
+/* drag handle hint on hover */
+.dashboard-tile .drag-hint,
+.ext-app-tile .drag-hint {
+  position: absolute;
+  top: 10px; left: 10px;
+  opacity: 0;
+  color: var(--c-300);
+  font-size: 13px;
+  line-height: 1;
+  transition: opacity .15s;
+  pointer-events: none;
+  letter-spacing: -1px;
+}
+.dashboard-tile:hover .drag-hint,
+.ext-app-tile:hover .drag-hint { opacity: 1; }
+.tile-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #EEF2FF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--btn);
+}
+.tile-icon svg { width: 24px; height: 24px; }
+.tile-label {
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+.tile-desc {
+  font-size: .78rem;
+  color: var(--muted);
+  line-height: 1.5;
+  padding-top: 15px;
+}
+.tile-arrow {
+  position: absolute;
+  bottom: 18px;
+  right: 18px;
+  color: var(--c-300);
+  transition: color .15s, right .15s;
+}
+.dashboard-tile:hover .tile-arrow { color: var(--btn); right: 14px; }
+
+/* Coming-soon tile */
+.dashboard-tile.tile-soon {
+  cursor: default;
+  opacity: .55;
+  pointer-events: none;
+}
+.tile-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  background: var(--c-100);
+  color: var(--muted);
+  padding: 2px 7px;
+  border-radius: 20px;
+}
+
+/* External Apps */
+.ext-app-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.ext-app-tile {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  width: 108px;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow .18s, border-color .18s, transform .18s;
+  text-align: center;
+}
+.ext-app-tile:hover {
+  box-shadow: 0 6px 20px rgba(0,0,0,.1);
+  border-color: var(--c-200);
+  transform: translateY(-2px);
+}
+.ext-app-tile:active { transform: translateY(0); }
+.ext-app-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.ext-app-icon img { width: 28px; height: 28px; object-fit: contain; }
+.ext-app-icon svg { width: 22px; height: 22px; }
+.ext-app-name {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+  word-break: break-word;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <img src="/assets/{{ header_logo }}" alt="Logo" class="header-logo" onerror="this.style.display='none'" />
+  <div style="flex:1">
+   
+  </div>
+  <div class="header-right">
+    <div class="user-menu" id="userMenu">
+      <button class="user-btn" onclick="toggleUserMenu()" type="button">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+          <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <span class="user-email-label">{{ current_user_email }}</span>
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24">
+          <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="user-dropdown" id="userDropdown">
+        <div class="user-dropdown-email">{{ current_user_email }}</div>
+        <hr class="dropdown-sep" />
+        <a href="/settings" class="dropdown-item">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24">
+            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.6"/>
+          </svg>
+          Einstellungen
+        </a>
+        <button class="dropdown-item dropdown-item-danger" onclick="doLogout()">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Abmelden
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="dashboard-body">
+
+  <div class="dashboard-greeting" style="display:flex;align-items:center;gap:16px;">
+    {% if current_user_profile_image %}
+      <img src="{{ current_user_profile_image }}" alt="Profilbild"
+           style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--border);flex-shrink:0;">
+    {% else %}
+      <div style="width:52px;height:52px;border-radius:50%;background:#EEF2FF;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--btn);">
+        <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </div>
+    {% endif %}
+    <div>
+      <h2 style="margin:0 0 2px;">Hi, {{ current_user_name }} 👋</h2>
+      <p style="margin:0;font-size:.82rem;color:var(--muted);">{{ current_user_email }}</p>
+    </div>
+  </div>
+
+  <div class="dashboard-section-label">Produktmanagement</div>
+  <div class="dashboard-grid" data-grid-id="produktmanagement">
+
+    <!-- Produkt anlegen -->
+    <a href="/app" class="dashboard-tile" data-tile-id="produkt-anlegen">
+      <span class="drag-hint">⠿</span>
+      <div class="tile-icon">
+        <svg fill="none" viewBox="0 0 24 24">
+          <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 17l10 5 10-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="tile-label">Produkt anlegen</div>
+        <div class="tile-desc">Bild analysieren, Texte generieren & exportieren</div>
+      </div>
+      <svg class="tile-arrow" width="16" height="16" fill="none" viewBox="0 0 24 24">
+        <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+
+    <!-- Alle Produkte -->
+    <a href="/products" class="dashboard-tile" data-tile-id="alle-produkte">
+      <span class="drag-hint">⠿</span>
+      <div class="tile-icon" style="background:#F0FDF4;color:#16A34A;">
+        <svg fill="none" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/>
+          <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/>
+          <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/>
+        </svg>
+      </div>
+      <div>
+        <div class="tile-label">Alle Produkte</div>
+        <div class="tile-desc">Gespeicherte Produkte ansehen & bearbeiten</div>
+      </div>
+      <svg class="tile-arrow" width="16" height="16" fill="none" viewBox="0 0 24 24">
+        <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+
+    <!-- Shops -->
+    <a href="/shops" class="dashboard-tile" data-tile-id="shops">
+      <span class="drag-hint">⠿</span>
+      <div class="tile-icon" style="background:#F8F9FB;color:#374151;">
+        <svg fill="none" viewBox="0 0 24 24">
+          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M16 10a4 4 0 0 1-8 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="tile-label">Shops</div>
+        <div class="tile-desc">Etsy, Shopify & Amazon Produkte verwalten</div>
+      </div>
+      <svg class="tile-arrow" width="16" height="16" fill="none" viewBox="0 0 24 24">
+        <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+
+  </div>
+
+  <div class="dashboard-section-label" style="margin-top:32px;">Social Media</div>
+  <div class="dashboard-grid" data-grid-id="socialmedia">
+
+    <!-- Instagram Posts -->
+    <a href="/social/instagram" class="dashboard-tile" data-tile-id="instagram-posts">
+      <span class="drag-hint">⠿</span>
+      <div class="tile-icon" style="background:#FFF0F5;color:#E1306C;">
+        <svg fill="none" viewBox="0 0 24 24">
+          <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.7"/>
+          <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.7"/>
+          <circle cx="17.5" cy="6.5" r="1.3" fill="currentColor"/>
+        </svg>
+      </div>
+      <div>
+        <div class="tile-label">Instagram</div>
+        <div class="tile-desc">Geplante & abgeschickte Posts verwalten, bearbeiten, neu senden</div>
+      </div>
+      <svg class="tile-arrow" width="16" height="16" fill="none" viewBox="0 0 24 24">
+        <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+
+    <!-- Pinterest Posts -->
+    <a href="/social/pinterest" class="dashboard-tile" data-tile-id="pinterest-posts">
+      <span class="drag-hint">⠿</span>
+      <div class="tile-icon" style="background:#FFF5F5;color:#E60023;">
+        <svg fill="none" viewBox="0 0 24 24">
+          <path d="M12 2C6.477 2 2 6.477 2 12c0 4.236 2.636 7.855 6.356 9.312-.088-.791-.167-2.005.035-2.868.181-.78 1.172-4.97 1.172-4.97s-.299-.598-.299-1.482c0-1.388.806-2.428 1.808-2.428.853 0 1.267.641 1.267 1.408 0 .858-.546 2.141-.828 3.33-.236.995.499 1.806 1.476 1.806 1.771 0 2.994-2.31 2.994-5.04 0-2.074-1.414-3.63-3.964-3.63-2.888 0-4.695 2.16-4.695 4.58 0 .832.245 1.417.63 1.877.175.207.2.29.136.529l-.191.766c-.061.24-.248.326-.455.237-1.279-.524-1.872-1.935-1.872-3.524 0-2.624 2.228-5.836 6.661-5.836 3.565 0 5.94 2.602 5.94 5.393 0 3.71-2.09 6.511-5.152 6.511-1.034 0-2.009-.561-2.342-1.19l-.637 2.457c-.23.877-.853 1.977-1.272 2.647A9.984 9.984 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="tile-label">Pinterest</div>
+        <div class="tile-desc">Geplante & abgeschickte Pins verwalten, bearbeiten, neu senden</div>
+      </div>
+      <svg class="tile-arrow" width="16" height="16" fill="none" viewBox="0 0 24 24">
+        <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+
+    <!-- Social Media Account Push -->
+    <div class="dashboard-tile tile-soon" data-tile-id="account-push">
+      <div class="tile-badge">Bald verfügbar</div>
+      <div class="tile-icon" style="background:#FFF7ED;color:#EA580C;">
+        <svg fill="none" viewBox="0 0 24 24">
+          <path d="M22 2L11 13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="tile-label">Account Push</div>
+        <div class="tile-desc">Posts direkt auf Social Media Accounts veröffentlichen</div>
+      </div>
+    </div>
+
+  </div>
+
+  {% if external_apps %}
+  <div class="dashboard-section-label" style="margin-top:32px;">External Apps</div>
+  <div class="ext-app-grid" data-grid-id="extapps" id="dashExtAppGrid">
+    {% for eapp in external_apps %}
+    <a href="{{ eapp.url }}" target="_blank" rel="noopener noreferrer"
+       class="ext-app-tile" title="{{ eapp.name }}" data-tile-id="ext-{{ eapp.id }}">
+      <span class="drag-hint">⠿</span>
+      <div class="ext-app-icon" style="background:{{ eapp.bg_color or '#EEF2FF' }};">
+        {% if eapp.icon_type == 'preset' and eapp.icon_preset in icon_svgs %}
+          <span style="color:{{ eapp.icon_color or '#FFFFFF' }};display:flex;align-items:center;">{{ icon_svgs[eapp.icon_preset] | safe }}</span>
+        {% elif eapp.icon_type == 'upload' and eapp.icon_url %}
+          <img src="{{ eapp.icon_url }}" alt="{{ eapp.name }}" />
+        {% else %}
+          <img src="https://www.google.com/s2/favicons?domain={{ eapp.domain }}&sz=64" alt="{{ eapp.name }}" onerror="this.style.display='none'" />
+        {% endif %}
+      </div>
+      <div class="ext-app-name">{{ eapp.name }}</div>
+    </a>
+    {% endfor %}
+    <a href="/settings#external-apps" class="ext-app-tile" title="App hinzufügen"
+       style="border-style:dashed;color:var(--muted);" data-no-drag>
+      <div class="ext-app-icon" style="background:var(--c-100);">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <div class="ext-app-name" style="color:var(--muted);">Hinzufügen</div>
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+/* ── User menu ── */
+function toggleUserMenu() {
+  document.getElementById('userDropdown').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('userMenu')?.contains(e.target))
+    document.getElementById('userDropdown')?.classList.remove('open');
+});
+async function doLogout() {
+  await fetch('/auth/logout', {method:'POST'});
+  window.location.href = '/login';
+}
+
+/* ══ Drag-and-drop tile reorder ══
+   – dashboard-grid tiles  → saved in localStorage (static tiles)
+   – ext-app-grid tiles    → saved via /api/external-apps/reorder (server)
+   Hover shows ⠿ handle hint. Dragging an <a> tile blocks click via _didDrag flag.
+*/
+let _dragEl   = null;
+let _didDrag  = false;
+
+function _initGrid(grid) {
+  const isDraggable = el => el.hasAttribute('data-tile-id') && !el.hasAttribute('data-no-drag');
+
+  grid.querySelectorAll('[data-tile-id]:not([data-no-drag])').forEach(tile => {
+    tile.setAttribute('draggable', 'true');
+
+    tile.addEventListener('dragstart', e => {
+      _dragEl  = tile;
+      _didDrag = false;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', tile.dataset.tileId);
+      requestAnimationFrame(() => tile.classList.add('tile-dragging'));
+    });
+
+    tile.addEventListener('dragend', () => {
+      tile.classList.remove('tile-dragging');
+      grid.querySelectorAll('.tile-drop-target').forEach(el => el.classList.remove('tile-drop-target'));
+      _dragEl = null;
+      _persistGrid(grid);
+    });
+
+    // Block click after a real drag (mousedown → mousemove → mouseup)
+    tile.addEventListener('click', e => {
+      if (_didDrag) { e.preventDefault(); e.stopPropagation(); _didDrag = false; }
+    });
+  });
+
+  grid.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (!_dragEl || !grid.contains(_dragEl)) return;
+    e.dataTransfer.dropEffect = 'move';
+
+    // Find the nearest tile to drop before/after
+    const afterEl = _dragAfter(grid, e.clientX, e.clientY);
+    grid.querySelectorAll('.tile-drop-target').forEach(el => el.classList.remove('tile-drop-target'));
+    if (afterEl && afterEl !== _dragEl) {
+      afterEl.classList.add('tile-drop-target');
+      grid.insertBefore(_dragEl, afterEl);
+    } else if (!afterEl) {
+      // Drop at end (before the "Hinzufügen" no-drag tile if present)
+      const noDrag = grid.querySelector('[data-no-drag]');
+      grid.insertBefore(_dragEl, noDrag || null);
+    }
+    _didDrag = true;
+  });
+
+  grid.addEventListener('drop', e => e.preventDefault());
+}
+
+function _dragAfter(grid, x, y) {
+  const items = [...grid.querySelectorAll('[data-tile-id]:not([data-no-drag]):not(.tile-dragging)')];
+  return items.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const cx  = box.left + box.width  / 2;
+    const cy  = box.top  + box.height / 2;
+    // Manhattan-ish: prefer x-axis for grid layout
+    const dx  = x - cx;
+    const dy  = y - cy;
+    // Score: negative when cursor is to the left+above the element center
+    const score = dx + dy * 0.5;
+    if (score < 0 && score > closest.score) {
+      return { score, element: child };
+    }
+    return closest;
+  }, { score: Number.NEGATIVE_INFINITY }).element || null;
+}
+
+function _persistGrid(grid) {
+  const gid = grid.dataset.gridId;
+  const ids  = [...grid.querySelectorAll('[data-tile-id]')].map(t => t.dataset.tileId);
+
+  if (gid === 'extapps') {
+    // Server-side: extract real app IDs (strip "ext-" prefix)
+    const appIds = ids.filter(id => id.startsWith('ext-')).map(id => id.slice(4));
+    fetch('/api/external-apps/reorder', {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify(appIds),
+    }).catch(console.error);
+  } else {
+    // localStorage for static grids
+    localStorage.setItem('tile-order-' + gid, JSON.stringify(ids));
+  }
+}
+
+function _restoreGrid(grid) {
+  const gid  = grid.dataset.gridId;
+  if (gid === 'extapps') return; // order comes from server-rendered HTML
+  const raw  = localStorage.getItem('tile-order-' + gid);
+  if (!raw) return;
+  try {
+    const ids = JSON.parse(raw);
+    ids.forEach(id => {
+      const el = grid.querySelector(`[data-tile-id="${id}"]`);
+      if (el) grid.appendChild(el);
+    });
+  } catch(_) {}
+}
+
+// Init all grids
+document.querySelectorAll('[data-grid-id]').forEach(grid => {
+  _restoreGrid(grid);
+  _initGrid(grid);
+});
+</script>
+{% include 'includes/footer.html' %}
+</body>
+</html>

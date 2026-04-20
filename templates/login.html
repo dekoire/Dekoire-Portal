@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Login – {{ header_title }}</title>
+<link rel="stylesheet" href="/static/style.css" />
+<style>
+.login-field .pw-wrap input { padding-right: 42px !important; }
+.login-field .pw-actions { right: 4px; }
+</style>
+</head>
+<body class="login-body">
+
+<div class="login-wrap">
+  <div class="login-card">
+
+    <div class="login-brand">
+      <img src="/assets/{{ login_logo }}" alt="Logo" class="login-logo" onerror="this.style.display='none'" />
+      <h1 class="login-title">{{ page_title }}</h1>
+    </div>
+
+    <p class="login-subtitle">{{ login_subtitle }}</p>
+
+    <div class="login-error" id="loginError" style="display:none;"></div>
+
+    <form class="login-form" id="loginForm" onsubmit="doLogin(event)">
+      <div class="login-field">
+        <label for="loginEmail">E-Mail</label>
+        <input type="email" id="loginEmail" placeholder="deine@email.com" autocomplete="email" required />
+      </div>
+      <div class="login-field">
+        <label for="loginPassword">Passwort</label>
+        <div class="pw-wrap">
+          <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" required />
+          <div class="pw-actions">
+            <button type="button" class="pw-btn" onclick="toggleLoginPw(this)" title="Anzeigen">
+              <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.7"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary login-btn" id="loginBtn">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Anmelden
+      </button>
+    </form>
+
+  </div>
+</div>
+
+<script>
+function toggleLoginPw(btn) {
+  const inp = document.getElementById('loginPassword');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.title = inp.type === 'password' ? 'Anzeigen' : 'Verbergen';
+  btn.style.color = inp.type === 'text' ? 'var(--btn)' : '';
+}
+
+async function doLogin(e) {
+  e.preventDefault();
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginError');
+  btn.disabled = true;
+  btn.textContent = 'Anmelden …';
+  err.style.display = 'none';
+  try {
+    const res  = await fetch('/auth/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        email:    document.getElementById('loginEmail').value,
+        password: document.getElementById('loginPassword').value,
+      }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      window.location.href = '/';
+    } else {
+      err.textContent = data.error || 'Login fehlgeschlagen.';
+      err.style.display = 'block';
+    }
+  } catch (_) {
+    err.textContent = 'Verbindungsfehler.';
+    err.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Anmelden';
+  }
+}
+</script>
+</body>
+</html>

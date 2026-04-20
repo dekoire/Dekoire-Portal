@@ -1,0 +1,2716 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Produkt bearbeiten – {{ header_title }}</title>
+<link rel="stylesheet" href="/static/style.css" />
+<style>
+/* reuse settings sidebar layout */
+.settings-layout {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+  max-width: 90%;
+  width: 100%;
+  margin: 0 auto;
+  padding: 28px 24px 40px;
+  box-sizing: border-box;
+  flex: 1;
+}
+.settings-sidebar {
+  width: 210px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 24px;
+}
+.settings-sidebar-title {
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 12px 8px;
+}
+.sidebar-nav { display: flex; flex-direction: column; gap: 2px; }
+.sidebar-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 12px; border-radius: 8px;
+  font-size: .85rem; font-weight: 500; color: var(--muted);
+  cursor: pointer; background: none; border: none;
+  text-align: left; width: 100%;
+  transition: color .15s, background .15s;
+}
+.sidebar-item:hover { color: var(--text); background: var(--c-100); }
+.sidebar-item.active { color: var(--btn); background: #EEF2FF; font-weight: 600; }
+.sidebar-item svg { flex-shrink: 0; opacity: .7; }
+.sidebar-item.active svg { opacity: 1; }
+
+/* Sidebar image preview */
+.sidebar-preview {
+  margin-top: 20px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--c-100);
+}
+.sidebar-preview img {
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  background: var(--c-50);
+  display: block;
+}
+.sidebar-preview-empty {
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-300);
+}
+
+.settings-content { flex: 1; min-width: 0; }
+.settings-pane { display: none; flex-direction: column; gap: 20px; }
+.settings-pane.active { display: flex; }
+
+/* Field with inline regen button */
+.field-with-regen {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field-with-regen label {
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.field-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.field-input-row input,
+.field-input-row textarea {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: .875rem;
+  background: var(--card);
+  color: var(--text);
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color .15s;
+}
+.field-input-row input:focus,
+.field-input-row textarea:focus {
+  outline: none;
+  border-color: var(--btn);
+}
+.field-input-row input[readonly],
+.field-input-row input:disabled {
+  background: var(--c-50);
+  color: var(--muted);
+  cursor: default;
+}
+.btn-regen-field {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.btn-regen-field:hover { color: var(--btn); border-color: var(--btn); background: #EEF2FF; }
+.btn-regen-field.spinning svg { animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Section regen bar */
+.regen-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+.btn-regen-section {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--btn);
+  background: #EEF2FF;
+  color: var(--btn);
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-regen-section:hover { background: #dce5ff; }
+.btn-regen-section.loading { opacity: .6; pointer-events: none; }
+
+/* SM platform headers */
+.sm-section-label {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Toast */
+.edit-toast {
+  position: fixed;
+  bottom: 72px;
+  right: 28px;
+  z-index: 999;
+  padding: 11px 18px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: .875rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  display: none;
+}
+.edit-toast.ok  { background: #D1FAE5; color: #065F46; border: 1px solid #6EE7B7; }
+.edit-toast.err { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
+
+/* ── Produktfotos ── */
+.pf-upload-zone {
+  position: relative;
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.pf-upload-zone:hover { border-color: var(--btn); background: #EEF2FF; }
+.pf-upload-zone.pf-drag { border-color: var(--btn); background: #EEF2FF; }
+
+.pf-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.pf-card-inner {
+  display: flex;
+  gap: 0;
+}
+.pf-thumb {
+  width: 180px;
+  flex-shrink: 0;
+  background: var(--c-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--border);
+  min-height: 160px;
+  overflow: hidden;
+}
+.pf-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pf-analyzing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: .78rem;
+}
+.pf-fields {
+  flex: 1;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pf-field-label {
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--muted);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pf-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--c-50);
+  font-size: .7rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.pf-copy-btn:hover { background: var(--btn); color: #fff; border-color: var(--btn); }
+.pf-copy-btn.copied { background: #D1FAE5; color: #065F46; border-color: #6EE7B7; }
+.pf-input {
+  width: 100%;
+  padding: 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: .85rem;
+  background: var(--card);
+  color: var(--text);
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color .15s;
+}
+.pf-input:focus { outline: none; border-color: var(--btn); }
+.pf-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--c-50);
+}
+.pf-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 7px;
+  border: none;
+  background: var(--btn);
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+.pf-save-btn:hover { background: var(--btn-h); }
+.pf-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 7px;
+  border: 1px solid #FECACA;
+  background: #FEF2F2;
+  color: #DC2626;
+  font-size: .82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+.pf-delete-btn:hover { background: #FEE2E2; }
+
+/* ── Social Posting UI ── */
+.sp-upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  min-height: 90px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  padding: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.sp-upload-zone:hover { border-color: var(--btn); background: #EEF2FF; }
+.sp-upload-hint { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: .83rem; }
+.sp-preview-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.sp-preview-thumb {
+  width: 72px; height: 72px;
+  border-radius: 8px; object-fit: cover;
+  border: 2px solid var(--border);
+  position: relative;
+}
+.sp-timing-row {
+  display: flex; align-items: center; gap: 16px;
+  margin-top: 12px; flex-wrap: wrap;
+}
+.sp-timing-opt { display: flex; align-items: center; gap: 6px; font-size: .85rem; cursor: pointer; }
+.sp-datetime {
+  padding: 7px 10px; border: 1px solid var(--border); border-radius: 7px;
+  font-size: .83rem; background: var(--card); color: var(--text);
+}
+.sp-history-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 18px; border-bottom: 1px solid var(--border);
+  font-size: .82rem;
+}
+.sp-history-row:last-child { border-bottom: none; }
+.sp-badge {
+  padding: 2px 9px; border-radius: 20px; font-size: .72rem; font-weight: 700;
+  white-space: nowrap;
+}
+.sp-badge.sent      { background: #D1FAE5; color: #065F46; }
+.sp-badge.scheduled { background: #FEF3C7; color: #92400E; }
+.sp-badge.failed    { background: #FEE2E2; color: #991B1B; }
+.sp-badge.pending   { background: var(--c-100); color: var(--muted); }
+/* required / optional badges */
+.req { color: #DC2626; font-weight: 700; margin-left: 2px; }
+.opt-badge {
+  color: var(--muted); font-size: .67rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .3px;
+  background: var(--c-100); border-radius: 3px;
+  padding: 1px 5px; vertical-align: middle; margin-left: 4px;
+}
+/* section divider inside card */
+.sp-post-divider {
+  display: flex; align-items: center; gap: 10px;
+  margin: 22px 0 14px;
+  color: var(--muted); font-size: .72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.sp-post-divider::before,
+.sp-post-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.sp-post-divider svg { flex-shrink: 0; }
+/* post action footer inside card */
+.sp-post-footer {
+  display: flex; align-items: center; gap: 12px;
+  margin-top: 14px; flex-wrap: wrap;
+}
+
+/* ── Shop card footer (generate + publish) ── */
+.shop-card-footer {
+  display: flex; align-items: center; gap: 10px;
+  padding-top: 14px; margin-top: 16px;
+  border-top: 1px solid var(--border); flex-wrap: wrap;
+}
+.shop-card-footer .btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 16px; font-size: .82rem;
+}
+
+/* ── Publish result panel (shown below footer after API call) ── */
+.shop-publish-result {
+  display: none;
+  margin-top: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  font-size: .82rem;
+}
+.shop-publish-result.ok  { border-color: #6EE7B7; background: #F0FDF4; }
+.shop-publish-result.err { border-color: #FCA5A5; background: #FEF2F2; }
+.shop-publish-result.loading { border-color: var(--border); background: var(--c-50); }
+.spr-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+}
+.spr-icon { font-size: 1rem; flex-shrink: 0; }
+.spr-text { flex: 1; font-weight: 500; line-height: 1.4; }
+.shop-publish-result.ok  .spr-text { color: #065F46; }
+.shop-publish-result.err .spr-text { color: #991B1B; }
+.shop-publish-result.loading .spr-text { color: var(--muted); }
+.spr-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); padding: 2px 6px; border-radius: 4px;
+  font-size: .8rem; flex-shrink: 0;
+  transition: color .15s, background .15s;
+}
+.spr-close:hover { color: var(--text); background: rgba(0,0,0,.06); }
+
+/* ── Pinterest Board Combobox ── */
+.pin-board-combo { position: relative; width: 100%; }
+.pin-board-input-wrap { display: flex; align-items: center; gap: 4px; }
+.pin-board-dropdown {
+  position: absolute; left: 0; right: 0; top: calc(100% - 18px);
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.12);
+  max-height: 240px; overflow-y: auto; z-index: 50;
+}
+.pin-board-option {
+  display: flex; flex-direction: column;
+  padding: 9px 14px; cursor: pointer; font-size: .85rem;
+  border-bottom: 1px solid var(--border); transition: background .1s;
+}
+.pin-board-option:last-child { border-bottom: none; }
+.pin-board-option:hover, .pin-board-option.active { background: var(--c-50); }
+.pin-board-option .board-name { font-weight: 500; color: var(--text); }
+.pin-board-option .board-id   { font-size: .72rem; color: var(--muted); margin-top: 1px; }
+.pin-board-empty {
+  padding: 14px; text-align: center; color: var(--muted); font-size: .82rem;
+}
+#pinBoardRefreshBtn.spinning svg {
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Social media post preview layout ── */
+.sm-post-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+.sm-post-fields { flex: 1; min-width: 0; }
+.sm-preview-col {
+  width: 240px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 96px;
+}
+.sm-preview-label {
+  font-size: .67rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+/* ── Pinterest pin mock ── */
+.pin-mock {
+  background: var(--card);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,.13);
+  font-family: inherit;
+  cursor: pointer;
+  transition: box-shadow .15s;
+}
+.pin-mock:hover { box-shadow: 0 4px 24px rgba(0,0,0,.18); }
+.pin-mock-img-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 2/3;
+  background: var(--c-100);
+  overflow: hidden;
+}
+.pin-mock-img-wrap img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.pin-mock-img-empty {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--c-300);
+}
+.pin-mock-save {
+  position: absolute; top: 10px; right: 10px;
+  background: #E60023; color: #fff;
+  font-size: .75rem; font-weight: 700;
+  padding: 6px 12px; border-radius: 20px;
+  opacity: 0; transition: opacity .15s;
+}
+.pin-mock:hover .pin-mock-save { opacity: 1; }
+.pin-mock-body { padding: 10px 12px 12px; }
+.pin-mock-board {
+  display: flex; align-items: center; gap: 5px;
+  font-size: .7rem; font-weight: 600; color: var(--muted);
+  margin-bottom: 5px;
+}
+.pin-mock-board svg { flex-shrink: 0; }
+.pin-mock-title {
+  font-size: .82rem; font-weight: 700; color: var(--text);
+  line-height: 1.3; margin-bottom: 4px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.pin-mock-desc {
+  font-size: .73rem; color: var(--muted); line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  margin-bottom: 6px;
+}
+.pin-mock-link {
+  font-size: .68rem; color: var(--muted);
+  display: flex; align-items: center; gap: 4px;
+}
+
+/* ── Instagram post mock ── */
+.ig-mock {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: inherit;
+}
+.ig-mock-header {
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 12px;
+}
+.ig-mock-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: .78rem; font-weight: 700; flex-shrink: 0;
+}
+.ig-mock-meta { flex: 1; min-width: 0; }
+.ig-mock-username { font-size: .78rem; font-weight: 700; color: var(--text); }
+.ig-mock-location { font-size: .67rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ig-mock-more { font-size: 1rem; color: var(--muted); font-weight: 700; letter-spacing: 1px; }
+.ig-mock-img-wrap {
+  width: 100%;
+  aspect-ratio: 1/1;
+  background: var(--c-100);
+  overflow: hidden;
+}
+.ig-mock-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ig-mock-img-empty {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--c-300);
+}
+.ig-mock-actions {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px 4px;
+}
+.ig-mock-actions svg { color: var(--text); }
+.ig-mock-actions .ig-save { margin-left: auto; }
+.ig-mock-caption {
+  padding: 2px 12px 4px;
+  font-size: .73rem; line-height: 1.45; color: var(--text);
+}
+.ig-mock-caption strong { font-weight: 700; margin-right: 4px; }
+.ig-mock-hashtags {
+  padding: 0 12px 10px;
+  font-size: .71rem; color: #00376b; line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* ── Action panel – minimalist sidebar style ── */
+.settings-layout .action-panel-title {
+  background: none;
+  padding: 0 12px 8px;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--muted);
+  gap: 7px;
+}
+.settings-layout .action-panel .action-btn-wrap {
+  background: none;
+  padding: 0;
+  gap: 2px;
+}
+.settings-layout .action-panel .action-btn {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: .85rem;
+  font-weight: 500;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: none;
+  transition: color .15s, background .15s;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.settings-layout .action-panel .action-btn:hover {
+  color: var(--text);
+  background: var(--c-100);
+}
+.settings-layout .action-panel .btn-primary.action-btn {
+  color: var(--btn);
+  background: #EEF2FF;
+  font-weight: 600;
+}
+.settings-layout .action-panel .btn-primary.action-btn:hover:not(:disabled) {
+  background: #dce5ff;
+  color: var(--btn-h);
+}
+.settings-layout .action-panel .action-btn-danger {
+  background: none;
+  border: none;
+  color: var(--error);
+}
+.settings-layout .action-panel .action-btn-danger:hover {
+  background: #FEF2F2;
+  color: #B91C1C;
+}
+.settings-layout .action-panel .action-btn-secondary {
+  background: none;
+  border: none;
+  color: var(--muted);
+}
+.settings-layout .action-panel .action-btn-secondary:hover {
+  color: var(--text);
+  background: var(--c-100);
+}
+</style>
+</head>
+<body>
+
+{% set header_back_href = '/products' %}
+{% set header_back_label = 'Alle Produkte' %}
+{% include 'includes/header.html' %}
+
+<div id="editToast" class="edit-toast"></div>
+
+<!-- Result Banner -->
+<div id="resultBanner" class="result-banner">
+  <div class="result-banner-header">
+    <span class="result-banner-status"></span>
+    <span class="result-banner-title"></span>
+    <button class="result-banner-close" onclick="closeResultBanner()">✕</button>
+  </div>
+  <div class="result-banner-steps"></div>
+  <div class="result-banner-changes"></div>
+</div>
+
+<div class="settings-layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="settings-sidebar">
+    <div class="settings-sidebar-title">Abschnitte</div>
+    <nav class="sidebar-nav">
+      <button class="sidebar-item active" onclick="showPane('produkt',this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Produktbeschreibung
+      </button>
+      <button class="sidebar-item" onclick="showPane('social',this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><circle cx="18" cy="19" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Social Media
+      </button>
+      <button class="sidebar-item" onclick="showPane('meta',this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M9 9h6M9 12h6M9 15h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Meta-Daten
+      </button>
+      <button class="sidebar-item" onclick="showPane('shops',this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M16 10a4 4 0 0 1-8 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Shops
+      </button>
+      <button class="sidebar-item" onclick="showPane('fotos',this);loadPhotos()">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Produktfotos
+      </button>
+    </nav>
+
+    {% if row.image_url %}
+    <div class="sidebar-preview">
+      <img src="{{ row.image_url }}" alt="{{ row.titel }}" />
+    </div>
+    {% else %}
+    <div class="sidebar-preview">
+      <div class="sidebar-preview-empty">
+        <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+    {% endif %}
+  </aside>
+
+  <!-- ── Content ── -->
+  <div class="settings-content">
+
+    {% if page_title %}
+    <div class="page-hero">
+      <h2 class="page-hero-title">{{ page_title }}</h2>
+      {% if page_subtitle %}<p class="page-hero-sub">{{ page_subtitle }}</p>
+      {% elif row.titel %}<p class="page-hero-sub">{{ row.titel }}</p>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ══ Produktbeschreibung ══ -->
+    <div class="settings-pane active" id="pane-produkt">
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Identifikatoren
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="field-with-regen">
+              <label>Dekoire ID</label>
+              <div class="field-input-row">
+                <input type="text" id="f-dekoire_id" value="{{ row.dekoire_id or '' }}" readonly />
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>MJ-ID</label>
+              <div class="field-input-row">
+                <input type="text" id="f-mj_id" value="{{ row.mj_id or '' }}" />
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Dateiname (Original)</label>
+              <div class="field-input-row">
+                <input type="text" id="f-dateiname" value="{{ row.dateiname or '' }}" readonly />
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Neuer Dateiname</label>
+              <div class="field-input-row">
+                <input type="text" id="f-neuer_dateiname" value="{{ row.neuer_dateiname or '' }}" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.6"/></svg>
+          KI-generierte Felder
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+
+            <div class="field-with-regen settings-field-full">
+              <label>Titel</label>
+              <div class="field-input-row">
+                <input type="text" id="f-titel" value="{{ row.titel or '' }}" />
+                <button class="btn-regen-field" onclick="regenField('titel')" title="Mit KI neu generieren">
+                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="field-with-regen settings-field-full">
+              <label>Beschreibung</label>
+              <div class="field-input-row">
+                <textarea id="f-beschreibung" rows="4">{{ row.beschreibung or '' }}</textarea>
+                <button class="btn-regen-field" onclick="regenField('beschreibung')" title="Mit KI neu generieren">
+                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="field-with-regen settings-field-full">
+              <label>Tags</label>
+              <div class="field-input-row">
+                <input type="text" id="f-tags" value="{{ row.tags or '' }}" placeholder="tag1, tag2, tag3" />
+                <button class="btn-regen-field" onclick="regenField('tags')" title="Mit KI neu generieren">
+                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="field-with-regen">
+              <label>Dominante Farben</label>
+              <div class="field-input-row">
+                <input type="text" id="f-dominante_farben" value="{{ row.dominante_farben or '' }}" />
+                <button class="btn-regen-field" onclick="regenField('dominante_farben')" title="Mit KI neu generieren">
+                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="field-with-regen">
+              <label>Kunstart</label>
+              <div class="field-input-row">
+                <input type="text" id="f-kunstart" value="{{ row.kunstart or '' }}" />
+                <button class="btn-regen-field" onclick="regenField('kunstart')" title="Mit KI neu generieren">
+                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="field-with-regen">
+              <label>Epoche</label>
+              <div class="field-input-row">
+                <input type="text" id="f-epoche" value="{{ row.epoche or '' }}" />
+                <button class="btn-regen-field" onclick="regenField('epoche')" title="Mit KI neu generieren">
+                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pane-produkt -->
+
+    <!-- ══ Social Media ══ -->
+    <div class="settings-pane" id="pane-social">
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M12 7c-2.76 0-5 2.24-5 5 0 2.12 1.31 3.94 3.17 4.69-.04-.38-.08-.98.02-1.4.09-.38.6-2.54.6-2.54s-.15-.31-.15-.76c0-.71.41-1.24.92-1.24.44 0 .65.33.65.72 0 .44-.28 1.1-.43 1.71-.12.51.25.93.75.93.9 0 1.59-.95 1.59-2.32 0-1.21-.87-2.06-2.12-2.06-1.44 0-2.29 1.08-2.29 2.2 0 .44.17.9.38 1.16.04.05.05.1.03.15l-.14.58c-.02.09-.08.11-.17.07-.63-.3-1.02-1.22-1.02-1.97 0-1.6 1.16-3.07 3.34-3.07 1.75 0 3.11 1.25 3.11 2.91 0 1.74-1.09 3.13-2.61 3.13-.51 0-.99-.26-1.15-.58l-.31 1.18c-.11.44-.42.99-.63 1.32.47.15.98.22 1.49.22 2.76 0 5-2.24 5-5s-2.24-5-5-5z" fill="currentColor"/></svg>
+          Pinterest
+          <button class="btn-icon-sm" style="margin-left:auto;width:auto;padding:4px 10px;border-radius:4px;font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:5px;" onclick="regenSocial()" title="Pinterest Texte generieren">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Texte generieren
+          </button>
+        </div>
+        <div class="settings-card-body">
+          <div class="sm-post-layout">
+          <div class="sm-post-fields">
+          <!-- ── Produktdaten ── -->
+          <div class="settings-grid">
+            <div class="field-with-regen settings-field-full">
+              <label>Board</label>
+              <!-- Real-time Pinterest board combobox -->
+              <div class="pin-board-combo" id="pinBoardCombo">
+                <div class="pin-board-input-wrap">
+                  <input type="text" id="f-pin_board" autocomplete="off"
+                    placeholder="Board auswählen …"
+                    value="{{ row.pin_board or '' }}"
+                    oninput="pinBoardFilter();updatePinPreview()"
+                    onfocus="pinBoardOpen()"
+                    onblur="setTimeout(pinBoardClose, 200)"
+                    style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--card);width:100%;box-sizing:border-box;" />
+                  <button type="button" id="pinBoardRefreshBtn" class="btn-icon-sm" title="Boards neu laden" onclick="pinBoardLoad(true)" style="margin-left:6px;flex-shrink:0;">
+                    <svg id="pinBoardRefreshIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  </button>
+                </div>
+                <!-- Hidden dropdown -->
+                <div class="pin-board-dropdown" id="pinBoardDropdown" style="display:none;"></div>
+                <!-- Status hint -->
+                <span class="settings-hint" id="pinBoardHint">Boards werden beim Öffnen automatisch geladen</span>
+                <!-- Hidden field carrying the numeric board ID for spPost() -->
+                <input type="hidden" id="pin-board-id" value="{{ row.pin_board_id or '' }}" />
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Ziel-URL</label>
+              <div class="field-input-row">
+                <input type="text" id="f-pin_ziel_url" value="{{ row.pin_ziel_url or '' }}" oninput="updatePinPreview()" />
+              </div>
+            </div>
+            <div class="field-with-regen settings-field-full">
+              <label>Titel</label>
+              <div class="field-input-row">
+                <input type="text" id="f-pin_titel" value="{{ row.pin_titel or '' }}" oninput="updatePinPreview()" />
+              </div>
+            </div>
+            <div class="field-with-regen settings-field-full">
+              <label>Beschreibung</label>
+              <div class="field-input-row">
+                <textarea id="f-pin_beschreibung" rows="4" oninput="updatePinPreview()">{{ row.pin_beschreibung or '' }}</textarea>
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Alt-Text</label>
+              <div class="field-input-row">
+                <input type="text" id="f-pin_alt_text" value="{{ row.pin_alt_text or '' }}" />
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Bild-URL (Media Source)</label>
+              <div class="field-input-row">
+                <input type="text" id="f-pin_media_url" value="{{ row.pin_media_url or '' }}"
+                  oninput="updatePinPreview()" />
+              </div>
+            </div>
+          </div>
+          </div><!-- /sm-post-fields -->
+
+          <!-- ── Pinterest pin preview ── -->
+          <div class="sm-preview-col">
+            <div class="sm-preview-label">Vorschau · Pinterest Pin</div>
+            <div class="pin-mock">
+              <div class="pin-mock-img-wrap">
+                <img id="pin-prev-img" src="{{ row.pin_media_url or row.image_url or '' }}"
+                  style="{{ '' if (row.pin_media_url or row.image_url) else 'display:none' }}" alt="" />
+                <div class="pin-mock-img-empty" id="pin-prev-empty"
+                  style="{{ 'display:none' if (row.pin_media_url or row.image_url) else '' }}">
+                  <svg width="36" height="36" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.4"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                </div>
+                <div class="pin-mock-save">Merken</div>
+              </div>
+              <div class="pin-mock-body">
+                <div class="pin-mock-board">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="#E60023"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+                  <span id="pin-prev-board">{{ row.pin_board or 'Board' }}</span>
+                </div>
+                <div class="pin-mock-title" id="pin-prev-title">{{ row.pin_titel or 'Titel erscheint hier' }}</div>
+                <div class="pin-mock-desc" id="pin-prev-desc">{{ row.pin_beschreibung or 'Beschreibung erscheint hier…' }}</div>
+                <div class="pin-mock-link">
+                  <svg width="10" height="10" fill="none" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                  <span id="pin-prev-link">{{ (row.pin_ziel_url or '').replace('https://','').replace('http://','').split('/')[0] or 'link.com' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          </div><!-- /sm-post-layout -->
+
+          <!-- ── Pin abschicken ── -->
+          <div class="sp-post-divider">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Pin abschicken
+          </div>
+
+          <div class="settings-grid">
+            <!-- pin-board-id is now a hidden field inside the Board combobox above -->
+            <div class="settings-field">
+              <label>Board Section ID <span class="opt-badge">optional</span></label>
+              <input type="text" id="pin-board-section" class="pf-input" placeholder="z.B. 9876543210987654" />
+              <span class="settings-hint">Unterbereich des Boards (falls vorhanden)</span>
+            </div>
+            <div class="settings-field settings-field-full">
+              <label>
+                Notiz <span class="opt-badge">optional</span>
+                <span class="settings-hint" style="font-size:.7rem;margin-left:4px;">nur für dich sichtbar · max. 500 Zeichen</span>
+              </label>
+              <textarea id="pin-note" rows="2" class="pf-input" placeholder="Private Notiz zum Pin …" maxlength="500"></textarea>
+            </div>
+            <div class="settings-field">
+              <label>Dominante Farbe <span class="opt-badge">optional</span></label>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input type="color" id="pin-color-picker" value="#ffffff"
+                  style="height:36px;width:48px;border:1px solid var(--border);border-radius:6px;padding:2px;cursor:pointer;"
+                  oninput="document.getElementById('pin-dominant-color').value=this.value" />
+                <input type="text" id="pin-dominant-color" class="pf-input" placeholder="#FFFFFF" style="flex:1;"
+                  oninput="if(/^#[0-9A-Fa-f]{6}$/.test(this.value))document.getElementById('pin-color-picker').value=this.value" />
+              </div>
+              <span class="settings-hint">Hex-Farbe (#RRGGBB) für Pinterest-Farbfilter</span>
+            </div>
+          </div>
+
+          <!-- Upload Zone -->
+          <div class="sp-upload-zone" id="pinUploadZone" style="margin-top:14px;" onclick="document.getElementById('pinFileInput').click()">
+            <input type="file" id="pinFileInput" accept=".jpg,.jpeg,.png,.webp" multiple style="display:none" onchange="spPreview(this,'pin')"/>
+            <div id="pinPreviewRow" class="sp-preview-row"></div>
+            <div id="pinUploadHint" class="sp-upload-hint">
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>1–4 Fotos hochladen <span class="req">*</span> · Mehrere Fotos → separate Pins</span>
+            </div>
+          </div>
+
+          <div class="sp-timing-row">
+            <label class="sp-timing-opt">
+              <input type="radio" name="pin-timing" value="now" checked onchange="spToggleTiming('pin',this.value)"/> Jetzt posten
+            </label>
+            <label class="sp-timing-opt">
+              <input type="radio" name="pin-timing" value="schedule" onchange="spToggleTiming('pin',this.value)"/> Planen
+            </label>
+            <input type="datetime-local" id="pin-scheduled-at" class="sp-datetime" style="display:none" />
+          </div>
+
+          <div class="sp-post-footer">
+            <button class="btn btn-primary" style="background:#E60023;border-color:#E60023;padding:10px 22px;" onclick="spPost('pinterest')">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Pinterest posten
+            </button>
+            <div id="pin-post-status" style="font-size:.82rem;display:none;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
+          Instagram
+          <button class="btn-icon-sm" style="margin-left:auto;width:auto;padding:4px 10px;border-radius:4px;font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:5px;" onclick="regenSocial()" title="Instagram Texte generieren">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Texte generieren
+          </button>
+        </div>
+        <div class="settings-card-body">
+          <div class="sm-post-layout">
+          <div class="sm-post-fields">
+          <!-- ── Produktdaten ── -->
+          <div class="settings-grid">
+            <div class="field-with-regen">
+              <label>Standort</label>
+              <div class="field-input-row">
+                <select id="f-ig_location" onchange="updateIgPreview()" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--card);">
+                  {% for loc in instagram_locations %}
+                    <option value="{{ loc }}" {% if row.ig_location == loc %}selected{% endif %}>{{ loc }}</option>
+                  {% endfor %}
+                  {% if not instagram_locations %}
+                    <option value="{{ row.ig_location or '' }}">{{ row.ig_location or '–' }}</option>
+                  {% endif %}
+                </select>
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Titel</label>
+              <div class="field-input-row">
+                <input type="text" id="f-ig_title" value="{{ row.ig_title or '' }}" oninput="updateIgPreview()" />
+              </div>
+            </div>
+            <div class="field-with-regen settings-field-full">
+              <label>Description</label>
+              <div class="field-input-row">
+                <textarea id="f-ig_description" rows="4" oninput="updateIgPreview()">{{ row.ig_description or '' }}</textarea>
+              </div>
+            </div>
+            <div class="field-with-regen settings-field-full">
+              <label>Tags / Hashtags</label>
+              <div class="field-input-row">
+                <input type="text" id="f-ig_tags" value="{{ row.ig_tags or '' }}" oninput="updateIgPreview()" />
+              </div>
+            </div>
+          </div>
+          </div><!-- /sm-post-fields -->
+
+          <!-- ── Instagram post preview ── -->
+          <div class="sm-preview-col">
+            <div class="sm-preview-label">Vorschau · Instagram Post</div>
+            <div class="ig-mock">
+              <div class="ig-mock-header">
+                <div class="ig-mock-avatar">D</div>
+                <div class="ig-mock-meta">
+                  <div class="ig-mock-username">dekoire</div>
+                  <div class="ig-mock-location" id="ig-prev-location">{{ row.ig_location or '' }}</div>
+                </div>
+                <div class="ig-mock-more">···</div>
+              </div>
+              <div class="ig-mock-img-wrap">
+                <img id="ig-prev-img" src="{{ row.image_url or '' }}"
+                  style="{{ '' if row.image_url else 'display:none' }}" alt="" />
+                <div class="ig-mock-img-empty" id="ig-prev-empty"
+                  style="{{ 'display:none' if row.image_url else '' }}">
+                  <svg width="36" height="36" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.4"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                </div>
+              </div>
+              <div class="ig-mock-actions">
+                <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><polygon points="22 2 15 22 11 13 2 9 22 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                <svg width="22" height="22" fill="none" viewBox="0 0 24 24" class="ig-save"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="ig-mock-caption">
+                <strong>dekoire</strong><span id="ig-prev-caption">{{ row.ig_description or 'Caption erscheint hier…' }}</span>
+              </div>
+              <div class="ig-mock-hashtags" id="ig-prev-hashtags">{{ row.ig_tags or '' }}</div>
+            </div>
+          </div>
+          </div><!-- /sm-post-layout -->
+
+          <!-- ── Post abschicken ── -->
+          <div class="sp-post-divider">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Post abschicken
+          </div>
+
+          <div class="settings-grid">
+            <div class="settings-field settings-field-full">
+              <label>
+                Caption <span class="req">*</span>
+                <span class="settings-hint" style="font-size:.7rem;margin-left:4px;">max. 2.200 Zeichen · wird aus Description vorausgefüllt</span>
+              </label>
+              <textarea id="ig-caption" rows="4" class="pf-input" placeholder="Caption für Instagram …" maxlength="2200" oninput="updateIgPreview()">{{ row.ig_description or '' }}</textarea>
+            </div>
+            <div class="settings-field settings-field-full">
+              <label>
+                Hashtags <span class="opt-badge">optional</span>
+                <span class="settings-hint" style="font-size:.7rem;margin-left:4px;">werden automatisch an Caption angehängt</span>
+              </label>
+              <input type="text" id="ig-hashtags" class="pf-input" placeholder="#kunst #art #design …" value="{{ row.ig_tags or '' }}" oninput="updateIgPreview()" />
+            </div>
+            <div class="settings-field">
+              <label>Location ID <span class="opt-badge">optional</span></label>
+              <input type="text" id="ig-location-id" class="pf-input" placeholder="z.B. 213385402" />
+              <span class="settings-hint">Facebook Location ID · findbar via Graph API /search?type=adlocation</span>
+            </div>
+            <div class="settings-field">
+              <label>User Tags <span class="opt-badge">optional</span></label>
+              <input type="text" id="ig-user-tags" class="pf-input" placeholder="@username1, @username2" />
+              <span class="settings-hint">Kommagetrennte Instagram-Nutzernamen (ohne @)</span>
+            </div>
+          </div>
+
+          <!-- Upload Zone -->
+          <div class="sp-upload-zone" id="igUploadZone" style="margin-top:14px;" onclick="document.getElementById('igFileInput').click()">
+            <input type="file" id="igFileInput" accept=".jpg,.jpeg,.png,.webp" multiple style="display:none" onchange="spPreview(this,'ig')"/>
+            <div id="igPreviewRow" class="sp-preview-row"></div>
+            <div id="igUploadHint" class="sp-upload-hint">
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>1–4 Fotos hochladen <span class="req">*</span> · Mehrere Fotos → Carousel-Post</span>
+            </div>
+          </div>
+
+          <div class="sp-timing-row">
+            <label class="sp-timing-opt">
+              <input type="radio" name="ig-timing" value="now" checked onchange="spToggleTiming('ig',this.value)"/> Jetzt posten
+            </label>
+            <label class="sp-timing-opt">
+              <input type="radio" name="ig-timing" value="schedule" onchange="spToggleTiming('ig',this.value)"/> Planen
+            </label>
+            <input type="datetime-local" id="ig-scheduled-at" class="sp-datetime" style="display:none" />
+          </div>
+
+          <div class="sp-post-footer">
+            <button class="btn btn-primary" style="padding:10px 22px;" onclick="spPost('instagram')">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Instagram posten
+            </button>
+            <div id="ig-post-status" style="font-size:.82rem;display:none;"></div>
+          </div>
+        </div>
+      </div>
+
+
+
+      <!-- ══ Post-Verlauf ══ -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" stroke="currentColor" stroke-width="1.6"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Post-Verlauf
+          <button onclick="loadSocialHistory()" style="margin-left:auto;font-size:.72rem;padding:3px 10px;border-radius:5px;border:1px solid var(--border);background:var(--c-50);cursor:pointer;font-weight:600;">Aktualisieren</button>
+        </div>
+        <div class="settings-card-body" style="padding:0;">
+          <div id="socialHistoryTable">
+            <div style="padding:20px;text-align:center;color:var(--muted);font-size:.83rem;">Noch keine Posts vorhanden.</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pane-social -->
+
+    <!-- ══ Meta-Daten ══ -->
+    <div class="settings-pane" id="pane-meta">
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M9 9h6M9 12h6M9 15h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Bilddaten
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="field-with-regen">
+              <label>Ausrichtung</label>
+              <div class="field-input-row"><input type="text" value="{{ row.ausrichtung or '–' }}" readonly /></div>
+            </div>
+            <div class="field-with-regen">
+              <label>Seitenverhältnis</label>
+              <div class="field-input-row"><input type="text" value="{{ row.seitenverhaeltnis or '–' }}" readonly /></div>
+            </div>
+            <div class="field-with-regen">
+              <label>Breite (px)</label>
+              <div class="field-input-row"><input type="text" value="{{ row.breite_px or '–' }}" readonly /></div>
+            </div>
+            <div class="field-with-regen">
+              <label>Höhe (px)</label>
+              <div class="field-input-row"><input type="text" value="{{ row.hoehe_px or '–' }}" readonly /></div>
+            </div>
+            <div class="field-with-regen">
+              <label>Ist Fotografie</label>
+              <div class="field-input-row"><input type="text" value="{{ 'Ja' if row.ist_fotografie else 'Nein' }}" readonly /></div>
+            </div>
+            <div class="field-with-regen">
+              <label>Angelegt am</label>
+              <div class="field-input-row"><input type="text" value="{{ row.created_at[:19].replace('T',' ') if row.created_at else '–' }}" readonly /></div>
+            </div>
+            <div class="field-with-regen settings-field-full">
+              <label>Bild-URL (Supabase)</label>
+              <div class="field-input-row">
+                <input type="text" id="f-image_url" value="{{ row.image_url or '' }}" readonly />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pane-meta -->
+
+    <!-- ══ Shops ══ -->
+    <div class="settings-pane" id="pane-shops">
+
+      <!-- Etsy -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Etsy
+          <button id="btn-gen-pe-etsy" class="btn-icon-sm" style="margin-left:auto;width:auto;padding:4px 10px;border-radius:4px;font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:5px;" onclick="generateShopSectionEdit('etsy')" title="Etsy Texte generieren">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Texte generieren
+          </button>
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="field-with-regen settings-field-full">
+              <label>Titel <span class="req">*</span></label>
+              <div class="field-input-row">
+                <input type="text" id="f-etsy_title" maxlength="140" value="{{ row.etsy_title or '' }}" placeholder="SEO-optimierter Etsy-Titel …" />
+              </div>
+            </div>
+            <div class="field-with-regen settings-field-full">
+              <label>Beschreibung <span class="req">*</span></label>
+              <div class="field-input-row">
+                <textarea id="f-etsy_description" rows="6">{{ row.etsy_description or '' }}</textarea>
+              </div>
+            </div>
+            <div class="field-with-regen settings-field-full">
+              <label>Tags <span class="req">*</span> <span class="opt-badge">max 13, kommagetrennt</span></label>
+              <div class="field-input-row">
+                <input type="text" id="f-etsy_tags" value="{{ row.etsy_tags or '' }}" placeholder="art print, wall art, poster, …" />
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Materialien <span class="opt-badge">optional</span></label>
+              <div class="field-input-row">
+                <input type="text" id="f-etsy_materials" value="{{ row.etsy_materials or '' }}" placeholder="Fine Art Paper, Archival Ink" />
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Wer hat's gemacht <span class="req">*</span></label>
+              <div class="field-input-row">
+                <select id="f-etsy_who_made" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--card);">
+                  <option value="i_did" {% if row.etsy_who_made == 'i_did' or not row.etsy_who_made %}selected{% endif %}>Ich</option>
+                  <option value="collective" {% if row.etsy_who_made == 'collective' %}selected{% endif %}>Kollektiv</option>
+                  <option value="someone_else" {% if row.etsy_who_made == 'someone_else' %}selected{% endif %}>Jemand anderes</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Hergestellt wann <span class="req">*</span></label>
+              <div class="field-input-row">
+                <select id="f-etsy_when_made" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--card);">
+                  <option value="made_to_order" {% if row.etsy_when_made == 'made_to_order' %}selected{% endif %}>Made to Order</option>
+                  <option value="2020_2024" {% if row.etsy_when_made == '2020_2024' or not row.etsy_when_made %}selected{% endif %}>2020–2024</option>
+                  <option value="2010_2019" {% if row.etsy_when_made == '2010_2019' %}selected{% endif %}>2010–2019</option>
+                  <option value="2000_2009" {% if row.etsy_when_made == '2000_2009' %}selected{% endif %}>2000–2009</option>
+                  <option value="before_2000" {% if row.etsy_when_made == 'before_2000' %}selected{% endif %}>Vor 2000</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Anlass <span class="opt-badge">optional</span></label>
+              <div class="field-input-row">
+                <select id="f-etsy_occasion" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--card);">
+                  <option value="" {% if not row.etsy_occasion %}selected{% endif %}>– kein –</option>
+                  <option value="anniversary" {% if row.etsy_occasion == 'anniversary' %}selected{% endif %}>Jubiläum</option>
+                  <option value="birthday" {% if row.etsy_occasion == 'birthday' %}selected{% endif %}>Geburtstag</option>
+                  <option value="christmas" {% if row.etsy_occasion == 'christmas' %}selected{% endif %}>Weihnachten</option>
+                  <option value="easter" {% if row.etsy_occasion == 'easter' %}selected{% endif %}>Ostern</option>
+                  <option value="graduation" {% if row.etsy_occasion == 'graduation' %}selected{% endif %}>Abschluss</option>
+                  <option value="halloween" {% if row.etsy_occasion == 'halloween' %}selected{% endif %}>Halloween</option>
+                  <option value="housewarming" {% if row.etsy_occasion == 'housewarming' %}selected{% endif %}>Einzug</option>
+                  <option value="mothers_day" {% if row.etsy_occasion == 'mothers_day' %}selected{% endif %}>Muttertag</option>
+                  <option value="valentines" {% if row.etsy_occasion == 'valentines' %}selected{% endif %}>Valentinstag</option>
+                  <option value="wedding" {% if row.etsy_occasion == 'wedding' %}selected{% endif %}>Hochzeit</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Empfänger <span class="opt-badge">optional</span></label>
+              <div class="field-input-row">
+                <select id="f-etsy_recipient" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--card);">
+                  <option value="" {% if not row.etsy_recipient %}selected{% endif %}>– kein –</option>
+                  <option value="babies_and_toddlers" {% if row.etsy_recipient == 'babies_and_toddlers' %}selected{% endif %}>Babies &amp; Kleinkinder</option>
+                  <option value="children" {% if row.etsy_recipient == 'children' %}selected{% endif %}>Kinder</option>
+                  <option value="friends" {% if row.etsy_recipient == 'friends' %}selected{% endif %}>Freunde</option>
+                  <option value="grandparents" {% if row.etsy_recipient == 'grandparents' %}selected{% endif %}>Großeltern</option>
+                  <option value="men" {% if row.etsy_recipient == 'men' %}selected{% endif %}>Männer</option>
+                  <option value="mothers" {% if row.etsy_recipient == 'mothers' %}selected{% endif %}>Mütter</option>
+                  <option value="teens" {% if row.etsy_recipient == 'teens' %}selected{% endif %}>Teens</option>
+                  <option value="women" {% if row.etsy_recipient == 'women' %}selected{% endif %}>Frauen</option>
+                </select>
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Versandprofil <span class="opt-badge">optional</span></label>
+              <div class="field-input-row">
+                <select id="f-etsy_shipping_profile" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--card);">
+                  <option value="">– Standard –</option>
+                  {% for p in etsy_shipping_profiles %}<option value="{{ p.id }}" {% if row.etsy_shipping_profile == p.id|string %}selected{% endif %}>{{ p.title }}</option>{% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Preis (€) <span class="opt-badge">optional</span></label>
+              <div class="field-input-row">
+                <input type="number" id="f-etsy_price" step="0.01" min="0" value="{{ row.etsy_price or '' }}" placeholder="19.99" />
+              </div>
+            </div>
+          </div>
+          <div class="shop-card-footer">
+            <button class="btn btn-primary" style="background:#F1641E;border-color:#F1641E;" onclick="publishShop('etsy')">
+              <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Auf Etsy anlegen
+            </button>
+          </div>
+          <div id="etsy-publish-result" class="shop-publish-result">
+            <div class="spr-row">
+              <span class="spr-icon"></span>
+              <span class="spr-text"></span>
+              <button class="spr-close" onclick="document.getElementById('etsy-publish-result').style.display='none'">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shopify -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          Shopify
+          <button id="btn-gen-pe-shopify" class="btn-icon-sm" style="margin-left:auto;width:auto;padding:4px 10px;border-radius:4px;font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:5px;" onclick="generateShopSectionEdit('shopify')" title="Shopify Texte generieren">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Texte generieren
+          </button>
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="field-with-regen settings-field-full">
+              <label>Titel <span class="req">*</span></label>
+              <div class="field-input-row">
+                <input type="text" id="f-shopify_title" value="{{ row.shopify_title or '' }}" />
+              </div>
+            </div>
+            <div class="field-with-regen settings-field-full">
+              <label>HTML-Beschreibung <span class="req">*</span></label>
+              <div class="field-input-row">
+                <textarea id="f-shopify_body_html" rows="6">{{ row.shopify_body_html or '' }}</textarea>
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Vendor</label>
+              <div class="field-input-row">
+                <input type="text" id="f-shopify_vendor" value="{{ row.shopify_vendor or 'dekoire' }}" />
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Produkttyp <span class="opt-badge">optional</span></label>
+              <div class="field-input-row">
+                <select id="f-shopify_product_type" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--card);">
+                  <option value="">– wählen –</option>
+                  {% for t in shopify_product_types %}<option value="{{ t }}" {% if row.shopify_product_type == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+                  {% if not shopify_product_types %}
+                  <option value="Art Print" {% if row.shopify_product_type == 'Art Print' %}selected{% endif %}>Art Print</option>
+                  <option value="Poster" {% if row.shopify_product_type == 'Poster' %}selected{% endif %}>Poster</option>
+                  <option value="Wall Art" {% if row.shopify_product_type == 'Wall Art' %}selected{% endif %}>Wall Art</option>
+                  {% endif %}
+                </select>
+              </div>
+            </div>
+            <div class="field-with-regen settings-field-full">
+              <label>Tags <span class="opt-badge">optional</span></label>
+              <div class="field-input-row">
+                <input type="text" id="f-shopify_tags" value="{{ row.shopify_tags or '' }}" placeholder="art, print, wall decor, …" />
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>SKU <span class="opt-badge">optional</span></label>
+              <div class="field-input-row">
+                <input type="text" id="f-shopify_sku" value="{{ row.shopify_sku or '' }}" placeholder="DK-ART-001" />
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Preis (€) <span class="opt-badge">optional</span></label>
+              <div class="field-input-row">
+                <input type="number" id="f-shopify_price" step="0.01" min="0" value="{{ row.shopify_price or '' }}" />
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Vergleichspreis (€) <span class="opt-badge">optional</span></label>
+              <div class="field-input-row">
+                <input type="number" id="f-shopify_compare_price" step="0.01" min="0" value="{{ row.shopify_compare_price or '' }}" />
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Kollektion <span class="opt-badge">optional</span></label>
+              <div class="field-input-row">
+                <select id="f-shopify_collection" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--card);">
+                  <option value="">– wählen –</option>
+                  {% for c in shopify_collections %}<option value="{{ c }}" {% if row.shopify_collection == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Status</label>
+              <div class="field-input-row">
+                <select id="f-shopify_status" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--card);">
+                  <option value="draft" {% if row.shopify_status == 'draft' or not row.shopify_status %}selected{% endif %}>Entwurf</option>
+                  <option value="active" {% if row.shopify_status == 'active' %}selected{% endif %}>Aktiv</option>
+                  <option value="archived" {% if row.shopify_status == 'archived' %}selected{% endif %}>Archiviert</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="shop-card-footer">
+            <button class="btn btn-primary" style="background:#5C6AC4;border-color:#5C6AC4;" onclick="publishShop('shopify')">
+              <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Auf Shopify anlegen
+            </button>
+          </div>
+          <div id="shopify-publish-result" class="shop-publish-result">
+            <div class="spr-row">
+              <span class="spr-icon"></span>
+              <span class="spr-text"></span>
+              <button class="spr-close" onclick="document.getElementById('shopify-publish-result').style.display='none'">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Amazon -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          Amazon
+          <button id="btn-gen-pe-amazon" class="btn-icon-sm" style="margin-left:auto;width:auto;padding:4px 10px;border-radius:4px;font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:5px;" onclick="generateShopSectionEdit('amazon')" title="Amazon Texte generieren">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Texte generieren
+          </button>
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="field-with-regen settings-field-full">
+              <label>Titel <span class="req">*</span></label>
+              <div class="field-input-row">
+                <input type="text" id="f-amazon_title" maxlength="200" value="{{ row.amazon_title or '' }}" />
+              </div>
+            </div>
+            <div class="field-with-regen settings-field-full">
+              <label>Beschreibung <span class="req">*</span></label>
+              <div class="field-input-row">
+                <textarea id="f-amazon_description" rows="5">{{ row.amazon_description or '' }}</textarea>
+              </div>
+            </div>
+            <div class="field-with-regen settings-field-full">
+              <label>Bullet 1 <span class="req">*</span></label>
+              <div class="field-input-row"><input type="text" id="f-amazon_bullet_1" value="{{ row.amazon_bullet_1 or '' }}" /></div>
+            </div>
+            <div class="field-with-regen settings-field-full">
+              <label>Bullet 2</label>
+              <div class="field-input-row"><input type="text" id="f-amazon_bullet_2" value="{{ row.amazon_bullet_2 or '' }}" /></div>
+            </div>
+            <div class="field-with-regen settings-field-full">
+              <label>Bullet 3</label>
+              <div class="field-input-row"><input type="text" id="f-amazon_bullet_3" value="{{ row.amazon_bullet_3 or '' }}" /></div>
+            </div>
+            <div class="field-with-regen settings-field-full">
+              <label>Bullet 4</label>
+              <div class="field-input-row"><input type="text" id="f-amazon_bullet_4" value="{{ row.amazon_bullet_4 or '' }}" /></div>
+            </div>
+            <div class="field-with-regen settings-field-full">
+              <label>Bullet 5</label>
+              <div class="field-input-row"><input type="text" id="f-amazon_bullet_5" value="{{ row.amazon_bullet_5 or '' }}" /></div>
+            </div>
+            <div class="field-with-regen settings-field-full">
+              <label>Suchbegriffe <span class="opt-badge">optional</span> <span class="opt-badge">max 250 Zeichen</span></label>
+              <div class="field-input-row">
+                <input type="text" id="f-amazon_search_terms" maxlength="250" value="{{ row.amazon_search_terms or '' }}" />
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Marke</label>
+              <div class="field-input-row">
+                <input type="text" id="f-amazon_brand" value="{{ row.amazon_brand or 'dekoire' }}" />
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Preis (€) <span class="opt-badge">optional</span></label>
+              <div class="field-input-row">
+                <input type="number" id="f-amazon_price" step="0.01" min="0" value="{{ row.amazon_price or '' }}" />
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>SKU <span class="opt-badge">optional</span></label>
+              <div class="field-input-row">
+                <input type="text" id="f-amazon_sku" value="{{ row.amazon_sku or '' }}" />
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Kategorie <span class="opt-badge">optional</span></label>
+              <div class="field-input-row">
+                <select id="f-amazon_category" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--card);">
+                  <option value="">– wählen –</option>
+                  {% for cat in amazon_categories %}<option value="{{ cat }}" {% if row.amazon_category == cat %}selected{% endif %}>{{ cat }}</option>{% endfor %}
+                  {% if not amazon_categories %}
+                  <option value="Art & Photography" {% if row.amazon_category == 'Art & Photography' %}selected{% endif %}>Art &amp; Photography</option>
+                  <option value="Home & Kitchen" {% if row.amazon_category == 'Home & Kitchen' %}selected{% endif %}>Home &amp; Kitchen</option>
+                  {% endif %}
+                </select>
+              </div>
+            </div>
+            <div class="field-with-regen">
+              <label>Zustand</label>
+              <div class="field-input-row">
+                <select id="f-amazon_condition" style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--card);">
+                  <option value="new" {% if row.amazon_condition == 'new' or not row.amazon_condition %}selected{% endif %}>Neu</option>
+                  <option value="used_like_new" {% if row.amazon_condition == 'used_like_new' %}selected{% endif %}>Wie neu</option>
+                  <option value="used_very_good" {% if row.amazon_condition == 'used_very_good' %}selected{% endif %}>Sehr gut</option>
+                  <option value="used_good" {% if row.amazon_condition == 'used_good' %}selected{% endif %}>Gut</option>
+                  <option value="used_acceptable" {% if row.amazon_condition == 'used_acceptable' %}selected{% endif %}>Akzeptabel</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="shop-card-footer">
+            <button class="btn btn-primary" style="background:#232F3E;border-color:#232F3E;" onclick="publishShop('amazon')">
+              <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Bei Amazon anlegen
+            </button>
+          </div>
+          <div id="amazon-publish-result" class="shop-publish-result">
+            <div class="spr-row">
+              <span class="spr-icon"></span>
+              <span class="spr-text"></span>
+              <button class="spr-close" onclick="document.getElementById('amazon-publish-result').style.display='none'">✕</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /pane-shops -->
+
+    <!-- ══ Produktfotos ══ -->
+    <div class="settings-pane" id="pane-fotos">
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Fotos hochladen
+        </div>
+        <div class="settings-card-body">
+          <div class="pf-upload-zone" id="pfUploadZone">
+            <input type="file" id="pfFileInput" accept=".jpg,.jpeg,.png,.webp" multiple
+                   onchange="uploadPhotos(this.files)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;" />
+            <svg width="32" height="32" fill="none" viewBox="0 0 24 24" style="color:var(--muted);margin-bottom:8px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div style="font-weight:600;color:var(--text);font-size:.9rem;">Fotos ablegen oder klicken</div>
+            <div style="font-size:.78rem;color:var(--muted);margin-top:4px;">JPG, PNG, WEBP · Mehrere gleichzeitig möglich</div>
+            <div id="pfUploadStatus" style="margin-top:10px;font-size:.8rem;color:var(--btn);font-weight:600;display:none;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Photo grid -->
+      <div id="pfGrid" style="display:flex;flex-direction:column;gap:16px;"></div>
+
+      <!-- Empty state -->
+      <div id="pfEmpty" style="display:none;text-align:center;padding:40px 20px;color:var(--muted);">
+        <svg width="40" height="40" fill="none" viewBox="0 0 24 24" style="margin:0 auto 10px;display:block;"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.4"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" opacity=".4"/><path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" opacity=".4"/></svg>
+        <p style="font-size:.85rem;">Noch keine Produktfotos hochgeladen</p>
+      </div>
+
+    </div><!-- /pane-fotos -->
+
+  </div><!-- /settings-content -->
+
+  <!-- ── Right action panel ── -->
+  <aside class="action-panel">
+    <div class="action-panel-title">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Aktionen
+    </div>
+    <div class="action-btn-wrap">
+      <button id="actionSaveBtn" class="btn btn-primary action-btn" onclick="saveProduct()">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M17 21v-8H7v8M7 3v5h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        Speichern
+      </button>
+      <a href="https://app.lumalabs.ai/boards" target="_blank" rel="noopener noreferrer"
+         class="btn action-btn action-btn-secondary">
+        <img src="/assets/lumalabs-favicon.png" width="15" height="15" style="border-radius:3px;flex-shrink:0;" alt="Luma" />
+         Kampagne erstellen
+      </a>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:4px 0;">
+
+      <button class="btn action-btn action-btn-danger" onclick="openDeleteModal()">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Produkt löschen
+      </button>
+    </div>
+  </aside>
+
+</div><!-- /settings-layout -->
+
+<!-- ── Delete confirmation modal ── -->
+<div id="deleteModal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);backdrop-filter:blur(3px);align-items:center;justify-content:center;">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:32px 28px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.2);">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <span style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:#FEE2E2;flex-shrink:0;">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01" stroke="#DC2626" stroke-width="2" stroke-linecap="round"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="#DC2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <div>
+        <div style="font-weight:700;font-size:1rem;color:var(--text);">Produkt wirklich löschen?</div>
+        <div style="font-size:.82rem;color:var(--muted);margin-top:3px;">Diese Aktion kann nicht rückgängig gemacht werden.</div>
+      </div>
+    </div>
+    <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:12px 14px;font-size:.83rem;color:#991B1B;margin-bottom:22px;">
+      Das Produkt wird dauerhaft aus der Datenbank entfernt. Lokale Dateien und Excel-Einträge bleiben erhalten.
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn" onclick="closeDeleteModal()" style="background:var(--c-100);color:var(--text);border:1px solid var(--border);">
+        Abbrechen
+      </button>
+      <button id="deleteConfirmBtn" class="btn" onclick="confirmDelete()"
+        style="background:#DC2626;color:#fff;border:none;font-weight:700;gap:7px;display:flex;align-items:center;">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Endgültig löschen
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PRODUCT_ID = {{ product_id | tojson }};
+const IMAGE_URL  = {{ (row.image_url or '') | tojson }};
+
+/* Original values snapshot for diff (before/after) */
+const ORIGINAL_DATA = {
+  mj_id:            {{ (row.mj_id           or '') | tojson }},
+  neuer_dateiname:  {{ (row.neuer_dateiname  or '') | tojson }},
+  titel:            {{ (row.titel            or '') | tojson }},
+  beschreibung:     {{ (row.beschreibung     or '') | tojson }},
+  tags:             {{ (row.tags             or '') | tojson }},
+  dominante_farben: {{ (row.dominante_farben or '') | tojson }},
+  kunstart:         {{ (row.kunstart         or '') | tojson }},
+  epoche:           {{ (row.epoche           or '') | tojson }},
+  pin_board:        {{ (row.pin_board        or '') | tojson }},
+  pin_ziel_url:     {{ (row.pin_ziel_url     or '') | tojson }},
+  pin_titel:        {{ (row.pin_titel        or '') | tojson }},
+  pin_beschreibung: {{ (row.pin_beschreibung or '') | tojson }},
+  pin_alt_text:     {{ (row.pin_alt_text     or '') | tojson }},
+  pin_media_url:    {{ (row.pin_media_url    or '') | tojson }},
+  ig_location:      {{ (row.ig_location      or '') | tojson }},
+  ig_title:         {{ (row.ig_title         or '') | tojson }},
+  ig_description:   {{ (row.ig_description   or '') | tojson }},
+  ig_tags:          {{ (row.ig_tags          or '') | tojson }},
+  etsy_title:            {{ (row.etsy_title            or '') | tojson }},
+  etsy_description:      {{ (row.etsy_description      or '') | tojson }},
+  etsy_tags:             {{ (row.etsy_tags             or '') | tojson }},
+  etsy_materials:        {{ (row.etsy_materials        or '') | tojson }},
+  etsy_who_made:         {{ (row.etsy_who_made         or '') | tojson }},
+  etsy_when_made:        {{ (row.etsy_when_made        or '') | tojson }},
+  etsy_occasion:         {{ (row.etsy_occasion         or '') | tojson }},
+  etsy_recipient:        {{ (row.etsy_recipient        or '') | tojson }},
+  etsy_shipping_profile: {{ (row.etsy_shipping_profile or '') | tojson }},
+  shopify_title:         {{ (row.shopify_title         or '') | tojson }},
+  shopify_body_html:     {{ (row.shopify_body_html     or '') | tojson }},
+  shopify_vendor:        {{ (row.shopify_vendor        or '') | tojson }},
+  shopify_product_type:  {{ (row.shopify_product_type  or '') | tojson }},
+  shopify_tags:          {{ (row.shopify_tags          or '') | tojson }},
+  shopify_sku:           {{ (row.shopify_sku           or '') | tojson }},
+  shopify_collection:    {{ (row.shopify_collection    or '') | tojson }},
+  shopify_status:        {{ (row.shopify_status        or 'draft') | tojson }},
+  amazon_title:          {{ (row.amazon_title          or '') | tojson }},
+  amazon_description:    {{ (row.amazon_description    or '') | tojson }},
+  amazon_bullet_1:       {{ (row.amazon_bullet_1       or '') | tojson }},
+  amazon_bullet_2:       {{ (row.amazon_bullet_2       or '') | tojson }},
+  amazon_bullet_3:       {{ (row.amazon_bullet_3       or '') | tojson }},
+  amazon_bullet_4:       {{ (row.amazon_bullet_4       or '') | tojson }},
+  amazon_bullet_5:       {{ (row.amazon_bullet_5       or '') | tojson }},
+  amazon_search_terms:   {{ (row.amazon_search_terms   or '') | tojson }},
+  amazon_brand:          {{ (row.amazon_brand          or '') | tojson }},
+  amazon_sku:            {{ (row.amazon_sku            or '') | tojson }},
+  amazon_category:       {{ (row.amazon_category       or '') | tojson }},
+  amazon_condition:      {{ (row.amazon_condition      or 'new') | tojson }},
+};
+
+const FIELD_LABELS = {
+  mj_id:'MJ-ID', neuer_dateiname:'Neuer Dateiname',
+  titel:'Titel', beschreibung:'Beschreibung', tags:'Tags',
+  dominante_farben:'Farben', kunstart:'Kunstart', epoche:'Epoche',
+  pin_board:'Pinterest Board', pin_ziel_url:'Pinterest URL',
+  pin_titel:'Pinterest Titel', pin_beschreibung:'Pinterest Beschreibung',
+  pin_alt_text:'Pinterest Alt-Text', pin_media_url:'Pinterest Media URL',
+  ig_location:'Instagram Standort', ig_title:'Instagram Title',
+  ig_description:'Instagram Description', ig_tags:'Instagram Tags',
+  etsy_title:'Etsy Titel', etsy_description:'Etsy Beschreibung',
+  etsy_tags:'Etsy Tags', etsy_materials:'Etsy Materialien',
+  etsy_who_made:'Etsy Hergestellt von', etsy_when_made:'Etsy Hergestellt wann',
+  etsy_occasion:'Etsy Anlass', etsy_recipient:'Etsy Empfänger',
+  etsy_shipping_profile:'Etsy Versandprofil',
+  shopify_title:'Shopify Titel', shopify_body_html:'Shopify Beschreibung',
+  shopify_vendor:'Shopify Vendor', shopify_product_type:'Shopify Produkttyp',
+  shopify_tags:'Shopify Tags', shopify_sku:'Shopify SKU',
+  shopify_collection:'Shopify Kollektion', shopify_status:'Shopify Status',
+  amazon_title:'Amazon Titel', amazon_description:'Amazon Beschreibung',
+  amazon_bullet_1:'Amazon Bullet 1', amazon_bullet_2:'Amazon Bullet 2',
+  amazon_bullet_3:'Amazon Bullet 3', amazon_bullet_4:'Amazon Bullet 4',
+  amazon_bullet_5:'Amazon Bullet 5', amazon_search_terms:'Amazon Suchbegriffe',
+  amazon_brand:'Amazon Marke', amazon_sku:'Amazon SKU',
+  amazon_category:'Amazon Kategorie', amazon_condition:'Amazon Zustand',
+};
+
+/* ── Navigation ── */
+function showPane(name, btn) {
+  document.querySelectorAll('.settings-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('pane-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+/* ── Toast (kept for regen feedback) ── */
+function showToast(msg, ok) {
+  const t = document.getElementById('editToast');
+  t.textContent = msg;
+  t.className = 'edit-toast ' + (ok ? 'ok' : 'err');
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3000);
+}
+
+/* ── Result Banner ── */
+let _bannerTimer;
+function showResultBanner(steps, changes) {
+  const banner = document.getElementById('resultBanner');
+  if (!banner) return;
+  const hasErr = steps.some(s => s.type === 'err');
+  const icon   = hasErr ? '⚠️' : '✅';
+  let   title  = hasErr ? 'Teilweise gespeichert' : 'Gespeichert';
+  if (changes && changes.length > 0) title += ` · ${changes.length} Felder geändert`;
+  banner.querySelector('.result-banner-status').textContent = icon;
+  banner.querySelector('.result-banner-title').textContent  = title;
+
+  const icons = { ok:'✅', err:'❌', warn:'⚠️', info:'📡' };
+  banner.querySelector('.result-banner-steps').innerHTML = steps.map(s =>
+    `<div class="result-step ${s.type}">
+       <span class="result-step-icon">${icons[s.type]||'•'}</span>
+       <span class="result-step-text">${s.label}</span>
+     </div>`
+  ).join('');
+
+  const changesEl = banner.querySelector('.result-banner-changes');
+  if (changes && changes.length > 0) {
+    changesEl.innerHTML =
+      `<hr class="result-banner-sep"/>
+       <div class="result-changes-label">Änderungen (${changes.length})</div>` +
+      changes.map(c => {
+        const bef = String(c.before || '—').substring(0, 55);
+        const aft = String(c.after  || '—').substring(0, 55);
+        return `<div class="result-change-row">
+          <div class="result-change-field">${c.field}</div>
+          <div class="result-change-vals">
+            <span class="result-change-before">${bef}</span>
+            <span class="result-change-arrow">→</span>
+            <span class="result-change-after">${aft}</span>
+          </div>
+        </div>`;
+      }).join('');
+    changesEl.style.display = 'block';
+  } else {
+    changesEl.innerHTML = '';
+    changesEl.style.display = 'none';
+  }
+  banner.classList.add('visible');
+  clearTimeout(_bannerTimer);
+  _bannerTimer = setTimeout(closeResultBanner, 12000);
+}
+function closeResultBanner() {
+  document.getElementById('resultBanner')?.classList.remove('visible');
+  clearTimeout(_bannerTimer);
+}
+
+/* ── Discord notify ── */
+async function sendDiscordNotification(type, payload, result, changes) {
+  try {
+    const res  = await fetch('/api/notify/discord', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ type, payload, result, changes: changes || [] }),
+    });
+    const data = await res.json();
+    if (data.skipped) return { skipped: true };
+    if (data.error)   return { ok: false, error: data.error };
+    return { ok: true };
+  } catch(e) { return { ok: false, error: e.message }; }
+}
+
+/* ── Collect current values ── */
+function val(id) {
+  const el = document.getElementById(id);
+  return el ? el.value : '';
+}
+
+/* ── Save ── */
+async function saveProduct() {
+  const numOrNull = id => { const v = val(id); return v ? parseFloat(v) : null; };
+  const current = {
+    mj_id:            val('f-mj_id'),
+    neuer_dateiname:  val('f-neuer_dateiname'),
+    titel:            val('f-titel'),
+    beschreibung:     val('f-beschreibung'),
+    tags:             val('f-tags'),
+    dominante_farben: val('f-dominante_farben'),
+    kunstart:         val('f-kunstart'),
+    epoche:           val('f-epoche'),
+    pin_board:        val('f-pin_board'),
+    pin_board_id:     document.getElementById('pin-board-id')?.value || '',
+    pin_ziel_url:     val('f-pin_ziel_url'),
+    pin_titel:        val('f-pin_titel'),
+    pin_beschreibung: val('f-pin_beschreibung'),
+    pin_alt_text:     val('f-pin_alt_text'),
+    pin_media_url:    val('f-pin_media_url'),
+    ig_location:      val('f-ig_location'),
+    ig_title:         val('f-ig_title'),
+    ig_description:   val('f-ig_description'),
+    ig_tags:          val('f-ig_tags'),
+    // Shop-Felder (Etsy / Shopify / Amazon) werden nur beim "Anlegen"-Button gespeichert
+  };
+
+  /* Build diff against original snapshot */
+  const changes = Object.entries(current)
+    .filter(([k, v]) => (ORIGINAL_DATA[k] || '') !== v && v !== '')
+    .map(([k, v]) => ({
+      field:  FIELD_LABELS[k] || k,
+      before: ORIGINAL_DATA[k] || '—',
+      after:  v,
+    }));
+
+  const saveBtn = document.getElementById('actionSaveBtn');
+  if (saveBtn) saveBtn.disabled = true;
+
+  const steps = [];
+  try {
+    const res  = await fetch(`/api/product/${PRODUCT_ID}/save`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(current),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      steps.push({ type: 'ok', label: 'Datenbank aktualisiert' });
+
+      /* Discord */
+      const discPayload = {
+        ...current,
+        dekoire_id: val('f-dekoire_id'),
+        image_url:  IMAGE_URL,
+      };
+      const disc = await sendDiscordNotification('edit', discPayload, {}, changes);
+      if (disc.ok)          steps.push({ type: 'info', label: 'Discord: Benachrichtigung gesendet' });
+      else if (!disc.skipped) steps.push({ type: 'warn', label: 'Discord: ' + disc.error });
+
+      /* Update original snapshot so subsequent saves are accurate */
+      Object.assign(ORIGINAL_DATA, current);
+    } else {
+      steps.push({ type: 'err', label: 'Fehler: ' + data.error });
+    }
+  } catch(e) {
+    steps.push({ type: 'err', label: 'Verbindungsfehler: ' + e.message });
+  } finally {
+    if (saveBtn) saveBtn.disabled = false;
+    showResultBanner(steps, changes);
+  }
+}
+
+/* ── Regen single field ── */
+async function regenField(field) {
+  if (!IMAGE_URL) { showToast('Kein Bild hinterlegt.', false); return; }
+  const btn = event.currentTarget;
+  btn.classList.add('spinning');
+  try {
+    const res  = await fetch(`/api/product/${PRODUCT_ID}/regen`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ field, image_url: IMAGE_URL }),
+    });
+    const data = await res.json();
+    if (data.error) { showToast(data.error, false); return; }
+    const el = document.getElementById('f-' + field);
+    if (el) el.value = Array.isArray(data.value) ? data.value.join(', ') : data.value;
+  } catch { showToast('Verbindungsfehler.', false); }
+  finally { btn.classList.remove('spinning'); }
+}
+
+/* ── Regen social media ── */
+async function regenSocial() {
+  // Spinner on whichever generate button triggered this call
+  const btn = event?.currentTarget || null;
+  if (btn) btn.classList.add('spinning');
+  const context = {
+    titel:           val('f-titel'),
+    beschreibung:    val('f-beschreibung'),
+    kunstart:        val('f-kunstart'),
+    epoche:          val('f-epoche'),
+    dominante_farben: val('f-dominante_farben').split(',').map(s=>s.trim()).filter(Boolean),
+    tags:            val('f-tags').split(',').map(s=>s.trim()).filter(Boolean),
+    ist_fotografie:  false,
+  };
+  try {
+    const res  = await fetch(`/api/product/${PRODUCT_ID}/regen`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ field: 'social', context }),
+    });
+    const data = await res.json();
+    if (data.error) { showToast(data.error, false); return; }
+    const p = data.pinterest || {};
+    const g = data.instagram  || {};
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+    set('f-pin_titel',        p.titel        || p.title || '');
+    set('f-pin_beschreibung', p.beschreibung || p.description || '');
+    set('f-pin_ziel_url',     p.ziel_url     || p.target_url  || '');
+    set('f-pin_alt_text',     p.alt_text     || '');
+    // Board: try to match by name in loaded boards, or just set display text
+    if (p.board) {
+      const match = _pinBoards.find(b => b.name.toLowerCase() === (p.board || '').toLowerCase());
+      if (match) {
+        pinBoardSelect(match.id, match.name);
+      } else {
+        set('f-pin_board', p.board);
+      }
+    }
+    set('f-ig_title',       g.title       || '');
+    set('f-ig_description', g.description || '');
+    set('f-ig_tags', Array.isArray(g.tags) ? g.tags.join(' ') : (g.tags || ''));
+    const ls = document.getElementById('f-ig_location');
+    if (ls && g.location) {
+      const v = (g.location || '').toLowerCase();
+      [...ls.options].forEach(o => { if (o.value.toLowerCase() === v) o.selected = true; });
+    }
+    showToast('Social Media generiert.', true);
+  } catch { showToast('Verbindungsfehler.', false); }
+  finally { if (btn) { btn.classList.remove('spinning'); btn.classList.remove('loading'); } }
+}
+
+/* ── User menu ── */
+function toggleUserMenu() {
+  document.getElementById('userDropdown').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('userMenu')?.contains(e.target))
+    document.getElementById('userDropdown')?.classList.remove('open');
+});
+async function doLogout() {
+  await fetch('/auth/logout', {method:'POST'});
+  window.location.href = '/login';
+}
+
+/* ══════════════════════════════════════
+   Produktfotos
+══════════════════════════════════════ */
+let _photosLoaded = false;
+
+async function loadPhotos() {
+  if (_photosLoaded) return;
+  _photosLoaded = true;
+  try {
+    const res   = await fetch(`/api/product/${PRODUCT_ID}/photos`);
+    const list  = await res.json();
+    renderPhotoGrid(list);
+  } catch(e) { console.error('loadPhotos', e); }
+}
+
+function renderPhotoGrid(photos) {
+  const grid  = document.getElementById('pfGrid');
+  const empty = document.getElementById('pfEmpty');
+  grid.innerHTML = '';
+  if (!photos || !photos.length) { empty.style.display = ''; return; }
+  empty.style.display = 'none';
+  photos.forEach(p => grid.appendChild(buildPhotoCard(p)));
+}
+
+function buildPhotoCard(p) {
+  const card = document.createElement('div');
+  card.className = 'pf-card';
+  card.id = `pf-card-${p.id}`;
+  card.innerHTML = `
+    <div class="pf-card-inner">
+      <div class="pf-thumb">
+        ${p._analyzing
+          ? `<div class="pf-analyzing"><div class="spinner" style="width:22px;height:22px;border-width:3px;"></div><span>Analysiere …</span></div>`
+          : `<img src="${p.url}" alt="${p.alt_text || ''}" />`}
+      </div>
+      <div class="pf-fields">
+        <div>
+          <div class="pf-field-label">
+            Alt-Text
+            <button class="pf-copy-btn" onclick="pfCopy(this,'pf-alt-${p.id}')">
+              <svg width="11" height="11" fill="none" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              Kopieren
+            </button>
+          </div>
+          <input type="text" class="pf-input" id="pf-alt-${p.id}"
+                 value="${(p.alt_text||'').replace(/"/g,'&quot;')}"
+                 placeholder="Alt-Text …" />
+        </div>
+        <div>
+          <div class="pf-field-label">
+            Tags
+            <button class="pf-copy-btn" onclick="pfCopy(this,'pf-tags-${p.id}')">
+              <svg width="11" height="11" fill="none" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              Kopieren
+            </button>
+          </div>
+          <textarea class="pf-input" id="pf-tags-${p.id}" rows="2"
+                    placeholder="Tags …">${p.tags||''}</textarea>
+        </div>
+      </div>
+    </div>
+    <div class="pf-card-footer">
+      <button class="pf-delete-btn" onclick="deletePhoto('${p.id}')">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Löschen
+      </button>
+      <button class="pf-save-btn" onclick="savePhotoMeta('${p.id}')">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M17 21v-8H7v8M7 3v5h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Speichern
+      </button>
+    </div>`;
+  return card;
+}
+
+async function uploadPhotos(files) {
+  if (!files || !files.length) return;
+  const status = document.getElementById('pfUploadStatus');
+  const zone   = document.getElementById('pfUploadZone');
+  status.style.display = '';
+  status.textContent   = `Lädt hoch & analysiert ${files.length} Foto(s) …`;
+  zone.style.pointerEvents = 'none';
+
+  // Show placeholder cards while uploading
+  const placeholders = [];
+  const grid  = document.getElementById('pfGrid');
+  const empty = document.getElementById('pfEmpty');
+  empty.style.display = 'none';
+  Array.from(files).forEach(f => {
+    const url = URL.createObjectURL(f);
+    const ph  = buildPhotoCard({ id: 'ph_'+Math.random(), url, alt_text:'', tags:'', _analyzing: true });
+    // replace thumb with real preview
+    const img = ph.querySelector('img');
+    if (!img) {
+      const thumb = ph.querySelector('.pf-thumb');
+      const i = document.createElement('img');
+      i.src = url; i.style.cssText='width:100%;height:100%;object-fit:cover;';
+      thumb.innerHTML = '';
+      thumb.appendChild(i);
+    }
+    grid.appendChild(ph);
+    placeholders.push(ph);
+  });
+
+  const fd = new FormData();
+  Array.from(files).forEach(f => fd.append('photos', f));
+
+  try {
+    const res  = await fetch(`/api/product/${PRODUCT_ID}/photos/upload`, { method:'POST', body: fd });
+    const data = await res.json();
+    if (data.error) { alert('Fehler: ' + data.error); return; }
+    // Replace placeholders with real cards
+    placeholders.forEach(ph => ph.remove());
+    (data.photos || []).forEach(p => {
+      if (!p.error) grid.appendChild(buildPhotoCard(p));
+    });
+    status.textContent = `✓ ${(data.photos||[]).filter(p=>!p.error).length} Foto(s) hochgeladen & analysiert`;
+    setTimeout(() => { status.style.display = 'none'; }, 3000);
+  } catch(e) {
+    placeholders.forEach(ph => ph.remove());
+    alert('Netzwerkfehler: ' + e.message);
+    status.style.display = 'none';
+  } finally {
+    zone.style.pointerEvents = '';
+    document.getElementById('pfFileInput').value = '';
+    _photosLoaded = false; // allow reload
+  }
+}
+
+async function savePhotoMeta(photoId) {
+  const alt  = document.getElementById(`pf-alt-${photoId}`)?.value  || '';
+  const tags = document.getElementById(`pf-tags-${photoId}`)?.value || '';
+  try {
+    const res  = await fetch(`/api/product/${PRODUCT_ID}/photos/${photoId}/save`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ alt_text: alt, tags }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      const btn = document.querySelector(`#pf-card-${photoId} .pf-save-btn`);
+      if (btn) { const orig = btn.innerHTML; btn.textContent='✓ Gespeichert'; setTimeout(()=>btn.innerHTML=orig,1800); }
+    }
+  } catch(e) { alert('Fehler: '+e.message); }
+}
+
+async function deletePhoto(photoId) {
+  if (!confirm('Dieses Produktfoto wirklich löschen?')) return;
+  try {
+    const res  = await fetch(`/api/product/${PRODUCT_ID}/photos/${photoId}/delete`, { method:'POST' });
+    const data = await res.json();
+    if (data.success) {
+      const card = document.getElementById(`pf-card-${photoId}`);
+      if (card) card.remove();
+      if (!document.querySelector('.pf-card'))
+        document.getElementById('pfEmpty').style.display = '';
+    }
+  } catch(e) { alert('Fehler: '+e.message); }
+}
+
+function pfCopy(btn, fieldId) {
+  const el = document.getElementById(fieldId);
+  if (!el) return;
+  navigator.clipboard.writeText(el.value).then(() => {
+    btn.classList.add('copied');
+    const orig = btn.innerHTML;
+    btn.textContent = '✓ Kopiert';
+    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = orig; }, 1800);
+  });
+}
+
+// Drag & drop for upload zone
+const pfZone = document.getElementById('pfUploadZone');
+if (pfZone) {
+  pfZone.addEventListener('dragover',  e => { e.preventDefault(); pfZone.classList.add('pf-drag'); });
+  pfZone.addEventListener('dragleave', () => pfZone.classList.remove('pf-drag'));
+  pfZone.addEventListener('drop', e => {
+    e.preventDefault();
+    pfZone.classList.remove('pf-drag');
+    uploadPhotos(e.dataTransfer.files);
+  });
+}
+
+/* ── Delete Modal ── */
+function openDeleteModal() {
+  const modal = document.getElementById('deleteModal');
+  modal.style.display = 'flex';
+  // Close on backdrop click
+  modal.onclick = e => { if (e.target === modal) closeDeleteModal(); };
+}
+function closeDeleteModal() {
+  document.getElementById('deleteModal').style.display = 'none';
+}
+async function confirmDelete() {
+  const btn = document.getElementById('deleteConfirmBtn');
+  btn.disabled = true;
+  btn.textContent = 'Wird gelöscht …';
+  try {
+    const res  = await fetch(`/api/product/${PRODUCT_ID}/delete`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      window.location.href = '/products';
+    } else {
+      alert('Fehler beim Löschen: ' + (data.error || 'Unbekannter Fehler'));
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="14" height="14" fill="none" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Endgültig löschen';
+    }
+  } catch (e) {
+    alert('Netzwerkfehler: ' + e.message);
+    btn.disabled = false;
+  }
+}
+
+/* ══ Social Posting ══ */
+const _spFiles = { ig: [], pin: [] };
+
+function spPreview(input, prefix) {
+  const files = Array.from(input.files).slice(0,4);
+  _spFiles[prefix] = files;
+  const row  = document.getElementById(`${prefix}PreviewRow`);
+  const hint = document.getElementById(`${prefix}UploadHint`);
+  row.innerHTML = '';
+  files.forEach(f => {
+    const img = document.createElement('img');
+    img.className = 'sp-preview-thumb';
+    img.src = URL.createObjectURL(f);
+    row.appendChild(img);
+  });
+  hint.style.display = files.length ? 'none' : '';
+  if (files.length) {
+    const blobUrl = URL.createObjectURL(files[0]);
+    if (prefix === 'pin') updatePinPreview(blobUrl);
+    if (prefix === 'ig')  updateIgPreview(blobUrl);
+  }
+}
+
+function spToggleTiming(prefix, val) {
+  const dt = document.getElementById(`${prefix}-scheduled-at`);
+  dt.style.display = val === 'schedule' ? '' : 'none';
+  if (val === 'schedule' && !dt.value) {
+    const d = new Date(Date.now() + 3600000);
+    dt.value = d.toISOString().slice(0,16);
+  }
+}
+
+async function spPost(platform) {
+  const prefix = platform === 'instagram' ? 'ig' : 'pin';
+  const files  = _spFiles[prefix];
+  if (!files || !files.length) { alert('Bitte zuerst Fotos auswählen.'); return; }
+
+  const status  = document.getElementById(`${prefix}-post-status`);
+  status.style.display = '';
+  status.style.color   = 'var(--muted)';
+  status.textContent   = platform === 'instagram' ? '📤 Lädt hoch & postet auf Instagram …' : '📤 Postet auf Pinterest …';
+
+  const fd = new FormData();
+  fd.append('platform', platform);
+  files.forEach(f => fd.append('images', f));
+
+  if (platform === 'instagram') {
+    fd.append('caption',     document.getElementById('ig-caption').value);
+    fd.append('hashtags',    document.getElementById('ig-hashtags').value);
+    // optional IG fields
+    const locId   = document.getElementById('ig-location-id')?.value.trim();
+    const uTags   = document.getElementById('ig-user-tags')?.value.trim();
+    if (locId)  fd.append('location_id', locId);
+    if (uTags)  fd.append('user_tags',   uTags);
+    const tim = document.querySelector('input[name="ig-timing"]:checked')?.value;
+    if (tim === 'schedule') fd.append('scheduled_at', document.getElementById('ig-scheduled-at').value);
+  } else {
+    // use product data fields as defaults for title / description / link / alt_text
+    fd.append('pin_title',       document.getElementById('f-pin_titel')?.value       || '');
+    fd.append('pin_description', document.getElementById('f-pin_beschreibung')?.value || '');
+    fd.append('board_id',        document.getElementById('pin-board-id').value);
+    fd.append('pin_link',        document.getElementById('f-pin_ziel_url')?.value     || '');
+    fd.append('alt_text',        document.getElementById('f-pin_alt_text')?.value     || '');
+    // optional Pinterest fields
+    const section = document.getElementById('pin-board-section')?.value.trim();
+    const note    = document.getElementById('pin-note')?.value.trim();
+    const color   = document.getElementById('pin-dominant-color')?.value.trim();
+    if (section) fd.append('board_section_id',  section);
+    if (note)    fd.append('pin_note',           note);
+    if (color)   fd.append('dominant_color',     color);
+    const tim = document.querySelector('input[name="pin-timing"]:checked')?.value;
+    if (tim === 'schedule') fd.append('scheduled_at', document.getElementById('pin-scheduled-at').value);
+  }
+
+  try {
+    const res  = await fetch(`/api/product/${PRODUCT_ID}/social/post`, { method:'POST', body: fd });
+    const data = await res.json();
+    if (!data.success) {
+      status.style.color = '#DC2626';
+      status.textContent = '❌ ' + (data.error || 'Fehler beim Posten');
+      return;
+    }
+    if (data.status === 'sent') {
+      status.style.color = '#059669';
+      status.textContent = '✅ Erfolgreich gepostet!';
+    } else if (data.status === 'scheduled') {
+      status.style.color = '#D97706';
+      status.textContent = '⏰ Kampagne geplant!';
+    } else if (data.status === 'failed') {
+      status.style.color = '#DC2626';
+      status.textContent = '❌ Fehler: ' + (data.error || 'Unbekannter Fehler');
+    }
+    loadSocialHistory();
+  } catch(e) {
+    status.style.color = '#DC2626';
+    status.textContent = '❌ Netzwerkfehler: ' + e.message;
+  }
+}
+
+/* ── Shop publish ── */
+function collectShopData(shop) {
+  const numOrNull = id => { const v = val(id); return v ? parseFloat(v) : null; };
+  if (shop === 'etsy') return {
+    etsy_title:            val('f-etsy_title'),
+    etsy_description:      val('f-etsy_description'),
+    etsy_tags:             val('f-etsy_tags'),
+    etsy_materials:        val('f-etsy_materials'),
+    etsy_who_made:         val('f-etsy_who_made'),
+    etsy_when_made:        val('f-etsy_when_made'),
+    etsy_occasion:         val('f-etsy_occasion'),
+    etsy_recipient:        val('f-etsy_recipient'),
+    etsy_shipping_profile: val('f-etsy_shipping_profile'),
+    etsy_price:            numOrNull('f-etsy_price'),
+  };
+  if (shop === 'shopify') return {
+    shopify_title:         val('f-shopify_title'),
+    shopify_body_html:     val('f-shopify_body_html'),
+    shopify_vendor:        val('f-shopify_vendor'),
+    shopify_product_type:  val('f-shopify_product_type'),
+    shopify_tags:          val('f-shopify_tags'),
+    shopify_sku:           val('f-shopify_sku'),
+    shopify_price:         numOrNull('f-shopify_price'),
+    shopify_compare_price: numOrNull('f-shopify_compare_price'),
+    shopify_collection:    val('f-shopify_collection'),
+    shopify_status:        val('f-shopify_status') || 'draft',
+  };
+  if (shop === 'amazon') return {
+    amazon_title:          val('f-amazon_title'),
+    amazon_description:    val('f-amazon_description'),
+    amazon_bullet_1:       val('f-amazon_bullet_1'),
+    amazon_bullet_2:       val('f-amazon_bullet_2'),
+    amazon_bullet_3:       val('f-amazon_bullet_3'),
+    amazon_bullet_4:       val('f-amazon_bullet_4'),
+    amazon_bullet_5:       val('f-amazon_bullet_5'),
+    amazon_search_terms:   val('f-amazon_search_terms'),
+    amazon_brand:          val('f-amazon_brand'),
+    amazon_price:          numOrNull('f-amazon_price'),
+    amazon_sku:            val('f-amazon_sku'),
+    amazon_category:       val('f-amazon_category'),
+    amazon_condition:      val('f-amazon_condition') || 'new',
+  };
+  return {};
+}
+
+async function publishShop(shop) {
+  const panel  = document.getElementById(`${shop}-publish-result`);
+  const icon   = panel.querySelector('.spr-icon');
+  const text   = panel.querySelector('.spr-text');
+
+  function showPanel(state, ico, msg) {
+    panel.className = `shop-publish-result ${state}`;
+    panel.style.display = '';
+    icon.textContent = ico;
+    text.textContent = msg;
+    // Scroll result into view
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  const labels = { etsy: 'Etsy', shopify: 'Shopify', amazon: 'Amazon' };
+  showPanel('loading', '⏳', 'Felder werden gespeichert …');
+
+  const data = collectShopData(shop);
+
+  try {
+    // 1. Felder in DB speichern
+    const saveRes  = await fetch(`/api/product/${PRODUCT_ID}/save`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data),
+    });
+    const saveData = await saveRes.json();
+    if (!saveData.success) {
+      showPanel('err', '✕', 'Speicherfehler: ' + (saveData.error || 'Unbekannt'));
+      return;
+    }
+
+    // 2. Im Shop als Entwurf anlegen
+    showPanel('loading', '📤', `Wird auf ${labels[shop]} angelegt …`);
+    const pubRes  = await fetch(`/api/product/${PRODUCT_ID}/publish/${shop}`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data),
+    });
+    const pubData = await pubRes.json();
+    if (pubData.success) {
+      const link = pubData.url ? ` – <a href="${pubData.url}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">Ansehen</a>` : '';
+      showPanel('ok', '✓', (pubData.message || `Entwurf auf ${labels[shop]} angelegt!`));
+      if (pubData.url) {
+        const a = document.createElement('a');
+        a.href = pubData.url; a.target = '_blank'; a.rel = 'noopener';
+        a.style.cssText = 'color:inherit;text-decoration:underline;margin-left:4px;font-size:.78rem;';
+        a.textContent = '→ Ansehen';
+        text.appendChild(a);
+      }
+    } else {
+      showPanel('err', '✕', (pubData.error || `Fehler beim Anlegen auf ${labels[shop]}`));
+    }
+  } catch(e) {
+    showPanel('err', '✕', 'Netzwerkfehler: ' + e.message);
+  }
+}
+
+/* ── Pinterest Board Combobox ── */
+let _pinBoards    = [];   // [{id, name}, ...]
+let _pinLoaded    = false;
+let _pinLoading   = false;
+
+async function pinBoardLoad(force = false) {
+  if (_pinLoading) return;
+  if (_pinLoaded && !force) return;
+  _pinLoading = true;
+  const btn  = document.getElementById('pinBoardRefreshBtn');
+  const hint = document.getElementById('pinBoardHint');
+  if (btn) btn.classList.add('spinning');
+  if (hint) { hint.textContent = 'Boards werden geladen …'; hint.style.color = 'var(--muted)'; }
+  try {
+    const res  = await fetch('/api/pinterest/boards');
+    const data = await res.json();
+    if (data.error) {
+      if (hint) { hint.textContent = '⚠ ' + data.error; hint.style.color = '#DC2626'; }
+      _pinBoards = [];
+    } else {
+      _pinBoards = data.boards || [];
+      if (hint) {
+        hint.textContent = _pinBoards.length
+          ? `${_pinBoards.length} Board${_pinBoards.length !== 1 ? 's' : ''} geladen`
+          : 'Keine Boards gefunden';
+        hint.style.color = 'var(--muted)';
+      }
+      _pinLoaded = true;
+      // If a board name is already set, try to pre-fill the board-id
+      const inp = document.getElementById('f-pin_board');
+      if (inp && inp.value) {
+        const match = _pinBoards.find(b => b.name.toLowerCase() === inp.value.toLowerCase());
+        if (match) document.getElementById('pin-board-id').value = match.id;
+      }
+    }
+  } catch(e) {
+    if (hint) { hint.textContent = '⚠ Netzwerkfehler: ' + e.message; hint.style.color = '#DC2626'; }
+  } finally {
+    _pinLoading = false;
+    if (btn) btn.classList.remove('spinning');
+    pinBoardFilter();
+  }
+}
+
+function pinBoardOpen() {
+  pinBoardLoad(false);
+  const dd = document.getElementById('pinBoardDropdown');
+  if (dd) dd.style.display = '';
+  pinBoardFilter();
+}
+
+function pinBoardClose() {
+  const dd = document.getElementById('pinBoardDropdown');
+  if (dd) dd.style.display = 'none';
+}
+
+function pinBoardFilter() {
+  const dd  = document.getElementById('pinBoardDropdown');
+  const inp = document.getElementById('f-pin_board');
+  if (!dd) return;
+  const q = (inp?.value || '').toLowerCase().trim();
+  const visible = q
+    ? _pinBoards.filter(b => b.name.toLowerCase().includes(q) || b.id.includes(q))
+    : _pinBoards;
+
+  if (!visible.length && !_pinLoading) {
+    dd.innerHTML = `<div class="pin-board-empty">${_pinLoaded ? 'Keine passenden Boards' : 'Boards werden geladen …'}</div>`;
+  } else {
+    dd.innerHTML = visible.map(b =>
+      `<div class="pin-board-option" onmousedown="pinBoardSelect(${JSON.stringify(b.id)}, ${JSON.stringify(b.name)})">
+        <span class="board-name">${b.name}</span>
+        <span class="board-id">ID: ${b.id}</span>
+       </div>`
+    ).join('');
+  }
+}
+
+function pinBoardSelect(id, name) {
+  document.getElementById('f-pin_board').value  = name;
+  document.getElementById('pin-board-id').value = id;
+  const hint = document.getElementById('pinBoardHint');
+  if (hint) { hint.textContent = `Board-ID: ${id}`; hint.style.color = 'var(--muted)'; }
+  pinBoardClose();
+}
+
+async function loadSocialHistory() {
+  try {
+    const res   = await fetch(`/api/product/${PRODUCT_ID}/social/posts`);
+    const posts = await res.json();
+    const box   = document.getElementById('socialHistoryTable');
+    if (!posts || !posts.length) {
+      box.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted);font-size:.83rem;">Noch keine Posts vorhanden.</div>';
+      return;
+    }
+    box.innerHTML = posts.map(p => {
+      const plat  = p.platform === 'instagram' ? '📸 Instagram' : '📌 Pinterest';
+      const title = p.caption || p.pin_title || '–';
+      const date  = p.created_at ? new Date(p.created_at).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '–';
+      const sched = p.scheduled_at ? ' · ⏰ ' + new Date(p.scheduled_at).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+      const statusMap = {sent:'Gesendet',scheduled:'Geplant',failed:'Fehler',pending:'Ausstehend'};
+      const badge = `<span class="sp-badge ${p.status||'pending'}">${statusMap[p.status]||p.status}</span>`;
+      const err   = p.error_message ? `<span style="color:#DC2626;font-size:.75rem;"> – ${p.error_message.slice(0,80)}</span>` : '';
+      return `<div class="sp-history-row">${badge}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${plat} · ${title.slice(0,60)}</span><span style="color:var(--muted);white-space:nowrap;">${date}${sched}</span>${err}</div>`;
+    }).join('');
+  } catch(e) { console.error('loadSocialHistory', e); }
+}
+
+/* ── Generate shop texts for one section (edit page, only fills empty fields) ── */
+async function generateShopSectionEdit(shop) {
+  const v = id => { const el = document.getElementById(id); return el ? (el.value || el.textContent || '') : ''; };
+  const context = {
+    titel:            v('f-titel'),
+    beschreibung:     v('f-beschreibung'),
+    kunstart:         v('f-kunstart'),
+    epoche:           v('f-epoche'),
+    dominante_farben: v('f-dominante_farben').split(',').map(s=>s.trim()).filter(Boolean),
+    tags:             v('f-tags').split(',').map(s=>s.trim()).filter(Boolean),
+    ist_fotografie:   v('f-ist_fotografie') === 'true',
+  };
+
+  const btn = document.getElementById('btn-gen-pe-' + shop);
+  if (btn) btn.classList.add('spinning');
+
+  try {
+    const res  = await fetch('/api/generate-shops', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(context),
+    });
+    const data = await res.json();
+    if (data.error) { showEditToast('Fehler: ' + data.error, false); return; }
+
+    const d = data[shop] || {};
+    const setIfEmpty = (id, val) => {
+      const el = document.getElementById(id);
+      if (el && !el.value?.trim() && val) el.value = val;
+    };
+
+    if (shop === 'etsy') {
+      setIfEmpty('f-etsy_title',       d.title       || '');
+      setIfEmpty('f-etsy_description', d.description || '');
+      setIfEmpty('f-etsy_tags',        d.tags        || '');
+      setIfEmpty('f-etsy_materials',   d.materials   || '');
+    } else if (shop === 'shopify') {
+      setIfEmpty('f-shopify_title',     d.title     || '');
+      setIfEmpty('f-shopify_body_html', d.body_html || '');
+      setIfEmpty('f-shopify_vendor',    d.vendor    || '');
+      setIfEmpty('f-shopify_tags',      d.tags      || '');
+      setIfEmpty('f-shopify_sku',       d.sku       || '');
+    } else if (shop === 'amazon') {
+      setIfEmpty('f-amazon_title',        d.title        || '');
+      setIfEmpty('f-amazon_description',  d.description  || '');
+      setIfEmpty('f-amazon_bullet_1',     d.bullet_1     || '');
+      setIfEmpty('f-amazon_bullet_2',     d.bullet_2     || '');
+      setIfEmpty('f-amazon_bullet_3',     d.bullet_3     || '');
+      setIfEmpty('f-amazon_bullet_4',     d.bullet_4     || '');
+      setIfEmpty('f-amazon_bullet_5',     d.bullet_5     || '');
+      setIfEmpty('f-amazon_search_terms', d.search_terms || '');
+      setIfEmpty('f-amazon_brand',        d.brand        || '');
+    }
+    showEditToast(shop.charAt(0).toUpperCase() + shop.slice(1) + ' Texte generiert ✓', true);
+  } catch (err) {
+    showEditToast('Verbindungsfehler: ' + err.message, false);
+  } finally {
+    if (btn) btn.classList.remove('spinning');
+  }
+}
+</script>
+
+<script>
+/* ── Field-action button injector ──────────────────────────────────────────
+   Adds Regen / Undo / Copy icon-buttons to every .field-with-regen.
+   • Moves any legacy .btn-regen-field from the input row into the label area.
+   • Skips readonly/disabled inputs (only adds copy for those).
+   ─────────────────────────────────────────────────────────────────────── */
+/* ── Live preview helpers ── */
+function _el(id) { return document.getElementById(id); }
+function _val(id) { return (_el(id)?.value || '').trim(); }
+function _txt(id, v) { const e = _el(id); if (e) e.textContent = v; }
+
+function _setPrevImg(imgId, emptyId, src) {
+  const img = _el(imgId), empty = _el(emptyId);
+  if (!img || !empty) return;
+  if (src) { img.src = src; img.style.display = ''; empty.style.display = 'none'; }
+  else      { img.style.display = 'none'; empty.style.display = ''; }
+}
+
+function updatePinPreview(uploadedSrc) {
+  const src = uploadedSrc || _val('f-pin_media_url');
+  _setPrevImg('pin-prev-img', 'pin-prev-empty', src);
+  _txt('pin-prev-board', _val('f-pin_board') || 'Board');
+  _txt('pin-prev-title', _val('f-pin_titel') || 'Titel erscheint hier');
+  _txt('pin-prev-desc',  _val('f-pin_beschreibung') || 'Beschreibung erscheint hier…');
+  const url = _val('f-pin_ziel_url');
+  _txt('pin-prev-link',  url ? url.replace(/^https?:\/\//, '').split('/')[0] : 'link.com');
+}
+
+function updateIgPreview(uploadedSrc) {
+  if (uploadedSrc) _setPrevImg('ig-prev-img', 'ig-prev-empty', uploadedSrc);
+  const loc = _el('f-ig_location');
+  _txt('ig-prev-location', loc ? (loc.options[loc.selectedIndex]?.text || '') : '');
+  const caption = _val('ig-caption') || _val('f-ig_description');
+  _txt('ig-prev-caption', caption || 'Caption erscheint hier…');
+  _txt('ig-prev-hashtags', _val('ig-hashtags') || _val('f-ig_tags'));
+}
+
+/* Wire all preview inputs via addEventListener (more reliable than oninput attrs) */
+document.addEventListener('DOMContentLoaded', () => {
+  /* Pinterest fields */
+  ['f-pin_media_url','f-pin_board','f-pin_titel','f-pin_beschreibung','f-pin_ziel_url',
+   'f-pin_alt_text'].forEach(id => {
+    _el(id)?.addEventListener('input', () => updatePinPreview());
+  });
+  /* Instagram fields */
+  ['f-ig_description','f-ig_tags','f-ig_title','f-ig_location',
+   'ig-caption','ig-hashtags'].forEach(id => {
+    const el = _el(id);
+    if (!el) return;
+    el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', () => updateIgPreview());
+  });
+  /* Initial populate */
+  updatePinPreview();
+  updateIgPreview();
+});
+
+(function injectFieldActions() {
+  const SVG_REGEN = `<svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14.93-4H15v2h6V4h-2v2.34A9.98 9.98 0 0 0 2 12h2zm16 0a8 8 0 0 1-14.93 4H9v-2H3v6h2v-2.34A9.98 9.98 0 0 0 22 12h-2z" fill="currentColor"/></svg>`;
+  const SVG_UNDO  = `<svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z" fill="currentColor"/></svg>`;
+  const SVG_COPY  = `<svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1M8 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M8 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m0 0h2a2 2 0 0 1 2 2v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+  const _prev = {};
+
+  function mkBtn(action, title, svg) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn-icon-sm';
+    b.dataset.action = action; b.title = title;
+    b.innerHTML = svg; return b;
+  }
+
+  function doCopy(text, btn) {
+    const flash = () => { btn.classList.add('copied'); setTimeout(() => btn.classList.remove('copied'), 1300); };
+    if (navigator.clipboard) { navigator.clipboard.writeText(text).then(flash).catch(flash); }
+    else {
+      const ta = Object.assign(document.createElement('textarea'), {value:text, style:'position:fixed;opacity:0'});
+      document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch(e){} ta.remove(); flash();
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.field-with-regen').forEach(wrap => {
+      const label = wrap.querySelector(':scope > label');
+      if (!label) return;
+
+      const row   = wrap.querySelector('.field-input-row');
+      const input = wrap.querySelector('input:not([type=hidden]):not([type=file])') || wrap.querySelector('textarea');
+      if (!input) return;
+
+      const isRO = input.readOnly || input.disabled;
+
+      // Ensure .field-actions-inline exists in the label.
+      // Also wrap any pre-existing label content in a <span> so that
+      // req/opt-badge spans don't become rogue flex items next to the actions.
+      let actions = label.querySelector('.field-actions-inline');
+      if (!actions) {
+        // Wrap existing child nodes in a <span> to keep them as one flex item
+        const children = Array.from(label.childNodes);
+        if (children.length) {
+          const wrap = document.createElement('span');
+          wrap.style.cssText = 'display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0;';
+          children.forEach(n => wrap.appendChild(n));
+          label.appendChild(wrap);
+        }
+        actions = document.createElement('div');
+        actions.className = 'field-actions-inline';
+        label.appendChild(actions);
+      }
+
+      // ── Move legacy .btn-regen-field from the input row into the label ──
+      const legacyRegen = row ? row.querySelector('.btn-regen-field') : null;
+      if (legacyRegen && !actions.querySelector('[data-action=regen]')) {
+        legacyRegen.classList.replace('btn-regen-field', 'btn-icon-sm');
+        legacyRegen.dataset.action = 'regen';
+        legacyRegen.title = legacyRegen.title || 'Neu generieren';
+        actions.insertBefore(legacyRegen, actions.firstChild);
+      }
+
+      // ── Regen (add if still missing and field is editable) ──
+      if (!actions.querySelector('[data-action=regen]') && !isRO) {
+        const fname = (input.id || '').replace(/^f-/, '');
+        if (fname) {
+          const btn = mkBtn('regen', 'Neu generieren', SVG_REGEN);
+          btn.addEventListener('click', function() {
+            if (typeof regenField === 'function') regenField.call(this, fname);
+          });
+          actions.insertBefore(btn, actions.firstChild);
+        }
+      }
+
+      // ── Undo ──
+      if (!actions.querySelector('[data-action=undo]') && !isRO) {
+        const key = input.id || ('_' + Math.random());
+        const btn = mkBtn('undo', 'Rückgängig', SVG_UNDO);
+        btn.disabled = true;
+        input.addEventListener('focus', () => { _prev[key] = input.value; btn.disabled = false; });
+        btn.addEventListener('click', () => {
+          if (_prev[key] !== undefined) { input.value = _prev[key]; input.dispatchEvent(new Event('input', {bubbles:true})); }
+        });
+        actions.appendChild(btn);
+      }
+
+      // ── Copy ──
+      if (!actions.querySelector('[data-action=copy]')) {
+        const btn = mkBtn('copy', 'Kopieren', SVG_COPY);
+        btn.addEventListener('click', () => doCopy(input.value, btn));
+        actions.appendChild(btn);
+      }
+    });
+  });
+})();
+</script>
+
+{% include 'includes/footer.html' %}
+</body>
+</html>

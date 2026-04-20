@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shops – {{ header_title }}</title>
+<link rel="stylesheet" href="/static/style.css" />
+<style>
+.shops-layout {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 24px 60px;
+  width: 100%;
+  box-sizing: border-box;
+  flex: 1;
+  min-height: calc(100vh - 120px);
+}
+.shops-sidebar {
+  width: 210px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 24px;
+  align-self: flex-start;
+}
+/* sidebar-item, sidebar-nav, settings-sidebar-title → now in style.css */
+.shops-content { flex: 1; min-width: 0; }
+.shops-pane { display: none; flex-direction: column; gap: 0; }
+.shops-pane.active { display: flex; }
+
+/* Top bar */
+.shops-topbar {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 20px; padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.shops-topbar h2 {
+  font-size: 1.15rem; font-weight: 500; margin: 0; flex: 1;
+  letter-spacing: -.25px; color: var(--text);
+}
+.shops-count { font-size: .78rem; color: var(--muted); margin-top: 3px; }
+
+/* Table */
+.shops-table-wrap { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.shops-table { width: 100%; border-collapse: collapse; background: var(--card); }
+.shops-table th {
+  background: #F8F9FB; font-size: .69rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .4px; color: var(--muted);
+  padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border);
+}
+.shops-table td {
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  font-size: .83rem; vertical-align: middle;
+}
+.shops-table tr:last-child td { border-bottom: none; }
+.shops-table tr:hover td { background: var(--c-50); }
+.shops-table tr { cursor: pointer; }
+.sh-thumb {
+  width: 44px; height: 44px; border-radius: 8px;
+  object-fit: cover; border: 1px solid var(--border); display: block;
+}
+.sh-thumb-empty {
+  width: 44px; height: 44px; border-radius: 8px;
+  background: var(--c-100); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); font-size: 1rem;
+}
+.sh-title { font-weight: 600; font-size: .85rem; }
+.sh-sub { font-size: .73rem; color: var(--muted); margin-top: 2px; }
+.sh-badge-yes {
+  display: inline-block; padding: 2px 8px; border-radius: 20px;
+  font-size: .68rem; font-weight: 700;
+  background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0;
+}
+.sh-badge-no {
+  display: inline-block; padding: 2px 8px; border-radius: 20px;
+  font-size: .68rem; color: var(--muted);
+  background: #FAFAFA; border: 1px solid var(--border);
+}
+.sh-empty {
+  text-align: center; padding: 60px 20px; color: var(--muted);
+}
+.sh-empty svg { opacity: .2; margin-bottom: 14px; display: block; margin-left: auto; margin-right: auto; }
+.sh-empty h3 { font-size: .95rem; font-weight: 600; margin: 0 0 5px; color: var(--text); }
+.sh-empty p { font-size: .82rem; margin: 0; }
+</style>
+</head>
+<body>
+
+{% set header_back_href = '/' %}
+{% set header_back_label = 'Dashboard' %}
+{% set header_dropdown_home = true %}
+{% include 'includes/header.html' %}
+
+<div class="shops-layout">
+
+  <!-- Sidebar -->
+  <aside class="shops-sidebar">
+    <div class="settings-sidebar-title">Shops</div>
+    <nav class="sidebar-nav">
+      <button class="sidebar-item active" onclick="showPane('etsy',this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Etsy
+      </button>
+      <button class="sidebar-item" onclick="showPane('shopify',this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M16 10a4 4 0 0 1-8 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Shopify
+      </button>
+      <button class="sidebar-item" onclick="showPane('amazon',this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Amazon
+      </button>
+    </nav>
+  </aside>
+
+  <!-- Content -->
+  <div class="shops-content">
+
+    {% set etsy_rows    = rows | selectattr('etsy_title')    | list %}
+    {% set shopify_rows = rows | selectattr('shopify_title') | list %}
+    {% set amazon_rows  = rows | selectattr('amazon_title')  | list %}
+
+    <!-- Etsy -->
+    <div class="shops-pane active" id="pane-etsy">
+      <div class="shops-topbar">
+        <div style="flex:1">
+          <h2>Etsy</h2>
+          <div class="shops-count">{{ etsy_rows|length }} Produkte mit Etsy-Daten</div>
+        </div>
+      </div>
+      {% if etsy_rows %}
+      <div class="shops-table-wrap">
+        <table class="shops-table">
+          <thead><tr>
+            <th style="width:58px"></th>
+            <th>Produkt</th>
+            <th>Etsy Titel</th>
+            <th style="width:100px">Angelegt</th>
+          </tr></thead>
+          <tbody>
+            {% for r in etsy_rows %}
+            <tr onclick="window.location.href='/product/{{ r.id }}#shops'">
+              <td style="padding:8px 10px;">
+                {% if r.image_url %}<img class="sh-thumb" src="{{ r.image_url }}" alt="" loading="lazy" />
+                {% else %}<div class="sh-thumb-empty">🖼</div>{% endif %}
+              </td>
+              <td>
+                <div class="sh-title">{{ r.titel or '–' }}</div>
+                <div class="sh-sub">{{ r.ausrichtung or '' }}</div>
+              </td>
+              <td>
+                <div style="font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;">{{ r.etsy_title or '–' }}</div>
+              </td>
+              <td><div style="font-size:.78rem;color:var(--muted);">{{ r.created_at[:10] if r.created_at else '–' }}</div></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="sh-empty">
+        <svg width="40" height="40" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.4"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+        <h3>Keine Etsy-Produkte vorhanden</h3>
+        <p>Lege ein Produkt an und generiere die Etsy-Texte.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Shopify -->
+    <div class="shops-pane" id="pane-shopify">
+      <div class="shops-topbar">
+        <div style="flex:1">
+          <h2>Shopify</h2>
+          <div class="shops-count">{{ shopify_rows|length }} Produkte mit Shopify-Daten</div>
+        </div>
+      </div>
+      {% if shopify_rows %}
+      <div class="shops-table-wrap">
+        <table class="shops-table">
+          <thead><tr>
+            <th style="width:58px"></th>
+            <th>Produkt</th>
+            <th>Shopify Titel</th>
+            <th style="width:100px">Angelegt</th>
+          </tr></thead>
+          <tbody>
+            {% for r in shopify_rows %}
+            <tr onclick="window.location.href='/product/{{ r.id }}#shops'">
+              <td style="padding:8px 10px;">
+                {% if r.image_url %}<img class="sh-thumb" src="{{ r.image_url }}" alt="" loading="lazy" />
+                {% else %}<div class="sh-thumb-empty">🖼</div>{% endif %}
+              </td>
+              <td>
+                <div class="sh-title">{{ r.titel or '–' }}</div>
+                <div class="sh-sub">{{ r.ausrichtung or '' }}</div>
+              </td>
+              <td>
+                <div style="font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;">{{ r.shopify_title or '–' }}</div>
+              </td>
+              <td><div style="font-size:.78rem;color:var(--muted);">{{ r.created_at[:10] if r.created_at else '–' }}</div></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="sh-empty">
+        <svg width="40" height="40" fill="none" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M16 10a4 4 0 0 1-8 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h3>Keine Shopify-Produkte vorhanden</h3>
+        <p>Lege ein Produkt an und generiere die Shopify-Texte.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Amazon -->
+    <div class="shops-pane" id="pane-amazon">
+      <div class="shops-topbar">
+        <div style="flex:1">
+          <h2>Amazon</h2>
+          <div class="shops-count">{{ amazon_rows|length }} Produkte mit Amazon-Daten</div>
+        </div>
+      </div>
+      {% if amazon_rows %}
+      <div class="shops-table-wrap">
+        <table class="shops-table">
+          <thead><tr>
+            <th style="width:58px"></th>
+            <th>Produkt</th>
+            <th>Amazon Titel</th>
+            <th style="width:100px">Angelegt</th>
+          </tr></thead>
+          <tbody>
+            {% for r in amazon_rows %}
+            <tr onclick="window.location.href='/product/{{ r.id }}#shops'">
+              <td style="padding:8px 10px;">
+                {% if r.image_url %}<img class="sh-thumb" src="{{ r.image_url }}" alt="" loading="lazy" />
+                {% else %}<div class="sh-thumb-empty">🖼</div>{% endif %}
+              </td>
+              <td>
+                <div class="sh-title">{{ r.titel or '–' }}</div>
+                <div class="sh-sub">{{ r.ausrichtung or '' }}</div>
+              </td>
+              <td>
+                <div style="font-size:.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;">{{ r.amazon_title or '–' }}</div>
+              </td>
+              <td><div style="font-size:.78rem;color:var(--muted);">{{ r.created_at[:10] if r.created_at else '–' }}</div></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="sh-empty">
+        <svg width="40" height="40" fill="none" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h3>Keine Amazon-Produkte vorhanden</h3>
+        <p>Lege ein Produkt an und generiere die Amazon-Texte.</p>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<script>
+function showPane(name, btn) {
+  document.querySelectorAll('.shops-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('pane-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+function toggleUserMenu() {
+  document.getElementById('userDropdown').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('userMenu')?.contains(e.target))
+    document.getElementById('userDropdown')?.classList.remove('open');
+});
+async function doLogout() {
+  await fetch('/auth/logout', { method: 'POST' });
+  window.location.href = '/login';
+}
+
+// Open to correct tab from hash
+const hash = location.hash.replace('#','');
+if (['etsy','shopify','amazon'].includes(hash)) {
+  const btn = document.querySelector(`.sidebar-item[onclick*="'${hash}'"]`);
+  if (btn) showPane(hash, btn);
+}
+</script>
+
+{% include 'includes/footer.html' %}
+</body>
+</html>

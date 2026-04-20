@@ -1,0 +1,44 @@
+<header>
+  <img src="/assets/{{ header_logo }}" alt="Logo" class="header-logo" onerror="this.style.display='none'" />
+  <div style="flex:1"></div>
+  <div class="header-right">
+    {% if header_back_href is defined %}
+    <a href="{{ header_back_href }}" class="btn-header-back">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+        <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      {{ header_back_label | default('Dashboard') }}
+    </a>
+    {% endif %}
+    <div class="user-menu" id="userMenu">
+      <button class="user-btn" onclick="toggleUserMenu()" type="button">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+          <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        <span class="user-email-label">{{ current_user_email }}</span>
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24">
+          <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="user-dropdown" id="userDropdown">
+        <div class="user-dropdown-email">{{ current_user_email }}</div>
+        <hr class="dropdown-sep" />
+        {% if header_dropdown_home is defined and header_dropdown_home %}
+        <a href="/" class="dropdown-item">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="1.6"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Dashboard
+        </a>
+        {% endif %}
+        <a href="/settings" class="dropdown-item{% if header_active == 'settings' %} dropdown-item-active{% endif %}">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.6"/></svg>
+          Einstellungen
+        </a>
+        <button class="dropdown-item dropdown-item-danger" onclick="doLogout()">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Abmelden
+        </button>
+      </div>
+    </div>
+  </div>
+</header>

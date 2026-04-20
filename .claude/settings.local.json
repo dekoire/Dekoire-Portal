@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"import anthropic, yaml, openpyxl, PIL\")",
+      "Bash(pip3 install *)",
+      "Bash(python3 -m py_compile \"/Users/naelahmed/Desktop/scripting analysis/analyze_images.py\")",
+      "Bash(python3 -c \"import flask; print\\(flask.__version__\\)\")",
+      "Bash(python3 -m py_compile \"/Users/naelahmed/Desktop/scripting analysis/server.py\")",
+      "Bash(python3 server.py)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5000/)",
+      "Bash(kill %1)",
+      "Bash(xargs kill *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5001/)",
+      "Bash(pip install *)",
+      "Bash(python3 -c \"from server import app; print\\('OK'\\)\")",
+      "Bash(ps -p 38962 -o lstart=)",
+      "Bash(kill 38962)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 setup_supabase.py)",
+      "Read(//tmp/**)",
+      "Read(//private/tmp/**)",
+      "Bash(grep -n \"def index\\\\|route.*/$\\\\|@app.route\" \"/Users/naelahmed/Desktop/scripting analysis/server.py\")",
+      "Bash(python3 -c \"import server; print\\('OK'\\)\")",
+      "Bash(python3 -c \"import py_compile; py_compile.compile\\('server.py', doraise=True\\); print\\('server.py OK'\\)\")",
+      "Bash(python3 -m py_compile server.py)",
+      "Bash(python3 -c \"import server\")",
+      "Bash(awk 'NR>=584 && NR<=800 {print NR\": \"$0}' templates/product_edit.html)",
+      "Bash(python3 -)",
+      "Bash(python3 -c \"from server import app\")",
+      "Bash(python3 -c \"from dotenv import load_dotenv; print\\('dotenv ok'\\)\")",
+      "Bash(sed -n '603,612p' \"/Users/naelahmed/Desktop/scripting analysis/templates/social_posts.html\")",
+      "Bash(sed -n '524,532p' \"/Users/naelahmed/Desktop/scripting analysis/templates/dashboard.html\")",
+      "Bash(sed -n '753,761p' \"/Users/naelahmed/Desktop/scripting analysis/templates/produkt_create.html\")",
+      "Bash(sed -n '320,328p' \"/Users/naelahmed/Desktop/scripting analysis/templates/shops.html\")",
+      "Bash(sed -n '1854,1862p' \"/Users/naelahmed/Desktop/scripting analysis/templates/config_page.html\")",
+      "Bash(gh auth *)",
+      "Bash(git --version)"
+    ]
+  }
+}
