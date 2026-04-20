@@ -905,6 +905,37 @@ def pinterest_oauth_callback():
         return redirect(url_for("settings_page") + f"?pin_error={_up2.quote(str(e))}")
 
 
+@app.route("/api/pinterest/create-board", methods=["POST"])
+@require_auth
+def api_pinterest_create_board():
+    """Create a new board via Pinterest API."""
+    import urllib.request as _ur, urllib.error as _ue, ssl as _ssl
+    data    = request.json or {}
+    name    = data.get("name", "").strip()
+    privacy = data.get("privacy", "PUBLIC")
+    if not name:
+        return jsonify({"error": "Name fehlt"}), 400
+    cfg     = load_config()
+    pin_cfg = cfg.get("pinterest_posting", {})
+    token   = _pin_token(pin_cfg)
+    base    = _pin_base(pin_cfg)
+    if not token:
+        return jsonify({"error": "Pinterest Token fehlt"}), 400
+    ctx = _ssl.create_default_context(); ctx.check_hostname=False; ctx.verify_mode=_ssl.CERT_NONE
+    body = json.dumps({"name": name, "privacy": privacy}).encode()
+    req  = _ur.Request(f"{base}/boards", data=body,
+                       headers={"Content-Type":"application/json","Authorization":f"Bearer {token}","User-Agent":"Mozilla/5.0"},
+                       method="POST")
+    try:
+        with _ur.urlopen(req, timeout=15, context=ctx) as r:
+            result = json.loads(r.read())
+        return jsonify({"success": True, "board": result})
+    except _ue.HTTPError as e:
+        return jsonify({"error": f"Pinterest API {e.code}: {e.read().decode('utf-8','replace')}"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
 @app.route("/api/pinterest/boards")
 @require_auth
 def api_pinterest_boards():
@@ -1710,7 +1741,15 @@ def social_post_create(product_id):
         post["error_message"] = err
     else:
         _send_campaign_discord(cfg, platform, "scheduled", {"product_id":product_id,"caption":caption,"scheduled_at":scheduled_at,"image_count":len(image_data)})
-    return jsonify({"success":True,"status":post["status"],"error":post.get("error_message","")})
+    post_url = ""
+    if post.get("status") == "sent":
+        resp = post.get("response_data", {})
+        pin_id = resp.get("id") or (resp.get("pins",[{}])[0].get("id","") if resp.get("pins") else "")
+        if pin_id and platform == "pinterest":
+            post_url = f"https://www.pinterest.com/pin/{pin_id}/"
+        elif platform == "instagram":
+            post_url = resp.get("permalink", "")
+    return jsonify({"success":True,"status":post["status"],"error":post.get("error_message",""),"post_url":post_url})
 
 @app.route("/api/product/<product_id>/regen", methods=["POST"])
 @require_auth

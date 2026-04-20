@@ -2296,7 +2296,8 @@ async function spPost(platform) {
     }
     if (data.status === 'sent') {
       status.style.color = '#059669';
-      status.textContent = '✅ Erfolgreich gepostet!';
+      status.innerHTML = '✅ Erfolgreich gepostet!'
+        + (data.post_url ? ` <a href="${data.post_url}" target="_blank" rel="noopener" style="color:#059669;font-weight:600;text-decoration:underline;margin-left:8px;">→ Zum Post</a>` : '');
     } else if (data.status === 'scheduled') {
       status.style.color = '#D97706';
       status.textContent = '⏰ Kampagne geplant!';

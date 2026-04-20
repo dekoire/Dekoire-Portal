@@ -459,6 +459,43 @@
         </div>
       </div>
 
+      <!-- ── Pinterest Test & Tools ── -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/></svg>
+          Pinterest · Test &amp; Tools
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+
+            <!-- Verbindung testen -->
+            <div class="settings-field settings-field-full">
+              <label>Verbindung testen</label>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <button type="button" class="btn" onclick="pinTest()" style="font-size:.83rem;padding:7px 14px;">Verbindung testen</button>
+                <span id="pin-test-result" style="font-size:.83rem;"></span>
+              </div>
+              <span class="settings-hint">Prüft ob der aktive Token gültig ist und Boards geladen werden können.</span>
+            </div>
+
+            <!-- Board erstellen -->
+            <div class="settings-field settings-field-full">
+              <label>Neues Board erstellen</label>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <input type="text" id="pin-new-board-name" placeholder="Board-Name" style="flex:1;min-width:160px;" />
+                <select id="pin-new-board-privacy" style="padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--card);color:var(--text);">
+                  <option value="PUBLIC">Öffentlich</option>
+                  <option value="PROTECTED">Geheim</option>
+                </select>
+                <button type="button" class="btn btn-primary" onclick="pinCreateBoard()" style="font-size:.83rem;padding:7px 14px;">Board anlegen</button>
+              </div>
+              <span id="pin-board-create-result" style="font-size:.82rem;margin-top:6px;display:block;"></span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
       <!-- ── Shopify ── -->
       <div class="settings-card">
         <div class="settings-card-header">
@@ -1230,8 +1267,17 @@ function getPinEnv() {
 }
 
 function togglePinEnv(env) {
-  document.getElementById('pin-sandbox-block').style.display = env === 'sandbox'    ? '' : 'none';
-  document.getElementById('pin-prod-block').style.display    = env === 'production' ? '' : 'none';
+  // Both token fields always visible; active env gets a highlight
+  ['pin-sandbox-block','pin-prod-block'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.opacity = '1';
+  });
+  const active   = env === 'sandbox' ? 'pin-sandbox-block' : 'pin-prod-block';
+  const inactive = env === 'sandbox' ? 'pin-prod-block'    : 'pin-sandbox-block';
+  const a = document.getElementById(active);
+  const b = document.getElementById(inactive);
+  if (a) a.style.outline = '2px solid var(--btn)';
+  if (b) b.style.outline = 'none';
 }
 
 async function savePinCredsFirst(env) {
@@ -1944,6 +1990,39 @@ async function saveAmazonCats() {
     const data = await res.json();
     status.textContent = data.success ? `✓ ${cats.length} Kategorien gespeichert` : 'Fehler: ' + data.error;
   } catch(e) { status.textContent = 'Fehler: ' + e.message; }
+}
+
+async function pinTest() {
+  const el = document.getElementById('pin-test-result');
+  el.textContent = 'Teste …'; el.style.color = 'var(--muted)';
+  try {
+    const res  = await fetch('/api/pinterest/boards');
+    const data = await res.json();
+    if (data.error) { el.textContent = '❌ ' + data.error; el.style.color = '#DC2626'; }
+    else { el.textContent = `✅ Verbunden · ${data.boards.length} Board(s) gefunden`; el.style.color = '#16a34a'; }
+  } catch(e) { el.textContent = '❌ ' + e.message; el.style.color = '#DC2626'; }
+}
+
+async function pinCreateBoard() {
+  const name    = document.getElementById('pin-new-board-name').value.trim();
+  const privacy = document.getElementById('pin-new-board-privacy').value;
+  const result  = document.getElementById('pin-board-create-result');
+  if (!name) { result.textContent = 'Bitte einen Board-Namen eingeben.'; result.style.color = '#DC2626'; return; }
+  result.textContent = 'Erstelle Board …'; result.style.color = 'var(--muted)';
+  try {
+    const res  = await fetch('/api/pinterest/create-board', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ name, privacy })
+    });
+    const data = await res.json();
+    if (data.error) { result.textContent = '❌ ' + data.error; result.style.color = '#DC2626'; }
+    else {
+      const b = data.board;
+      result.innerHTML = `✅ Board "<strong>${b.name}</strong>" erstellt · ID: <code>${b.id}</code>`;
+      result.style.color = '#16a34a';
+      document.getElementById('pin-new-board-name').value = '';
+    }
+  } catch(e) { result.textContent = '❌ ' + e.message; result.style.color = '#DC2626'; }
 }
 
 // Load exact redirect URI from server
