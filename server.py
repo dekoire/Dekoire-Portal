@@ -1019,6 +1019,34 @@ def api_all_social_posts():
     platform = request.args.get("platform")
     return jsonify(_all_social_posts(platform or None))
 
+@app.route("/api/dashboard/stats")
+@require_auth
+def api_dashboard_stats():
+    cfg     = load_config()
+    sb_cfg  = cfg.get("supabase", {})
+    svc_key = sb_cfg.get("service_role_key","") or cfg.get("service_role_key","")
+    stats   = {"products_total": None, "products_etsy": None,
+               "posts_pinterest": None, "posts_instagram": None}
+    # Product counts
+    if _SUPABASE_OK and sb_cfg.get("url") and sb_cfg.get("anon_key"):
+        try:
+            sb    = _sb_create(sb_cfg["url"], sb_cfg["anon_key"])
+            table = sb_cfg.get("table_name", "image_analyses")
+            res   = sb.table(table).select("id,etsy_title", count="exact").execute()
+            rows  = res.data or []
+            stats["products_total"] = res.count if res.count is not None else len(rows)
+            stats["products_etsy"]  = sum(1 for r in rows if r.get("etsy_title","").strip())
+        except Exception:
+            pass
+    # Social post counts
+    try:
+        all_posts = _all_social_posts()
+        stats["posts_pinterest"] = sum(1 for p in all_posts if p.get("platform") == "pinterest")
+        stats["posts_instagram"] = sum(1 for p in all_posts if p.get("platform") == "instagram")
+    except Exception:
+        pass
+    return jsonify(stats)
+
 @app.route("/api/social/post/<post_id>", methods=["DELETE"])
 @require_auth
 def api_delete_social_post(post_id):
