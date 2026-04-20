@@ -810,11 +810,12 @@ def _pin_base(pin_cfg: dict) -> str:
     return _PIN_API_SANDBOX if pin_cfg.get("environment", "sandbox") == "sandbox" else _PIN_API_PROD
 
 def _pin_token(pin_cfg: dict) -> str:
-    """Return the token for the current environment."""
+    """Return the token for the current environment, falling back to legacy access_token."""
     env = pin_cfg.get("environment", "sandbox")
+    legacy = pin_cfg.get("access_token", "").strip()
     if env == "sandbox":
-        return pin_cfg.get("access_token_sandbox", pin_cfg.get("access_token", "")).strip()
-    return pin_cfg.get("access_token_prod", pin_cfg.get("access_token", "")).strip()
+        return pin_cfg.get("access_token_sandbox", "").strip() or legacy
+    return pin_cfg.get("access_token_prod", "").strip() or legacy
 
 @app.route("/api/pinterest/redirect-uri")
 @require_auth
@@ -911,13 +912,21 @@ def api_pinterest_boards():
     import urllib.request as _ur, urllib.error as _ue, ssl as _ssl
     cfg     = load_config()
     pin_cfg = cfg.get("pinterest_posting", {})
-    token   = _pin_token(pin_cfg)
     env     = pin_cfg.get("environment", "sandbox")
-    base    = _pin_base(pin_cfg)
+
+    # For board loading, if the sandbox-specific token is missing fall back to
+    # the production token + production API so boards are still accessible.
+    token = _pin_token(pin_cfg)
+    if env == "sandbox" and not pin_cfg.get("access_token_sandbox", "").strip():
+        token = pin_cfg.get("access_token_prod", pin_cfg.get("access_token", "")).strip()
+        base  = _PIN_API_PROD
+    else:
+        base  = _pin_base(pin_cfg)
+
     masked  = (token[:6] + "…" + token[-4:]) if len(token) > 12 else ("(leer)" if not token else token)
     print(f"[Pinterest Boards] env={env}  token={masked}  base={base}")
     if not token:
-        return jsonify({"error": f"Pinterest Access Token fehlt ({env}) – bitte unter Einstellungen → Pinterest API verbinden.", "boards": []}), 200
+        return jsonify({"error": f"Pinterest Access Token fehlt – bitte unter Einstellungen → Pinterest API verbinden.", "boards": []}), 200
     ctx = _ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode    = _ssl.CERT_NONE
