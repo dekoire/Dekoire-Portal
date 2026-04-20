@@ -1056,6 +1056,38 @@ def produkt_create():
         amazon_categories        = amazon_cfg.get("synced_categories", []),
     )
 
+@app.route("/social/post/create")
+@require_auth
+def social_post_create_page():
+    cfg = load_config()
+    pin_cfg = cfg.get("pinterest_posting", {})
+    return render_template("social_post_create.html",
+        cfg              = cfg,
+        header_logo      = cfg.get("header_logo", "logo-white.png"),
+        current_user_email = session.get("user_email", ""),
+        pin_environment  = pin_cfg.get("environment", "sandbox"),
+    )
+
+@app.route("/api/products/list")
+@require_auth
+def api_products_list():
+    """Return products sorted newest-first for social post creation picker."""
+    cfg    = load_config()
+    sb_cfg = cfg.get("supabase", {})
+    if not (_SUPABASE_OK and sb_cfg.get("url") and sb_cfg.get("anon_key")):
+        return jsonify([])
+    try:
+        sb    = _sb_create(sb_cfg["url"], sb_cfg["anon_key"])
+        table = sb_cfg.get("table_name", "image_analyses")
+        res   = sb.table(table).select(
+            "id,dekoire_id,titel,image_url,created_at,"
+            "pin_board,pin_board_id,pin_titel,pin_beschreibung,pin_ziel_url,pin_alt_text,pin_media_url,"
+            "ig_title,ig_description,ig_tags,ig_location"
+        ).order("created_at", desc=True).limit(200).execute()
+        return jsonify(res.data or [])
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/products")
 @require_auth
 def products_page():
