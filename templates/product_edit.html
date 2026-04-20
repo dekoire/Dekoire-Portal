@@ -441,10 +441,10 @@
 .pin-board-combo { position: relative; width: 100%; }
 .pin-board-input-wrap { display: flex; align-items: center; gap: 4px; }
 .pin-board-dropdown {
-  position: absolute; left: 0; right: 0; top: calc(100% - 18px);
+  position: absolute; left: 0; right: 0; top: calc(100% + 2px);
   background: var(--card); border: 1px solid var(--border);
   border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.12);
-  max-height: 240px; overflow-y: auto; z-index: 50;
+  max-height: 240px; overflow-y: auto; z-index: 100;
 }
 .pin-board-option {
   display: flex; flex-direction: column;
@@ -863,27 +863,22 @@
           <div class="settings-grid">
             <div class="field-with-regen settings-field-full">
               <label>Board</label>
-              <!-- Real-time Pinterest board combobox -->
-              <div class="pin-board-combo" id="pinBoardCombo">
-                <div class="pin-board-input-wrap">
-                  <input type="text" id="f-pin_board" autocomplete="off"
-                    placeholder="Board auswählen …"
-                    value="{{ row.pin_board or '' }}"
-                    oninput="pinBoardFilter();updatePinPreview()"
-                    onfocus="pinBoardOpen()"
-                    onblur="setTimeout(pinBoardClose, 200)"
-                    style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--card);width:100%;box-sizing:border-box;" />
-                  <button type="button" id="pinBoardRefreshBtn" class="btn-icon-sm" title="Boards neu laden" onclick="pinBoardLoad(true)" style="margin-left:6px;flex-shrink:0;">
-                    <svg id="pinBoardRefreshIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                  </button>
-                </div>
-                <!-- Hidden dropdown -->
-                <div class="pin-board-dropdown" id="pinBoardDropdown" style="display:none;"></div>
-                <!-- Status hint -->
-                <span class="settings-hint" id="pinBoardHint">Boards werden beim Öffnen automatisch geladen</span>
-                <!-- Hidden field carrying the numeric board ID for spPost() -->
-                <input type="hidden" id="pin-board-id" value="{{ row.pin_board_id or '' }}" />
+              <div style="display:flex;gap:6px;align-items:center;">
+                <select id="f-pin_board_select"
+                  onchange="pinBoardSelectFromDropdown(this)"
+                  style="flex:1;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--card);color:var(--text);cursor:pointer;appearance:auto;">
+                  <option value="">— Board auswählen —</option>
+                  {% if row.pin_board and row.pin_board_id %}
+                  <option value="{{ row.pin_board_id }}" data-name="{{ row.pin_board }}" selected>{{ row.pin_board }}</option>
+                  {% endif %}
+                </select>
+                <button type="button" id="pinBoardRefreshBtn" class="btn-icon-sm" title="Boards neu laden" onclick="pinBoardLoad(true)" style="flex-shrink:0;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                </button>
               </div>
+              <span class="settings-hint" id="pinBoardHint">{% if row.pin_board_id %}✓ {{ row.pin_board }} · ID: {{ row.pin_board_id }}{% else %}Boards werden automatisch geladen{% endif %}</span>
+              <input type="hidden" id="f-pin_board" value="{{ row.pin_board or '' }}" />
+              <input type="hidden" id="pin-board-id" value="{{ row.pin_board_id or '' }}" />
             </div>
             <div class="field-with-regen">
               <label>Ziel-URL</label>
@@ -955,12 +950,6 @@
           </div>
 
           <div class="settings-grid">
-            <!-- pin-board-id is now a hidden field inside the Board combobox above -->
-            <div class="settings-field">
-              <label>Board Section ID <span class="opt-badge">optional</span></label>
-              <input type="text" id="pin-board-section" class="pf-input" placeholder="z.B. 9876543210987654" />
-              <span class="settings-hint">Unterbereich des Boards (falls vorhanden)</span>
-            </div>
             <div class="settings-field settings-field-full">
               <label>
                 Notiz <span class="opt-badge">optional</span>
@@ -2194,6 +2183,30 @@ async function confirmDelete() {
 /* ══ Social Posting ══ */
 const _spFiles = { ig: [], pin: [] };
 
+function extractDominantColor(file, onColor) {
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = function() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 50; canvas.height = 50;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, 50, 50);
+    const data = ctx.getImageData(0, 0, 50, 50).data;
+    let r = 0, g = 0, b = 0, count = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i+3] < 10) continue;
+      r += data[i]; g += data[i+1]; b += data[i+2]; count++;
+    }
+    if (count) {
+      const hex = '#' + [Math.round(r/count), Math.round(g/count), Math.round(b/count)]
+        .map(v => v.toString(16).padStart(2,'0')).join('');
+      onColor(hex);
+    }
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+}
+
 function spPreview(input, prefix) {
   const files = Array.from(input.files).slice(0,4);
   _spFiles[prefix] = files;
@@ -2209,8 +2222,16 @@ function spPreview(input, prefix) {
   hint.style.display = files.length ? 'none' : '';
   if (files.length) {
     const blobUrl = URL.createObjectURL(files[0]);
-    if (prefix === 'pin') updatePinPreview(blobUrl);
-    if (prefix === 'ig')  updateIgPreview(blobUrl);
+    if (prefix === 'pin') {
+      updatePinPreview(blobUrl);
+      extractDominantColor(files[0], hex => {
+        const picker = document.getElementById('pin-color-picker');
+        const text   = document.getElementById('pin-dominant-color');
+        if (picker) picker.value = hex;
+        if (text)   text.value  = hex;
+      });
+    }
+    if (prefix === 'ig') updateIgPreview(blobUrl);
   }
 }
 
@@ -2402,6 +2423,7 @@ async function pinBoardLoad(force = false) {
   _pinLoading = true;
   const btn  = document.getElementById('pinBoardRefreshBtn');
   const hint = document.getElementById('pinBoardHint');
+  const sel  = document.getElementById('f-pin_board_select');
   if (btn) btn.classList.add('spinning');
   if (hint) { hint.textContent = 'Boards werden geladen …'; hint.style.color = 'var(--muted)'; }
   try {
@@ -2412,18 +2434,29 @@ async function pinBoardLoad(force = false) {
       _pinBoards = [];
     } else {
       _pinBoards = data.boards || [];
-      if (hint) {
-        hint.textContent = _pinBoards.length
-          ? `${_pinBoards.length} Board${_pinBoards.length !== 1 ? 's' : ''} geladen`
-          : 'Keine Boards gefunden';
-        hint.style.color = 'var(--muted)';
-      }
       _pinLoaded = true;
-      // If a board name is already set, try to pre-fill the board-id
-      const inp = document.getElementById('f-pin_board');
-      if (inp && inp.value) {
-        const match = _pinBoards.find(b => b.name.toLowerCase() === inp.value.toLowerCase());
-        if (match) document.getElementById('pin-board-id').value = match.id;
+      // Rebuild select options
+      const currentId = document.getElementById('pin-board-id').value;
+      if (sel) {
+        sel.innerHTML = '<option value="">— Board auswählen —</option>';
+        _pinBoards.forEach(b => {
+          const opt = document.createElement('option');
+          opt.value = b.id;
+          opt.dataset.name = b.name;
+          opt.textContent = b.name;
+          if (b.id === currentId) opt.selected = true;
+          sel.appendChild(opt);
+        });
+      }
+      if (hint) {
+        if (currentId && _pinBoards.find(b => b.id === currentId)) {
+          const b = _pinBoards.find(b => b.id === currentId);
+          hint.textContent = `✓ ${b.name} · ID: ${b.id}`;
+          hint.style.color = '#16a34a';
+        } else {
+          hint.textContent = _pinBoards.length ? `${_pinBoards.length} Boards geladen` : 'Keine Boards gefunden';
+          hint.style.color = 'var(--muted)';
+        }
       }
     }
   } catch(e) {
@@ -2431,49 +2464,20 @@ async function pinBoardLoad(force = false) {
   } finally {
     _pinLoading = false;
     if (btn) btn.classList.remove('spinning');
-    pinBoardFilter();
   }
 }
 
-function pinBoardOpen() {
-  pinBoardLoad(false);
-  const dd = document.getElementById('pinBoardDropdown');
-  if (dd) dd.style.display = '';
-  pinBoardFilter();
-}
-
-function pinBoardClose() {
-  const dd = document.getElementById('pinBoardDropdown');
-  if (dd) dd.style.display = 'none';
-}
-
-function pinBoardFilter() {
-  const dd  = document.getElementById('pinBoardDropdown');
-  const inp = document.getElementById('f-pin_board');
-  if (!dd) return;
-  const q = (inp?.value || '').toLowerCase().trim();
-  const visible = q
-    ? _pinBoards.filter(b => b.name.toLowerCase().includes(q) || b.id.includes(q))
-    : _pinBoards;
-
-  if (!visible.length && !_pinLoading) {
-    dd.innerHTML = `<div class="pin-board-empty">${_pinLoaded ? 'Keine passenden Boards' : 'Boards werden geladen …'}</div>`;
-  } else {
-    dd.innerHTML = visible.map(b =>
-      `<div class="pin-board-option" onmousedown="pinBoardSelect(${JSON.stringify(b.id)}, ${JSON.stringify(b.name)})">
-        <span class="board-name">${b.name}</span>
-        <span class="board-id">ID: ${b.id}</span>
-       </div>`
-    ).join('');
-  }
-}
-
-function pinBoardSelect(id, name) {
+function pinBoardSelectFromDropdown(sel) {
+  const id   = sel.value;
+  const name = sel.options[sel.selectedIndex]?.dataset.name || sel.options[sel.selectedIndex]?.text || '';
   document.getElementById('f-pin_board').value  = name;
   document.getElementById('pin-board-id').value = id;
   const hint = document.getElementById('pinBoardHint');
-  if (hint) { hint.textContent = `Board-ID: ${id}`; hint.style.color = 'var(--muted)'; }
-  pinBoardClose();
+  if (hint) {
+    if (id) { hint.textContent = `✓ ${name} · ID: ${id}`; hint.style.color = '#16a34a'; }
+    else    { hint.textContent = 'Kein Board ausgewählt';  hint.style.color = 'var(--muted)'; }
+  }
+  updatePinPreview();
 }
 
 async function loadSocialHistory() {
@@ -2578,9 +2582,10 @@ function _setPrevImg(imgId, emptyId, src) {
 }
 
 function updatePinPreview(uploadedSrc) {
-  const src = uploadedSrc || _val('f-pin_media_url');
+  const src = uploadedSrc || _val('f-pin_media_url') || IMAGE_URL || '';
   _setPrevImg('pin-prev-img', 'pin-prev-empty', src);
-  _txt('pin-prev-board', _val('f-pin_board') || 'Board');
+  const boardName = _val('f-pin_board') || 'Board';
+  _txt('pin-prev-board', boardName);
   _txt('pin-prev-title', _val('f-pin_titel') || 'Titel erscheint hier');
   _txt('pin-prev-desc',  _val('f-pin_beschreibung') || 'Beschreibung erscheint hier…');
   const url = _val('f-pin_ziel_url');
@@ -2613,6 +2618,8 @@ document.addEventListener('DOMContentLoaded', () => {
   /* Initial populate */
   updatePinPreview();
   updateIgPreview();
+  /* Auto-load boards on page open */
+  pinBoardLoad(false);
 });
 
 (function injectFieldActions() {

@@ -365,22 +365,96 @@
         </div>
         <div class="settings-card-body">
           <div class="settings-grid">
-            <div class="settings-field settings-field-full">
-              <label>Access Token</label>
+            <div class="settings-field">
+              <label>App-ID <span class="opt-badge">Client ID</span></label>
+              <input type="text" id="s-pin-client-id" value="{{ cfg.get('pinterest_posting',{}).get('client_id','') }}" placeholder="1563474" autocomplete="off"/>
+              <span class="settings-hint">Pinterest Developer Console → deine App → App-ID</span>
+            </div>
+            <div class="settings-field">
+              <label>App-Geheimschlüssel <span class="opt-badge">Client Secret</span></label>
               <div class="pw-wrap">
-                <input type="password" id="s-pin-post-token" value="{{ cfg.get('pinterest_posting',{}).get('access_token','') }}" placeholder="pina_…" autocomplete="off"/>
+                <input type="password" id="s-pin-client-secret" value="{{ cfg.get('pinterest_posting',{}).get('client_secret','') }}" placeholder="••••••••" autocomplete="off"/>
                 <div class="pw-actions">
-                  <button type="button" class="pw-btn" onclick="togglePw('s-pin-post-token',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
-                  <button type="button" class="pw-btn" onclick="copyPw('s-pin-post-token',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="togglePw('s-pin-client-secret',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
                 </div>
               </div>
-              <span class="settings-hint">
-                Pinterest Developer Console → deine App → <strong>Generate Access Token</strong>.<br/>
-                Benötigte Scopes: <code style="font-size:.75rem;background:var(--c-50);padding:1px 4px;border-radius:4px;">boards:read</code>
-                <code style="font-size:.75rem;background:var(--c-50);padding:1px 4px;border-radius:4px;">pins:write</code>
-                <code style="font-size:.75rem;background:var(--c-50);padding:1px 4px;border-radius:4px;">pins:read</code> — alle drei auswählen.
-              </span>
             </div>
+            <div class="settings-field settings-field-full">
+              <label>Umgebung</label>
+              {% set pin_env = cfg.get('pinterest_posting',{}).get('environment','sandbox') %}
+              <div style="display:flex;gap:8px;">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:normal;font-size:.875rem;">
+                  <input type="radio" name="pin-env" id="pin-env-sandbox" value="sandbox" {{ 'checked' if pin_env == 'sandbox' else '' }} onchange="togglePinEnv('sandbox')" />
+                  Sandbox <span style="font-size:.72rem;color:var(--muted);">(Trial / Entwicklung)</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:normal;font-size:.875rem;margin-left:16px;">
+                  <input type="radio" name="pin-env" id="pin-env-prod" value="production" {{ 'checked' if pin_env == 'production' else '' }} onchange="togglePinEnv('production')" />
+                  Produktion <span style="font-size:.72rem;color:var(--muted);">(Live)</span>
+                </label>
+              </div>
+              <span class="settings-hint">Sandbox = api-sandbox.pinterest.com · Produktion = api.pinterest.com</span>
+            </div>
+
+            <!-- Sandbox Token -->
+            <div class="settings-field settings-field-full" id="pin-sandbox-block">
+              <label>Sandbox Token</label>
+              {% set tok_sb = cfg.get('pinterest_posting',{}).get('access_token_sandbox','') %}
+              {% if tok_sb %}
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="color:#16a34a;font-size:.82rem;font-weight:600;">✓ Verbunden</span>
+                <span style="color:var(--muted);font-size:.75rem;">{{ tok_sb[:8] }}…{{ tok_sb[-4:] }}</span>
+                <button type="button" class="btn" style="font-size:.75rem;padding:4px 10px;" onclick="savePinCredsFirst('sandbox').then(ok=>{ if(ok) window.location='/auth/pinterest'; })">Neu verbinden</button>
+              </div>
+              {% else %}
+              <button type="button" class="btn btn-primary" style="font-size:.82rem;padding:7px 14px;display:inline-flex;align-items:center;gap:6px;margin-bottom:6px;" onclick="savePinCredsFirst('sandbox').then(ok=>{ if(ok) window.location='/auth/pinterest'; })">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+                Mit Pinterest verbinden (Sandbox)
+              </button>
+              {% endif %}
+              <div class="pw-wrap">
+                <input type="password" id="s-pin-token-sandbox" value="{{ tok_sb }}" placeholder="manuell eintragen oder via OAuth" autocomplete="off"/>
+                <div class="pw-actions">
+                  <button type="button" class="pw-btn" onclick="togglePw('s-pin-token-sandbox',this)">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-pin-token-sandbox',this)">{% include 'icons/copy.svg' %}</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Production Token -->
+            <div class="settings-field settings-field-full" id="pin-prod-block">
+              <label>Produktions-Token</label>
+              {% set tok_pr = cfg.get('pinterest_posting',{}).get('access_token_prod','') %}
+              {% if tok_pr %}
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="color:#16a34a;font-size:.82rem;font-weight:600;">✓ Verbunden</span>
+                <span style="color:var(--muted);font-size:.75rem;">{{ tok_pr[:8] }}…{{ tok_pr[-4:] }}</span>
+                <button type="button" class="btn" style="font-size:.75rem;padding:4px 10px;" onclick="savePinCredsFirst('production').then(ok=>{ if(ok) window.location='/auth/pinterest'; })">Neu verbinden</button>
+              </div>
+              {% else %}
+              <button type="button" class="btn btn-primary" style="font-size:.82rem;padding:7px 14px;display:inline-flex;align-items:center;gap:6px;margin-bottom:6px;" onclick="savePinCredsFirst('production').then(ok=>{ if(ok) window.location='/auth/pinterest'; })">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+                Mit Pinterest verbinden (Produktion)
+              </button>
+              {% endif %}
+              <div class="pw-wrap">
+                <input type="password" id="s-pin-token-prod" value="{{ tok_pr }}" placeholder="manuell eintragen oder via OAuth" autocomplete="off"/>
+                <div class="pw-actions">
+                  <button type="button" class="pw-btn" onclick="togglePw('s-pin-token-prod',this)">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-pin-token-prod',this)">{% include 'icons/copy.svg' %}</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-field settings-field-full">
+              <label style="font-size:.8rem;">Redirect-URI für Pinterest Developer Console</label>
+              <div style="background:var(--c-50);border:1px solid var(--border);border-radius:8px;padding:8px 12px;display:flex;align-items:center;gap:8px;">
+                <code id="pinRedirectUriDisplay" style="font-size:.8rem;color:var(--text);flex:1;word-break:break-all;">wird geladen…</code>
+                <button type="button" class="pw-btn" onclick="navigator.clipboard.writeText(document.getElementById('pinRedirectUriDisplay').textContent).then(()=>showToast('URI kopiert!',true))" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+              </div>
+            </div>
+
+            <!-- hidden legacy field kept for save function -->
+            <input type="hidden" id="s-pin-post-token" value="{{ cfg.get('pinterest_posting',{}).get('access_token','') }}" />
           </div>
         </div>
       </div>
@@ -1151,6 +1225,31 @@ function showPane(name, btn) {
 }
 
 /* ── Password helpers ── */
+function getPinEnv() {
+  return document.getElementById('pin-env-prod')?.checked ? 'production' : 'sandbox';
+}
+
+function togglePinEnv(env) {
+  document.getElementById('pin-sandbox-block').style.display = env === 'sandbox'    ? '' : 'none';
+  document.getElementById('pin-prod-block').style.display    = env === 'production' ? '' : 'none';
+}
+
+async function savePinCredsFirst(env) {
+  const resolvedEnv  = env || getPinEnv();
+  const clientId     = document.getElementById('s-pin-client-id')?.value.trim();
+  const clientSecret = document.getElementById('s-pin-client-secret')?.value.trim();
+  if (!clientId || !clientSecret) {
+    alert('Bitte zuerst App-ID und App-Geheimschlüssel eintragen.');
+    return false;
+  }
+  await fetch('/api/config', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ pinterest_posting: { client_id: clientId, client_secret: clientSecret, environment: resolvedEnv } })
+  });
+  return true;
+}
+
 function togglePw(id, btn) {
   const inp = document.getElementById(id);
   inp.type = inp.type === 'password' ? 'text' : 'password';
@@ -1238,7 +1337,12 @@ async function saveSettings() {
       user_id:      document.getElementById('s-ig-post-userid').value.trim(),
     },
     pinterest_posting: {
-      access_token: document.getElementById('s-pin-post-token').value.trim(),
+      access_token:        document.getElementById('s-pin-post-token').value.trim(),
+      access_token_sandbox: document.getElementById('s-pin-token-sandbox')?.value.trim() || '',
+      access_token_prod:    document.getElementById('s-pin-token-prod')?.value.trim() || '',
+      client_id:            document.getElementById('s-pin-client-id').value.trim(),
+      client_secret:        document.getElementById('s-pin-client-secret').value.trim(),
+      environment:          getPinEnv(),
     },
     social_posting: {
       discord_webhook_campaigns: document.getElementById('s-campaigns-discord').value.trim(),
@@ -1841,6 +1945,28 @@ async function saveAmazonCats() {
     status.textContent = data.success ? `✓ ${cats.length} Kategorien gespeichert` : 'Fehler: ' + data.error;
   } catch(e) { status.textContent = 'Fehler: ' + e.message; }
 }
+
+// Load exact redirect URI from server
+fetch('/api/pinterest/redirect-uri').then(r=>r.json()).then(d=>{
+  const el = document.getElementById('pinRedirectUriDisplay');
+  if (el && d.redirect_uri) el.textContent = d.redirect_uri;
+});
+
+// Init Pinterest UI on load
+(function() {
+  const p   = new URLSearchParams(window.location.search);
+  const env = document.getElementById('pin-env-prod')?.checked ? 'production' : 'sandbox';
+  togglePinEnv(env);
+
+  if (p.get('pin_connected') === '1') {
+    const connEnv = p.get('pin_env') === 'production' ? 'Produktion' : 'Sandbox';
+    showToast(`✓ Pinterest (${connEnv}) erfolgreich verbunden!`, true);
+    history.replaceState({}, '', window.location.pathname);
+  } else if (p.get('pin_error')) {
+    showToast('Pinterest Fehler: ' + decodeURIComponent(p.get('pin_error')), false);
+    history.replaceState({}, '', window.location.pathname);
+  }
+})();
 </script>
 {% include 'includes/footer.html' %}
 </body>

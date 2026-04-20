@@ -797,6 +797,113 @@ def social_instagram():
                            header_title = cfg.get("header_title", "Image Analyzer"),
                            current_user_email = session.get("user_email", ""))
 
+# ── Pinterest OAuth ──────────────────────────────────────────────────────────
+
+_PIN_SCOPES        = "boards:read,boards:write,pins:read,pins:write,user_accounts:read"
+_PIN_API_PROD      = "https://api.pinterest.com/v5"
+_PIN_API_SANDBOX   = "https://api-sandbox.pinterest.com/v5"
+_PIN_OAUTH_PROD    = "https://www.pinterest.com/oauth/"
+_PIN_OAUTH_SANDBOX = "https://www.pinterest.com/oauth/"  # same auth URL, different API base
+
+def _pin_base(pin_cfg: dict) -> str:
+    """Return the correct Pinterest API base URL based on environment setting."""
+    return _PIN_API_SANDBOX if pin_cfg.get("environment", "sandbox") == "sandbox" else _PIN_API_PROD
+
+def _pin_token(pin_cfg: dict) -> str:
+    """Return the token for the current environment."""
+    env = pin_cfg.get("environment", "sandbox")
+    if env == "sandbox":
+        return pin_cfg.get("access_token_sandbox", pin_cfg.get("access_token", "")).strip()
+    return pin_cfg.get("access_token_prod", pin_cfg.get("access_token", "")).strip()
+
+@app.route("/api/pinterest/redirect-uri")
+@require_auth
+def pinterest_redirect_uri():
+    uri = url_for("pinterest_oauth_callback", _external=True)
+    return jsonify({"redirect_uri": uri})
+
+@app.route("/auth/pinterest")
+@require_auth
+def pinterest_oauth_start():
+    """Redirect user to Pinterest authorization page."""
+    import urllib.parse as _up
+    cfg     = load_config()
+    pin_cfg = cfg.get("pinterest_posting", {})
+    client_id = pin_cfg.get("client_id", "").strip()
+    if not client_id:
+        return redirect(url_for("settings_page") + "?error=pinterest_no_client_id")
+    redirect_uri = url_for("pinterest_oauth_callback", _external=True)
+    params = _up.urlencode({
+        "client_id":     client_id,
+        "redirect_uri":  redirect_uri,
+        "response_type": "code",
+        "scope":         _PIN_SCOPES,
+    })
+    return redirect(f"https://www.pinterest.com/oauth/?{params}")
+
+
+@app.route("/auth/pinterest/callback")
+@require_auth
+def pinterest_oauth_callback():
+    """Exchange authorization code for access token and save it."""
+    import urllib.request as _ur, urllib.parse as _up, urllib.error as _ue, ssl as _ssl
+    code  = request.args.get("code", "")
+    error = request.args.get("error", "")
+    if error or not code:
+        msg = request.args.get("error_description", error or "Abgebrochen")
+        return redirect(url_for("settings_page") + f"?pin_error={_up.quote(msg)}")
+
+    cfg     = load_config()
+    pin_cfg = cfg.setdefault("pinterest_posting", {})
+    client_id     = pin_cfg.get("client_id", "").strip()
+    client_secret = pin_cfg.get("client_secret", "").strip()
+    redirect_uri  = url_for("pinterest_oauth_callback", _external=True)
+
+    if not client_id or not client_secret:
+        return redirect(url_for("settings_page") + "?pin_error=App-ID+oder+Geheimschlüssel+fehlt")
+
+    ctx = _ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode    = _ssl.CERT_NONE
+
+    body = _up.urlencode({
+        "grant_type":   "authorization_code",
+        "code":         code,
+        "redirect_uri": redirect_uri,
+    }).encode()
+    credentials = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+    env         = pin_cfg.get("environment", "sandbox")
+    token_field = "access_token_sandbox" if env == "sandbox" else "access_token_prod"
+    req = _ur.Request(
+        "https://api.pinterest.com/v5/oauth/token",
+        data=body,
+        headers={
+            "Authorization": f"Basic {credentials}",
+            "Content-Type":  "application/x-www-form-urlencoded",
+        },
+        method="POST",
+    )
+    try:
+        with _ur.urlopen(req, timeout=15, context=ctx) as r:
+            data = json.loads(r.read())
+        token = data.get("access_token", "")
+        if not token:
+            raise ValueError("Kein Token in der Antwort")
+        pin_cfg[token_field]    = token
+        pin_cfg["access_token"] = token  # keep legacy field in sync
+        if data.get("refresh_token"):
+            pin_cfg[f"refresh_token_{env}"] = data["refresh_token"]
+        save_config(cfg)
+        return redirect(url_for("settings_page") + f"?pin_connected=1&pin_env={env}")
+    except _ue.HTTPError as e:
+        body_err = e.read().decode("utf-8", "replace")
+        import urllib.parse as _up2
+        return redirect(url_for("settings_page") + f"?pin_error={_up2.quote(body_err[:200])}")
+    except Exception as e:
+        import urllib.parse as _up2
+        return redirect(url_for("settings_page") + f"?pin_error={_up2.quote(str(e))}")
+
+
 @app.route("/api/pinterest/boards")
 @require_auth
 def api_pinterest_boards():
@@ -804,12 +911,13 @@ def api_pinterest_boards():
     import urllib.request as _ur, urllib.error as _ue, ssl as _ssl
     cfg     = load_config()
     pin_cfg = cfg.get("pinterest_posting", {})
-    token   = pin_cfg.get("access_token", "").strip()
-    # Debug: log masked token so admin can verify it is loaded
-    masked = (token[:6] + "…" + token[-4:]) if len(token) > 12 else ("(leer)" if not token else token)
-    print(f"[Pinterest Boards] token={masked}  len={len(token)}")
+    token   = _pin_token(pin_cfg)
+    env     = pin_cfg.get("environment", "sandbox")
+    base    = _pin_base(pin_cfg)
+    masked  = (token[:6] + "…" + token[-4:]) if len(token) > 12 else ("(leer)" if not token else token)
+    print(f"[Pinterest Boards] env={env}  token={masked}  base={base}")
     if not token:
-        return jsonify({"error": "Pinterest Access Token fehlt – bitte unter Einstellungen → Zugangsdaten → Pinterest API hinterlegen.", "boards": []}), 200
+        return jsonify({"error": f"Pinterest Access Token fehlt ({env}) – bitte unter Einstellungen → Pinterest API verbinden.", "boards": []}), 200
     ctx = _ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode    = _ssl.CERT_NONE
@@ -817,7 +925,7 @@ def api_pinterest_boards():
     cursor = None
     try:
         while True:
-            url = "https://api.pinterest.com/v5/boards?page_size=250"
+            url = f"{base}/boards?page_size=250"
             if cursor:
                 url += f"&bookmark={cursor}"
             req = _ur.Request(url, headers={
@@ -1422,9 +1530,10 @@ def _post_to_instagram(cfg: dict, public_urls: list, caption: str, hashtags: str
 def _post_to_pinterest(cfg: dict, image_bytes_list: list, title: str, description: str, board_id: str, link: str) -> dict:
     import urllib.request as _ur, urllib.error as _ue, ssl as _ssl
     pin_cfg = cfg.get("pinterest_posting", {})
-    token   = pin_cfg.get("access_token","")
+    token   = _pin_token(pin_cfg)
+    base    = _pin_base(pin_cfg)
     if not token:
-        raise ValueError("Pinterest Access Token fehlt (Einstellungen → Social Posting)")
+        raise ValueError("Pinterest Access Token fehlt (Einstellungen → Pinterest API verbinden)")
     if not board_id:
         raise ValueError("Pinterest Board ID fehlt")
     ctx = _ssl.create_default_context(); ctx.check_hostname=False; ctx.verify_mode=_ssl.CERT_NONE
@@ -1433,7 +1542,7 @@ def _post_to_pinterest(cfg: dict, image_bytes_list: list, title: str, descriptio
         body = {"board_id":board_id,"title":pin_title,"description":description,"link":link,
                 "media_source":{"source_type":"image_base64","content_type":"image/jpeg","data":b64}}
         raw = json.dumps(body).encode()
-        req = _ur.Request("https://api.pinterest.com/v5/pins", data=raw,
+        req = _ur.Request(f"{base}/pins", data=raw,
                           headers={"Content-Type":"application/json","Authorization":f"Bearer {token}","User-Agent":"Mozilla/5.0"}, method="POST")
         try:
             with _ur.urlopen(req, timeout=30, context=ctx) as r:
