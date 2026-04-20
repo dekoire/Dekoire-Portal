@@ -459,6 +459,27 @@
         </div>
       </div>
 
+      <!-- ── Bilder-Generator ── -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Bilder-Generator
+        </div>
+        <div class="settings-card-body">
+          <div class="settings-grid">
+            <div class="settings-field settings-field-full">
+              <label>Generator URL</label>
+              <input type="text" id="s-img-gen-url" value="{{ cfg.get('social_media',{}).get('image_gen_url','') }}" placeholder="https://app.midjourney.com" />
+              <span class="settings-hint">URL des Bildgenerators (z.B. Midjourney, DALL-E, Firefly). Wird als Button im Post-Editor angezeigt.</span>
+            </div>
+            <div class="settings-field">
+              <label>Button-Bezeichnung</label>
+              <input type="text" id="s-img-gen-name" value="{{ cfg.get('social_media',{}).get('image_gen_name','') }}" placeholder="Bilder generieren" />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── Pinterest Test & Tools ── -->
       <div class="settings-card">
         <div class="settings-card-header">
@@ -1381,6 +1402,10 @@ async function saveSettings() {
     instagram_posting: {
       access_token: document.getElementById('s-ig-post-token').value.trim(),
       user_id:      document.getElementById('s-ig-post-userid').value.trim(),
+    },
+    social_media: {
+      image_gen_url:  document.getElementById('s-img-gen-url').value.trim(),
+      image_gen_name: document.getElementById('s-img-gen-name').value.trim(),
     },
     pinterest_posting: {
       access_token:        document.getElementById('s-pin-post-token').value.trim(),

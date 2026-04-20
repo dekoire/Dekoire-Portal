@@ -1092,11 +1092,14 @@ def produkt_create():
 def social_post_create_page():
     cfg = load_config()
     pin_cfg = cfg.get("pinterest_posting", {})
+    sm_cfg  = cfg.get("social_media", {})
     return render_template("social_post_create.html",
-        cfg              = cfg,
-        header_logo      = cfg.get("header_logo", "logo-white.png"),
+        cfg                = cfg,
+        header_logo        = cfg.get("header_logo", "logo-white.png"),
         current_user_email = session.get("user_email", ""),
-        pin_environment  = pin_cfg.get("environment", "sandbox"),
+        pin_environment    = pin_cfg.get("environment", "sandbox"),
+        image_gen_url      = sm_cfg.get("image_gen_url", "").strip(),
+        image_gen_name     = sm_cfg.get("image_gen_name", "").strip() or "Bilder generieren",
     )
 
 @app.route("/api/products/list")
@@ -1813,6 +1816,57 @@ def social_post_create(product_id):
         elif platform == "instagram":
             post_url = resp.get("permalink", "")
     return jsonify({"success":True,"status":post["status"],"error":post.get("error_message",""),"post_url":post_url})
+
+@app.route("/api/social/standalone/post", methods=["POST"])
+@require_auth
+def social_standalone_post():
+    return social_post_create("standalone")
+
+@app.route("/api/social/generate-field", methods=["POST"])
+@require_auth
+def social_generate_field():
+    """Generate a single social-media field with AI (no product context required)."""
+    data      = request.json or {}
+    field     = data.get("field", "")
+    title_ctx = data.get("title", "").strip()
+    cfg       = load_config()
+    client, _ = get_client()
+    model     = cfg.get("model", "claude-opus-4-5")
+    if not client:
+        return jsonify({"error": "Kein KI-Client konfiguriert"}), 400
+
+    prompts = {
+        "pin_titel":        f"Write a short, catchy Pinterest pin title (max 100 chars). Context: {title_ctx or 'art print'}. Return only the title.",
+        "pin_beschreibung": f"Write an engaging Pinterest pin description (2–3 sentences, max 500 chars). Context: {title_ctx or 'art print'}. Return only the description.",
+        "pin_alt_text":     f"Write a concise alt text for an image (max 500 chars). Context: {title_ctx or 'art print'}. Return only the alt text.",
+        "ig_description":   f"Write an Instagram caption (1–3 sentences, engaging, no hashtags). Context: {title_ctx or 'art print'}. Return only the caption.",
+        "ig_tags":          f"Generate 10–15 relevant Instagram hashtags for: {title_ctx or 'art print'}. Format: #tag1 #tag2 … Return only hashtags.",
+    }
+    # Handle _all variants for bulk generation
+    if field in ("pin_all", "ig_all"):
+        keys = ["pin_titel","pin_beschreibung","pin_alt_text"] if field == "pin_all" else ["ig_description","ig_tags"]
+        result = {}
+        map_key = {"pin_titel":"pin_titel","pin_beschreibung":"pin_beschreibung","pin_alt_text":"pin_alt_text",
+                   "ig_description":"ig_description","ig_tags":"ig_tags"}
+        out_key = {"pin_titel":"pin_titel","pin_beschreibung":"pin_beschreibung","pin_alt_text":"pin_alt_text",
+                   "ig_description":"ig_description","ig_tags":"ig_tags"}
+        for k in keys:
+            try:
+                resp = client.messages.create(model=model, max_tokens=300,
+                    messages=[{"role":"user","content": prompts[k]}])
+                result[k] = resp.content[0].text.strip()
+            except Exception:
+                pass
+        return jsonify(result)
+
+    if field not in prompts:
+        return jsonify({"error": "Unbekanntes Feld"}), 400
+    try:
+        resp = client.messages.create(model=model, max_tokens=300,
+            messages=[{"role":"user","content": prompts[field]}])
+        return jsonify({"value": resp.content[0].text.strip()})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/product/<product_id>/regen", methods=["POST"])
 @require_auth
