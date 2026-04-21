@@ -2268,16 +2268,17 @@ def product_legal_check(product_id):
 
         if inline_img_bytes:
             # ── Inline upload via multipart (no URL needed) ──────────────────
-            # Compress if needed
+            # Always normalise through save_and_compress (same pipeline as
+            # /api/analyze): converts to JPEG, compresses if too large.
+            # Then re-detect MIME from the resulting bytes so it always matches.
             try:
-                if len(inline_img_bytes) > MAX_BYTES:
-                    tmp_path = save_and_compress(inline_img_bytes, "legal_check_tmp.jpg")
-                    inline_img_bytes = tmp_path.read_bytes()
-                    tmp_path.unlink(missing_ok=True)
+                tmp_path = save_and_compress(inline_img_bytes, "legal_check_tmp.jpg")
+                inline_img_bytes = tmp_path.read_bytes()
+                tmp_path.unlink(missing_ok=True)
             except Exception:
-                pass
+                pass  # use raw bytes if compression fails
             img_data = base64.standard_b64encode(inline_img_bytes).decode()
-            img_mime = inline_img_mime or "image/jpeg"
+            img_mime = _detect_mime(inline_img_bytes)  # detect AFTER normalisation
 
         elif has_image:
             # ── Fetch from stored URL / local path ───────────────────────────
