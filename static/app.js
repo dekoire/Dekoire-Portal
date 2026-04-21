@@ -32,11 +32,14 @@ async function setFile(file) {
   const prev = document.getElementById('preview');
   prev.src = url;
   prev.style.display = 'block';
-  // Show preview section with heading
+  // Show preview section with heading (legacy sidebarPreview wrapper, may not exist)
   const previewWrap = document.getElementById('sidebarPreview');
   if (previewWrap) previewWrap.style.display = 'block';
   const previewEmpty = document.getElementById('previewEmpty');
   if (previewEmpty) previewEmpty.style.display = 'none';
+  // Mark picker as having an image (for .sidebar-img-picker CSS)
+  const pickerZone = document.getElementById('uploadZone');
+  if (pickerZone) pickerZone.classList.add('has-image');
 
   const dims = await getImageDimensions(file);
   const dpiX = exif.dpiX || 96, dpiY = exif.dpiY || 96;
