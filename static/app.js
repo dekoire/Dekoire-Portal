@@ -237,10 +237,11 @@ async function analyzeImage() {
     document.getElementById('nav-produktinfo').classList.add('active');
     hideLoading();
     showToast('Analyse abgeschlossen', 'success');
+    // Fire the post-analysis hook FIRST (before generateSocialMedia re-shows
+    // the loading overlay) so the legal check widget is visible immediately.
+    if (typeof window._afterAnalyze === 'function') window._afterAnalyze(data, currentFile);
     generateSocialMedia();
     prefillShopsFromProduct(data);
-    // Optional hook for pages that want to act after analysis (e.g. auto legal check)
-    if (typeof window._afterAnalyze === 'function') window._afterAnalyze(data, currentFile);
   } catch (err) { hideLoading(); showToast('Fehler: '+err.message, 'error'); }
 }
 

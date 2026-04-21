@@ -1305,7 +1305,11 @@ window._afterAnalyze = function(_analysisData, file) {
       document.getElementById('lc-results').style.display = 'block';
     })
     .catch(err => {
-      console.warn('Legal check auto-run failed:', err.message);
+      // Show error visibly in the widget (not just console)
+      document.getElementById('lcw-loading').style.display = 'none';
+      document.getElementById('lcw-empty').style.display   = 'block';
+      document.getElementById('lcw-empty').innerHTML =
+        `<div class="lc-widget-empty" style="color:#ef4444;">⚠ ${err.message}</div>`;
     })
     .finally(() => {
       document.getElementById('lcw-loading').style.display = 'none';
