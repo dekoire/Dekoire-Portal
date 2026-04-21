@@ -6,10 +6,11 @@
 <title>Post erstellen</title>
 <link rel="stylesheet" href="/static/style.css"/>
 <style>
-.spc-body { max-width: 1100px; margin: 0 auto; padding: 28px 24px 60px; box-sizing: border-box; }
+/* ── Page ── */
+.spc-body { max-width: 1060px; margin: 0 auto; padding: 28px 24px 60px; box-sizing: border-box; }
 
 /* ── Platform tabs ── */
-.spc-tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
+.spc-tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
 .spc-tab {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 22px 12px; font-size: .9rem; font-weight: 600;
@@ -18,143 +19,170 @@
   transition: color .15s, border-color .15s;
 }
 .spc-tab:hover { color: var(--text); }
-.spc-tab.active-pin  { color: #E60023; border-bottom-color: #E60023; }
-.spc-tab.active-ig   { color: #C13584; border-bottom-color: #C13584; }
+.spc-tab.a-pin { color: #E60023; border-bottom-color: #E60023; }
+.spc-tab.a-ig  { color: #C13584; border-bottom-color: #C13584; }
 
-/* ── Card ── */
-.spc-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+/* ── Card shell (both panes share same width) ── */
+.spc-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; width: 100%; box-sizing: border-box; }
 .spc-card-header {
-  display: flex; align-items: center; gap: 10px; padding: 13px 20px;
+  display: flex; align-items: center; gap: 10px; padding: 12px 20px;
   border-bottom: 1px solid var(--border); background: var(--c-50);
 }
-.spc-card-title { display: flex; align-items: center; gap: 8px; font-size: .9rem; font-weight: 700; color: var(--text); flex: 1; min-width: 0; }
-.spc-header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-
-.spc-btn-white {
+.spc-card-title { display: flex; align-items: center; gap: 8px; font-size: .9rem; font-weight: 700; color: var(--text); flex: 1; }
+.spc-btn-gen {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 13px; border: 1px solid var(--border); border-radius: 8px;
-  background: var(--card); color: var(--text); font-size: .82rem; font-weight: 600;
-  cursor: pointer; white-space: nowrap; transition: background .15s, border-color .15s;
+  padding: 6px 13px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--card); color: var(--text); font-size: .81rem; font-weight: 600;
+  cursor: pointer; transition: background .15s, border-color .15s; white-space: nowrap;
 }
-.spc-btn-white:hover { background: var(--c-100); border-color: var(--c-300); }
-.spc-btn-primary {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 15px; border: none; border-radius: 8px;
-  font-size: .82rem; font-weight: 700; cursor: pointer; white-space: nowrap;
-  transition: background .15s; color: #fff;
-}
-.spc-btn-primary.pin-color { background: #E60023; }
-.spc-btn-primary.pin-color:hover { background: #bf001d; }
-.spc-btn-primary.ig-color  { background: #C13584; }
-.spc-btn-primary.ig-color:hover  { background: #9c2a6b; }
+.spc-btn-gen:hover { background: var(--c-100); border-color: var(--c-300); }
 
 /* ── Card body ── */
 .spc-card-body { padding: 20px; }
 
-/* ── Upload zone (top of card) ── */
-.spc-upload-top {
-  border: 2px dashed var(--border); border-radius: 10px;
-  padding: 18px 20px; text-align: center; cursor: pointer;
-  transition: border-color .15s, background .15s; margin-bottom: 22px;
-}
-.spc-upload-top:hover { border-color: var(--btn); background: #EEF2FF; }
-.spc-upload-hint { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--muted); font-size: .83rem; }
-.spc-preview-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 8px; }
-.spc-preview-thumb { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
-
-/* ── 2-col layout ── */
-.spc-content-row { display: flex; gap: 28px; align-items: flex-start; }
-.spc-fields      { flex: 1; min-width: 0; }
-.spc-preview-col { width: 270px; flex-shrink: 0; position: sticky; top: 88px; }
+/* ── 2-col: fields left, preview right ── */
+.spc-cols { display: flex; gap: 24px; align-items: flex-start; }
+.spc-fields { flex: 1; min-width: 0; }
+.spc-prev-col { width: 252px; flex-shrink: 0; }
 
 /* ── Fields ── */
-.spc-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.spc-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 13px; }
+.spc-field:last-child { margin-bottom: 0; }
 .spc-field label {
-  font-size: .74rem; font-weight: 700; color: var(--muted);
+  font-size: .73rem; font-weight: 700; color: var(--muted);
   text-transform: uppercase; letter-spacing: .3px;
   display: flex; align-items: center; gap: 5px;
 }
 .spc-req { color: #E60023; font-size: .85rem; line-height: 1; }
-.spc-opt { font-size: .63rem; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; background: var(--c-100); color: var(--muted); padding: 1px 5px; border-radius: 4px; }
-.spc-field-row { display: flex; gap: 6px; align-items: flex-start; }
-.spc-field-row input,
-.spc-field-row textarea,
-.spc-field-row select {
-  flex: 1; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+.spc-opt { font-size: .62rem; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; background: var(--c-100); color: var(--muted); padding: 1px 5px; border-radius: 4px; }
+.spc-row { display: flex; gap: 6px; align-items: flex-start; }
+.spc-row input, .spc-row textarea, .spc-row select {
+  flex: 1; padding: 8px 11px; border: 1px solid var(--border); border-radius: 8px;
   font-size: .875rem; background: var(--card); color: var(--text);
   box-sizing: border-box; font-family: inherit; transition: border-color .15s;
 }
-.spc-field-row input:focus,
-.spc-field-row textarea:focus,
-.spc-field-row select:focus { outline: none; border-color: var(--btn); }
-.spc-field-row textarea { resize: vertical; min-height: 80px; }
-.spc-hint { font-size: .74rem; color: var(--muted); }
-
+.spc-row input:focus, .spc-row textarea:focus, .spc-row select:focus { outline: none; border-color: var(--btn); }
+.spc-row textarea { resize: vertical; min-height: 76px; }
+.spc-hint { font-size: .73rem; color: var(--muted); }
 .spc-regen {
   display: flex; align-items: center; justify-content: center;
-  width: 34px; height: 34px; flex-shrink: 0; margin-top: 1px;
-  border: 1px solid var(--border); border-radius: 8px;
+  width: 33px; height: 33px; flex-shrink: 0; margin-top: 1px;
+  border: 1px solid var(--border); border-radius: 7px;
   background: var(--card); color: var(--muted); cursor: pointer;
   transition: color .15s, border-color .15s, background .15s;
 }
 .spc-regen:hover { color: var(--btn); border-color: var(--btn); background: #EEF2FF; }
-.spc-regen.loading { opacity: .45; pointer-events: none; }
+.spc-regen.spin { opacity: .4; pointer-events: none; }
 
-/* ── Bilder-Generator button ── */
-.spc-imggen-row { margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--border); }
-.spc-imggen-btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px;
-  background: var(--card); color: var(--text); font-size: .83rem; font-weight: 600;
-  cursor: pointer; text-decoration: none; transition: background .15s, border-color .15s;
+/* ── Preview (clickable) ── */
+.spc-prev-label { font-size: .67rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 8px; }
+
+/* Pin mock */
+.pin-mock { background: var(--card); border-radius: 14px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+.pin-img-wrap { position: relative; width: 100%; aspect-ratio: 2/3; background: var(--c-100); overflow: hidden; cursor: pointer; }
+.pin-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pin-img-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--c-300); }
+.pin-mock-save { position: absolute; top: 10px; right: 10px; background: #E60023; color: #fff; border-radius: 20px; padding: 4px 11px; font-size: .76rem; font-weight: 700; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.pin-mock:hover .pin-mock-save { opacity: 1; }
+.pin-mock-body { padding: 9px 11px 11px; }
+.pin-mock-board { display: flex; align-items: center; gap: 4px; font-size: .7rem; color: var(--muted); margin-bottom: 3px; }
+.pin-mock-title { font-size: .8rem; font-weight: 700; color: var(--text); margin-bottom: 3px; line-height: 1.3; }
+.pin-mock-desc  { font-size: .71rem; color: var(--muted); line-height: 1.4; margin-bottom: 5px; }
+.pin-mock-link  { font-size: .67rem; color: var(--muted); display: flex; align-items: center; gap: 3px; }
+
+/* Ig mock */
+.ig-mock { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+.ig-mock-hdr { display: flex; align-items: center; gap: 8px; padding: 9px 11px; }
+.ig-avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); color: #fff; display: flex; align-items: center; justify-content: center; font-size: .74rem; font-weight: 700; flex-shrink: 0; }
+.ig-username { font-size: .8rem; font-weight: 700; color: var(--text); flex: 1; }
+.ig-more { font-size: 1rem; color: var(--muted); letter-spacing: 1px; }
+.ig-img-wrap { position: relative; width: 100%; aspect-ratio: 1/1; background: var(--c-100); overflow: hidden; cursor: pointer; }
+.ig-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ig-img-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--c-300); }
+.ig-actions { display: flex; align-items: center; gap: 12px; padding: 9px 11px 4px; color: var(--text); }
+.ig-caption  { font-size: .78rem; color: var(--text); padding: 0 11px 3px; line-height: 1.4; }
+.ig-hashtags { font-size: .73rem; color: #1e88e5; padding: 0 11px 9px; line-height: 1.5; }
+
+/* Upload hover overlay (both platforms) */
+.prev-overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,.42);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; color: #fff; font-size: .78rem; font-weight: 600;
+  opacity: 0; transition: opacity .18s; pointer-events: none;
 }
-.spc-imggen-btn:hover { background: var(--c-100); border-color: var(--c-300); }
-.spc-imggen-favicon { width: 16px; height: 16px; border-radius: 3px; object-fit: contain; }
+.pin-img-wrap:hover .prev-overlay,
+.ig-img-wrap:hover .prev-overlay { opacity: 1; }
 
-/* ── Schedule ── */
-.spc-schedule { border-top: 1px solid var(--border); margin-top: 22px; padding-top: 16px; }
-.spc-schedule-title { font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 10px; }
-.spc-schedule-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.spc-radiolabel {
+/* ── Divider ── */
+.spc-divider {
+  display: flex; align-items: center; gap: 10px;
+  font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+  color: var(--muted); margin: 20px 0 16px;
+}
+.spc-divider::before, .spc-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── Product picker ── */
+.prod-picker { display: flex; flex-direction: column; gap: 10px; }
+.prod-search-row { display: flex; gap: 8px; }
+.prod-search {
+  flex: 1; padding: 7px 11px; border: 1px solid var(--border); border-radius: 8px;
+  font-size: .84rem; background: var(--card); color: var(--text); font-family: inherit;
+}
+.prod-search:focus { outline: none; border-color: var(--btn); }
+.prod-tiles { display: flex; gap: 8px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+.prod-tile {
+  flex-shrink: 0; width: 80px; border: 1.5px solid var(--border); border-radius: 10px;
+  overflow: hidden; cursor: pointer; transition: border-color .15s, box-shadow .15s;
+  background: var(--card);
+}
+.prod-tile:hover { border-color: var(--btn); box-shadow: 0 2px 10px rgba(0,0,0,.1); }
+.prod-tile.selected { border-color: var(--btn); box-shadow: 0 0 0 2px #818CF840; }
+.prod-tile img { width: 100%; height: 64px; object-fit: cover; display: block; background: var(--c-100); }
+.prod-tile-name { font-size: .67rem; font-weight: 600; color: var(--text); padding: 4px 5px 5px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.prod-tile-empty { width: 80px; flex-shrink: 0; padding: 12px 8px; text-align: center; font-size: .7rem; color: var(--muted); }
+.prod-sel-badge {
   display: inline-flex; align-items: center; gap: 7px;
-  padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px;
-  cursor: pointer; font-size: .85rem; font-weight: 500; color: var(--muted);
+  background: #EEF2FF; border: 1px solid var(--btn); border-radius: 7px;
+  padding: 4px 10px 4px 6px; font-size: .78rem; color: var(--btn); font-weight: 600;
+}
+.prod-sel-badge img { width: 22px; height: 22px; border-radius: 4px; object-fit: cover; }
+.prod-sel-clear { background: none; border: none; color: var(--muted); cursor: pointer; font-size: .9rem; line-height: 1; padding: 0 0 0 4px; }
+.prod-sel-clear:hover { color: #DC2626; }
+
+/* ── Bilder-Generator ── */
+.imggen-wrap { margin-top: 4px; }
+.imggen-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 14px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--card); color: var(--text); font-size: .82rem; font-weight: 600;
+  text-decoration: none; transition: background .15s, border-color .15s;
+}
+.imggen-btn:hover { background: var(--c-100); border-color: var(--c-300); }
+.imggen-fav { width: 15px; height: 15px; border-radius: 3px; object-fit: contain; }
+
+/* ── Schedule + Post button (bottom) ── */
+.spc-footer { border-top: 1px solid var(--border); margin-top: 20px; padding-top: 16px; display: flex; flex-direction: column; gap: 12px; }
+.spc-sched-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.spc-sched-lbl {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px; border: 1px solid var(--border); border-radius: 8px;
+  cursor: pointer; font-size: .84rem; font-weight: 500; color: var(--muted);
   transition: border-color .15s, color .15s, background .15s; user-select: none;
 }
-.spc-radiolabel input[type=radio] { display: none; }
-.spc-radiolabel.active { border-color: var(--btn); color: var(--btn); background: #EEF2FF; font-weight: 600; }
-.spc-datetime {
-  padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;
-  font-size: .85rem; background: var(--card); color: var(--text); font-family: inherit;
+.spc-sched-lbl input { display: none; }
+.spc-sched-lbl.on { border-color: var(--btn); color: var(--btn); background: #EEF2FF; font-weight: 600; }
+.spc-dt { padding: 7px 11px; border: 1px solid var(--border); border-radius: 8px; font-size: .84rem; background: var(--card); color: var(--text); font-family: inherit; }
+.spc-post-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 11px; border: none; border-radius: 9px;
+  font-size: .9rem; font-weight: 700; color: #fff; cursor: pointer;
+  transition: background .15s; letter-spacing: .2px;
 }
-.spc-status { font-size: .85rem; margin-top: 10px; min-height: 22px; }
-
-/* ── Preview: pin mock ── */
-.sm-prev-label { font-size: .67rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 10px; }
-.pin-mock { background: var(--card); border-radius: 14px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 2px 12px rgba(0,0,0,.08); }
-.pin-mock-img-wrap { position: relative; width: 100%; aspect-ratio: 2/3; background: var(--c-100); overflow: hidden; }
-.pin-mock-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.pin-mock-img-empty { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--c-300); }
-.pin-mock-save { position: absolute; top: 10px; right: 10px; background: #E60023; color: #fff; border-radius: 20px; padding: 5px 12px; font-size: .78rem; font-weight: 700; opacity: 0; transition: opacity .2s; }
-.pin-mock:hover .pin-mock-save { opacity: 1; }
-.pin-mock-body { padding: 10px 12px 12px; }
-.pin-mock-board { display: flex; align-items: center; gap: 5px; font-size: .72rem; color: var(--muted); margin-bottom: 4px; }
-.pin-mock-title { font-size: .82rem; font-weight: 700; color: var(--text); margin-bottom: 4px; line-height: 1.3; }
-.pin-mock-desc  { font-size: .73rem; color: var(--muted); line-height: 1.4; margin-bottom: 5px; }
-.pin-mock-link  { font-size: .68rem; color: var(--muted); display: flex; align-items: center; gap: 4px; }
-
-/* ── Preview: ig mock ── */
-.ig-mock { background: var(--card); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 2px 12px rgba(0,0,0,.08); }
-.ig-mock-header { display: flex; align-items: center; gap: 9px; padding: 10px 12px; }
-.ig-mock-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); color: #fff; display: flex; align-items: center; justify-content: center; font-size: .78rem; font-weight: 700; flex-shrink: 0; }
-.ig-mock-username { font-size: .82rem; font-weight: 700; color: var(--text); }
-.ig-mock-more { font-size: 1.1rem; color: var(--muted); letter-spacing: 1px; margin-left: auto; }
-.ig-mock-img-wrap { width: 100%; aspect-ratio: 1/1; background: var(--c-100); overflow: hidden; }
-.ig-mock-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.ig-mock-img-empty { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--c-300); }
-.ig-mock-actions { display: flex; align-items: center; gap: 14px; padding: 10px 12px 5px; color: var(--text); }
-.ig-mock-caption { font-size: .8rem; color: var(--text); padding: 0 12px 4px; line-height: 1.4; }
-.ig-mock-hashtags { font-size: .75rem; color: #1e88e5; padding: 0 12px 10px; line-height: 1.5; }
+.spc-post-btn.pin-c { background: #E60023; }
+.spc-post-btn.pin-c:hover { background: #bf001d; }
+.spc-post-btn.ig-c  { background: #C13584; }
+.spc-post-btn.ig-c:hover  { background: #9c2a6b; }
+.spc-status { font-size: .84rem; min-height: 20px; }
 </style>
 </head>
 <body>
@@ -166,512 +194,521 @@
 
   <!-- ── Platform Tabs ── -->
   <div class="spc-tabs">
-    <button class="spc-tab active-pin" id="tab-pin" onclick="setPlatform('pinterest',this)">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+    <button class="spc-tab a-pin" id="tab-pin" onclick="setPlatform('pinterest',this)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
       Pinterest
     </button>
     <button class="spc-tab" id="tab-ig" onclick="setPlatform('instagram',this)">
-      <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.7"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg>
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.7"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg>
       Instagram
     </button>
   </div>
 
-  <!-- ══ Pinterest Pane ══ -->
-  <div id="pane-pinterest">
+  <!-- ══ Pinterest Card ══ -->
+  <div id="pane-pin">
     <div class="spc-card">
       <div class="spc-card-header">
         <div class="spc-card-title">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="#E60023"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="#E60023"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
           Pinterest Pin
         </div>
-        <div class="spc-header-actions">
-          <button class="spc-btn-white" onclick="generateWithAI()">
-            <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Texte generieren
-          </button>
-          <button class="spc-btn-primary pin-color" onclick="doPost('pinterest')">
-            <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Pin posten
-          </button>
-        </div>
+        <button class="spc-btn-gen" onclick="generateWithAI()">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Texte generieren
+        </button>
       </div>
 
       <div class="spc-card-body">
+        <!-- hidden file input -->
+        <input type="file" id="pin-file" accept=".jpg,.jpeg,.png,.webp" multiple style="display:none" onchange="spUpload(this,'pin')"/>
 
-        <!-- Upload zone at top -->
-        <div class="spc-upload-top" id="pinUploadZone" onclick="document.getElementById('pinFileInput').click()"
-             ondragover="event.preventDefault()" ondrop="handleDrop(event,'pin')">
-          <input type="file" id="pinFileInput" accept=".jpg,.jpeg,.png,.webp" multiple style="display:none" onchange="spUpload(this,'pin')"/>
-          <div id="pinPreviewRow" class="spc-preview-row"></div>
-          <div id="pinUploadHint" class="spc-upload-hint">
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Bild hochladen oder hier ablegen &nbsp;<span style="color:var(--c-300);font-size:.75rem;">JPG · PNG · WebP · max. 4</span>
-          </div>
-        </div>
-
-        <!-- 2-col: fields + preview -->
-        <div class="spc-content-row">
+        <div class="spc-cols">
+          <!-- Fields -->
           <div class="spc-fields">
 
-            <!-- Board (required) -->
             <div class="spc-field">
               <label>Board <span class="spc-req">*</span></label>
-              <div class="spc-field-row">
-                <select id="spc-board-select" onchange="spcBoardChange(this)">
-                  <option value="">— Board auswählen —</option>
-                </select>
-                <button type="button" class="spc-regen" title="Boards neu laden" onclick="loadBoards(true)">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              <div class="spc-row">
+                <select id="spc-board-sel" onchange="boardChange(this)"><option value="">— Board auswählen —</option></select>
+                <button type="button" class="spc-regen" title="Boards laden" onclick="loadBoards(true)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
                 </button>
               </div>
-              <span class="spc-hint" id="spc-board-hint">Boards werden geladen…</span>
+              <span class="spc-hint" id="board-hint">Boards werden geladen…</span>
               <input type="hidden" id="spc-board-id"/>
             </div>
 
-            <!-- Titel (required) -->
             <div class="spc-field">
               <label>Titel <span class="spc-req">*</span></label>
-              <div class="spc-field-row">
-                <input type="text" id="spc-pin-title" placeholder="Pin-Titel…" oninput="updatePinPreview()"/>
-                <button class="spc-regen" title="KI" onclick="regenField('pin_titel','spc-pin-title',updatePinPreview,this)">
-                  <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div class="spc-row">
+                <input type="text" id="pin-title" placeholder="Pin-Titel…" oninput="previewPin()"/>
+                <button class="spc-regen" title="KI" onclick="rf('pin_titel','pin-title',previewPin,this)">
+                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
               </div>
             </div>
 
-            <!-- Beschreibung -->
             <div class="spc-field">
               <label>Beschreibung <span class="spc-opt">optional</span></label>
-              <div class="spc-field-row">
-                <textarea id="spc-pin-desc" rows="3" placeholder="Beschreibung…" oninput="updatePinPreview()"></textarea>
-                <button class="spc-regen" title="KI" onclick="regenField('pin_beschreibung','spc-pin-desc',updatePinPreview,this)">
-                  <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div class="spc-row">
+                <textarea id="pin-desc" rows="3" placeholder="Beschreibung…" oninput="previewPin()"></textarea>
+                <button class="spc-regen" title="KI" onclick="rf('pin_beschreibung','pin-desc',previewPin,this)">
+                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
               </div>
             </div>
 
-            <!-- Ziel-URL -->
             <div class="spc-field">
               <label>Ziel-URL <span class="spc-opt">optional</span></label>
-              <div class="spc-field-row">
-                <input type="text" id="spc-pin-url" placeholder="https://…" oninput="updatePinPreview()"/>
+              <div class="spc-row">
+                <input type="text" id="pin-url" placeholder="https://…" oninput="previewPin()"/>
               </div>
             </div>
 
-            <!-- Alt-Text -->
             <div class="spc-field">
               <label>Alt-Text <span class="spc-opt">optional</span></label>
-              <div class="spc-field-row">
-                <input type="text" id="spc-pin-alt" placeholder="Bildbeschreibung für Barrierefreiheit…"/>
-                <button class="spc-regen" title="KI" onclick="regenField('pin_alt_text','spc-pin-alt',null,this)">
-                  <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div class="spc-row">
+                <input type="text" id="pin-alt" placeholder="Bildbeschreibung…"/>
+                <button class="spc-regen" title="KI" onclick="rf('pin_alt_text','pin-alt',null,this)">
+                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
               </div>
             </div>
 
-            <!-- Bilder-Generator button -->
             {% if image_gen_url %}
-            <div class="spc-imggen-row">
-              <a href="{{ image_gen_url }}" target="_blank" rel="noopener" class="spc-imggen-btn">
-                <img class="spc-imggen-favicon"
-                     src="https://www.google.com/s2/favicons?domain={{ image_gen_url }}&sz=32"
-                     onerror="this.style.display='none'" alt=""/>
+            <div class="imggen-wrap">
+              <a href="{{ image_gen_url }}" target="_blank" rel="noopener" class="imggen-btn">
+                <img class="imggen-fav" src="https://www.google.com/s2/favicons?domain={{ image_gen_url }}&sz=32" onerror="this.style.display='none'" alt=""/>
                 {{ image_gen_name }}
               </a>
             </div>
             {% endif %}
 
-          </div><!-- /spc-fields -->
+          </div><!-- /fields -->
 
-          <!-- Pinterest preview -->
-          <div class="spc-preview-col">
-            <div class="sm-prev-label">Vorschau · Pinterest</div>
+          <!-- Pinterest preview (click to upload) -->
+          <div class="spc-prev-col">
+            <div class="spc-prev-label">Vorschau — klicken zum Hochladen</div>
             <div class="pin-mock">
-              <div class="pin-mock-img-wrap">
+              <div class="pin-img-wrap" onclick="document.getElementById('pin-file').click()">
                 <img id="pin-prev-img" src="" style="display:none;" alt=""/>
-                <div id="pin-prev-empty" class="pin-mock-img-empty">
-                  <svg width="36" height="36" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.4"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                <div id="pin-prev-empty" class="pin-img-empty">
+                  <svg width="40" height="40" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                </div>
+                <div class="prev-overlay">
+                  <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  Bild auswählen
                 </div>
                 <div class="pin-mock-save">Merken</div>
               </div>
               <div class="pin-mock-body">
                 <div class="pin-mock-board">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="#E60023"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="#E60023"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
                   <span id="pin-prev-board">Board</span>
                 </div>
                 <div class="pin-mock-title" id="pin-prev-title">Titel erscheint hier</div>
-                <div class="pin-mock-desc"  id="pin-prev-desc">Beschreibung erscheint hier…</div>
+                <div class="pin-mock-desc"  id="pin-prev-desc">Beschreibung…</div>
                 <div class="pin-mock-link">
-                  <svg width="10" height="10" fill="none" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                  <svg width="9" height="9" fill="none" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
                   <span id="pin-prev-link">link.com</span>
                 </div>
               </div>
             </div>
           </div>
-        </div><!-- /spc-content-row -->
+        </div><!-- /spc-cols -->
 
-        <!-- Schedule + status -->
-        <div class="spc-schedule">
-          <div class="spc-schedule-title">Veröffentlichung</div>
-          <div class="spc-schedule-row">
-            <label class="spc-radiolabel active" id="sched-now-pin">
-              <input type="radio" name="spc-sched-pin" value="now" checked onchange="schedToggle('pin','now')"/>
-              <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Jetzt posten
-            </label>
-            <label class="spc-radiolabel" id="sched-later-pin">
-              <input type="radio" name="spc-sched-pin" value="later" onchange="schedToggle('pin','later')"/>
-              <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-              Später posten
-            </label>
-            <input type="datetime-local" id="spc-sched-dt-pin" class="spc-datetime" style="display:none;"/>
+        <!-- Product picker -->
+        <div class="spc-divider">Produkt zuordnen <span class="spc-opt">optional</span></div>
+        <div class="prod-picker">
+          <div id="pin-prod-sel" style="display:none;"></div>
+          <div class="prod-search-row">
+            <input type="text" class="prod-search" id="pin-prod-q" placeholder="Produkt suchen…" oninput="prodFilter('pin')" onfocus="prodOpen('pin')" onblur="setTimeout(()=>prodClose('pin'),200)"/>
           </div>
-          <div id="spc-status-pin" class="spc-status"></div>
+          <div class="prod-tiles" id="pin-prod-tiles"></div>
         </div>
 
+        <!-- Footer: schedule + post button -->
+        <div class="spc-footer">
+          <div class="spc-sched-row">
+            <label class="spc-sched-lbl on" id="sn-pin">
+              <input type="radio" name="sc-pin" value="now" checked onchange="schedT('pin','now')"/>
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Jetzt posten
+            </label>
+            <label class="spc-sched-lbl" id="sl-pin">
+              <input type="radio" name="sc-pin" value="later" onchange="schedT('pin','later')"/>
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              Später posten
+            </label>
+            <input type="datetime-local" id="dt-pin" class="spc-dt" style="display:none;"/>
+          </div>
+          <button class="spc-post-btn pin-c" onclick="doPost('pin')">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Pin posten
+          </button>
+          <div id="st-pin" class="spc-status"></div>
+        </div>
       </div>
     </div>
-  </div><!-- /pane-pinterest -->
+  </div><!-- /pane-pin -->
 
-  <!-- ══ Instagram Pane ══ -->
-  <div id="pane-instagram" style="display:none;">
+  <!-- ══ Instagram Card ══ -->
+  <div id="pane-ig" style="display:none;">
     <div class="spc-card">
       <div class="spc-card-header">
         <div class="spc-card-title">
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.6"/><circle cx="17.5" cy="6.5" r="1.2" fill="#C13584"/></svg>
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.6"/><circle cx="17.5" cy="6.5" r="1.2" fill="#C13584"/></svg>
           Instagram Post
         </div>
-        <div class="spc-header-actions">
-          <button class="spc-btn-white" onclick="generateWithAI()">
-            <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Texte generieren
-          </button>
-          <button class="spc-btn-primary ig-color" onclick="doPost('instagram')">
-            <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Post posten
-          </button>
-        </div>
+        <button class="spc-btn-gen" onclick="generateWithAI()">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Texte generieren
+        </button>
       </div>
 
       <div class="spc-card-body">
+        <input type="file" id="ig-file" accept=".jpg,.jpeg,.png,.webp" multiple style="display:none" onchange="spUpload(this,'ig')"/>
 
-        <!-- Upload zone at top -->
-        <div class="spc-upload-top" onclick="document.getElementById('igFileInput').click()"
-             ondragover="event.preventDefault()" ondrop="handleDrop(event,'ig')">
-          <input type="file" id="igFileInput" accept=".jpg,.jpeg,.png,.webp" multiple style="display:none" onchange="spUpload(this,'ig')"/>
-          <div id="igPreviewRow" class="spc-preview-row"></div>
-          <div id="igUploadHint" class="spc-upload-hint">
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Bild hochladen oder hier ablegen &nbsp;<span style="color:var(--c-300);font-size:.75rem;">JPG · PNG · WebP · max. 4</span>
-          </div>
-        </div>
-
-        <!-- 2-col: fields + preview -->
-        <div class="spc-content-row">
+        <div class="spc-cols">
+          <!-- Fields -->
           <div class="spc-fields">
 
-            <!-- Caption (required) -->
             <div class="spc-field">
               <label>Caption <span class="spc-req">*</span></label>
-              <div class="spc-field-row">
-                <textarea id="spc-ig-caption" rows="4" placeholder="Caption…" oninput="updateIgPreview()"></textarea>
-                <button class="spc-regen" title="KI" onclick="regenField('ig_description','spc-ig-caption',updateIgPreview,this)">
-                  <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div class="spc-row">
+                <textarea id="ig-caption" rows="4" placeholder="Caption…" oninput="previewIg()"></textarea>
+                <button class="spc-regen" title="KI" onclick="rf('ig_description','ig-caption',previewIg,this)">
+                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
               </div>
             </div>
 
-            <!-- Hashtags -->
             <div class="spc-field">
               <label>Hashtags <span class="spc-opt">optional</span></label>
-              <div class="spc-field-row">
-                <textarea id="spc-ig-hashtags" rows="2" placeholder="#tag1 #tag2 #tag3…" oninput="updateIgPreview()"></textarea>
-                <button class="spc-regen" title="KI" onclick="regenField('ig_tags','spc-ig-hashtags',updateIgPreview,this)">
-                  <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div class="spc-row">
+                <textarea id="ig-hashtags" rows="2" placeholder="#tag1 #tag2…" oninput="previewIg()"></textarea>
+                <button class="spc-regen" title="KI" onclick="rf('ig_tags','ig-hashtags',previewIg,this)">
+                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </button>
               </div>
             </div>
 
-            <!-- Bilder-Generator button -->
             {% if image_gen_url %}
-            <div class="spc-imggen-row">
-              <a href="{{ image_gen_url }}" target="_blank" rel="noopener" class="spc-imggen-btn">
-                <img class="spc-imggen-favicon"
-                     src="https://www.google.com/s2/favicons?domain={{ image_gen_url }}&sz=32"
-                     onerror="this.style.display='none'" alt=""/>
+            <div class="imggen-wrap">
+              <a href="{{ image_gen_url }}" target="_blank" rel="noopener" class="imggen-btn">
+                <img class="imggen-fav" src="https://www.google.com/s2/favicons?domain={{ image_gen_url }}&sz=32" onerror="this.style.display='none'" alt=""/>
                 {{ image_gen_name }}
               </a>
             </div>
             {% endif %}
 
-          </div><!-- /spc-fields -->
+          </div><!-- /fields -->
 
-          <!-- Instagram preview -->
-          <div class="spc-preview-col">
-            <div class="sm-prev-label">Vorschau · Instagram</div>
+          <!-- Instagram preview (click to upload) -->
+          <div class="spc-prev-col">
+            <div class="spc-prev-label">Vorschau — klicken zum Hochladen</div>
             <div class="ig-mock">
-              <div class="ig-mock-header">
-                <div class="ig-mock-avatar">D</div>
-                <div style="flex:1;"><div class="ig-mock-username">dekoire</div></div>
-                <span class="ig-mock-more">···</span>
+              <div class="ig-mock-hdr">
+                <div class="ig-avatar">D</div>
+                <div class="ig-username">dekoire</div>
+                <span class="ig-more">···</span>
               </div>
-              <div class="ig-mock-img-wrap">
+              <div class="ig-img-wrap" onclick="document.getElementById('ig-file').click()">
                 <img id="ig-prev-img" src="" style="display:none;" alt=""/>
-                <div id="ig-prev-empty" class="ig-mock-img-empty">
-                  <svg width="36" height="36" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.4"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                <div id="ig-prev-empty" class="ig-img-empty">
+                  <svg width="40" height="40" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                </div>
+                <div class="prev-overlay">
+                  <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  Bild auswählen
                 </div>
               </div>
-              <div class="ig-mock-actions">
-                <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="1.6"/></svg>
-                <svg width="22" height="22" fill="none" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.6"/></svg>
-                <svg width="22" height="22" fill="none" viewBox="0 0 24 24" style="margin-left:auto;"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.6"/></svg>
+              <div class="ig-actions">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" stroke="currentColor" stroke-width="1.6"/></svg>
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.6"/></svg>
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" style="margin-left:auto;"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.6"/></svg>
               </div>
-              <div class="ig-mock-caption" id="ig-prev-caption"><strong>dekoire</strong> Caption erscheint hier…</div>
-              <div class="ig-mock-hashtags" id="ig-prev-hashtags"></div>
+              <div class="ig-caption" id="ig-prev-cap"><strong>dekoire</strong> Caption…</div>
+              <div class="ig-hashtags" id="ig-prev-tags"></div>
             </div>
           </div>
-        </div><!-- /spc-content-row -->
+        </div><!-- /spc-cols -->
 
-        <!-- Schedule + status -->
-        <div class="spc-schedule">
-          <div class="spc-schedule-title">Veröffentlichung</div>
-          <div class="spc-schedule-row">
-            <label class="spc-radiolabel active" id="sched-now-ig">
-              <input type="radio" name="spc-sched-ig" value="now" checked onchange="schedToggle('ig','now')"/>
-              <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Jetzt posten
-            </label>
-            <label class="spc-radiolabel" id="sched-later-ig">
-              <input type="radio" name="spc-sched-ig" value="later" onchange="schedToggle('ig','later')"/>
-              <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-              Später posten
-            </label>
-            <input type="datetime-local" id="spc-sched-dt-ig" class="spc-datetime" style="display:none;"/>
+        <!-- Product picker -->
+        <div class="spc-divider">Produkt zuordnen <span class="spc-opt">optional</span></div>
+        <div class="prod-picker">
+          <div id="ig-prod-sel" style="display:none;"></div>
+          <div class="prod-search-row">
+            <input type="text" class="prod-search" id="ig-prod-q" placeholder="Produkt suchen…" oninput="prodFilter('ig')" onfocus="prodOpen('ig')" onblur="setTimeout(()=>prodClose('ig'),200)"/>
           </div>
-          <div id="spc-status-ig" class="spc-status"></div>
+          <div class="prod-tiles" id="ig-prod-tiles"></div>
         </div>
 
+        <!-- Footer -->
+        <div class="spc-footer">
+          <div class="spc-sched-row">
+            <label class="spc-sched-lbl on" id="sn-ig">
+              <input type="radio" name="sc-ig" value="now" checked onchange="schedT('ig','now')"/>
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Jetzt posten
+            </label>
+            <label class="spc-sched-lbl" id="sl-ig">
+              <input type="radio" name="sc-ig" value="later" onchange="schedT('ig','later')"/>
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              Später posten
+            </label>
+            <input type="datetime-local" id="dt-ig" class="spc-dt" style="display:none;"/>
+          </div>
+          <button class="spc-post-btn ig-c" onclick="doPost('ig')">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Post posten
+          </button>
+          <div id="st-ig" class="spc-status"></div>
+        </div>
       </div>
     </div>
-  </div><!-- /pane-instagram -->
+  </div><!-- /pane-ig -->
 
 </div><!-- /spc-body -->
 
 <script>
-let _platform = 'pinterest';
-let _boards   = [];
-let _boardsLoaded = false;
-let _spFiles  = { pin: [], ig: [] };
-let _blob     = { pin: null, ig: null };
-
-const $  = id => document.getElementById(id);
-const _v = id => ($( id)?.value || '').trim();
-const _s = (id, v) => { const e = $(id); if (e) e.value = v; };
-const _t = (id, v) => { const e = $(id); if (e) e.textContent = v; };
-const _img = (imgId, emptyId, src) => {
-  const img = $(imgId), em = $(emptyId);
-  if (!img || !em) return;
-  if (src) { img.src = src; img.style.display=''; em.style.display='none'; }
-  else     { img.style.display='none'; em.style.display=''; }
+const $ = id => document.getElementById(id);
+const _v = id => ($( id)?.value||'').trim();
+const _s = (id,v)=>{ const e=$(id); if(e) e.value=v; };
+const _t = (id,v)=>{ const e=$(id); if(e) e.textContent=v; };
+const _img = (imgId,emId,src)=>{
+  const i=$(imgId),e=$(emId);
+  if(!i||!e)return;
+  if(src){i.src=src;i.style.display='';e.style.display='none';}
+  else{i.style.display='none';e.style.display='';}
 };
-const _status = (plat, msg, color) => {
-  const el = $('spc-status-' + plat);
-  if (el) { el.style.color = color || 'var(--muted)'; el.innerHTML = msg; }
-};
+const st=(p,msg,color)=>{ const e=$(p);if(e){e.style.color=color||'var(--muted)';e.innerHTML=msg;} };
 
-// ── Platform toggle ──
+let _plat   = 'pin';
+let _boards = [];
+let _boardsOk = false;
+let _files  = { pin:[], ig:[] };
+let _blob   = { pin:null, ig:null };
+let _prods  = [];
+let _prodsOk = false;
+let _selProd = { pin:null, ig:null };
+
+// ── Platform ──
 function setPlatform(p, btn) {
-  _platform = p;
-  document.querySelectorAll('.spc-tab').forEach(b => b.className = 'spc-tab');
-  btn.className = 'spc-tab active-' + (p === 'pinterest' ? 'pin' : 'ig');
-  $('pane-pinterest').style.display = p === 'pinterest' ? '' : 'none';
-  $('pane-instagram').style.display = p === 'instagram'  ? '' : 'none';
+  _plat = p === 'pinterest' ? 'pin' : 'ig';
+  document.querySelectorAll('.spc-tab').forEach(b=>b.className='spc-tab');
+  btn.className = 'spc-tab a-' + _plat;
+  $('pane-pin').style.display = _plat==='pin' ? '' : 'none';
+  $('pane-ig').style.display  = _plat==='ig'  ? '' : 'none';
 }
 
-// ── Schedule toggle ──
-function schedToggle(plat, val) {
-  const nowId   = 'sched-now-'  + plat;
-  const laterId = 'sched-later-' + plat;
-  const dtId    = 'spc-sched-dt-' + plat;
-  $(nowId)?.classList.toggle('active', val === 'now');
-  $(laterId)?.classList.toggle('active', val === 'later');
-  if ($(dtId)) $(dtId).style.display = val === 'later' ? '' : 'none';
+// ── Schedule ──
+function schedT(p, v) {
+  $('sn-'+p)?.classList.toggle('on', v==='now');
+  $('sl-'+p)?.classList.toggle('on', v==='later');
+  const dt=$('dt-'+p); if(dt) dt.style.display=v==='later'?'':'none';
 }
 
 // ── Boards ──
 async function loadBoards(force) {
-  if (_boardsLoaded && !force) return;
-  const hint = $('spc-board-hint'), sel = $('spc-board-select');
-  if (hint) hint.textContent = 'Lädt…';
+  if(_boardsOk&&!force)return;
+  const hint=$('board-hint'), sel=$('spc-board-sel');
+  if(hint)hint.textContent='Lädt…';
   try {
-    const d = await fetch('/api/pinterest/boards').then(r => r.json());
-    if (d.error) { if (hint) { hint.textContent = '⚠ '+d.error; hint.style.color='#DC2626'; } return; }
-    _boards = d.boards || [];
-    _boardsLoaded = true;
-    sel.innerHTML = '<option value="">— Board auswählen —</option>';
-    _boards.forEach(b => {
-      const o = document.createElement('option');
-      o.value = b.id; o.dataset.name = b.name; o.textContent = b.name;
-      sel.appendChild(o);
-    });
-    if (hint) { hint.style.color='var(--muted)'; hint.textContent = _boards.length+' Boards verfügbar'; }
-  } catch(e) { if (hint) { hint.textContent='⚠ '+e.message; hint.style.color='#DC2626'; } }
+    const d=await fetch('/api/pinterest/boards').then(r=>r.json());
+    if(d.error){if(hint){hint.textContent='⚠ '+d.error;hint.style.color='#DC2626';}return;}
+    _boards=d.boards||[];_boardsOk=true;
+    sel.innerHTML='<option value="">— Board auswählen —</option>';
+    _boards.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.dataset.name=b.name;o.textContent=b.name;sel.appendChild(o);});
+    if(hint){hint.style.color='var(--muted)';hint.textContent=_boards.length+' Boards verfügbar';}
+  } catch(e){if(hint){hint.textContent='⚠ '+e.message;hint.style.color='#DC2626';}}
+}
+function boardChange(sel) {
+  const id=sel.value, name=sel.options[sel.selectedIndex]?.dataset.name||'';
+  _s('spc-board-id',id);
+  const h=$('board-hint');if(h){h.textContent=id?'✓ '+name:'';h.style.color='#16a34a';}
+  _t('pin-prev-board',name||'Board');
 }
 
-function spcBoardChange(sel) {
-  const id   = sel.value;
-  const name = sel.options[sel.selectedIndex]?.dataset.name || '';
-  _s('spc-board-id', id);
-  const hint = $('spc-board-hint');
-  if (hint) { hint.textContent = id ? '✓ '+name : ''; hint.style.color='#16a34a'; }
-  _t('pin-prev-board', name || 'Board');
-}
-
-// ── Upload ──
-function spUpload(input, p) {
-  const files = Array.from(input.files).slice(0,4);
-  _spFiles[p] = files;
-  const row  = $(p+'PreviewRow'), hint = $(p+'UploadHint');
-  row.innerHTML = '';
-  files.forEach(f => {
-    const img = document.createElement('img');
-    img.className = 'spc-preview-thumb';
-    img.src = URL.createObjectURL(f);
-    row.appendChild(img);
-  });
-  if (hint) hint.style.display = files.length ? 'none' : '';
-  if (files.length) {
-    _blob[p] = URL.createObjectURL(files[0]);
-    if (p === 'pin') _img('pin-prev-img','pin-prev-empty',_blob.pin);
-    if (p === 'ig')  _img('ig-prev-img', 'ig-prev-empty', _blob.ig);
-  }
-}
-function handleDrop(e, p) {
-  e.preventDefault();
-  const dt = e.dataTransfer;
-  if (dt?.files?.length) {
-    const inp = $(p === 'pin' ? 'pinFileInput' : 'igFileInput');
-    // simulate file selection
-    const files = Array.from(dt.files).slice(0,4);
-    _spFiles[p] = files;
-    const row  = $(p+'PreviewRow'), hint = $(p+'UploadHint');
-    row.innerHTML = '';
-    files.forEach(f => {
-      const img = document.createElement('img');
-      img.className = 'spc-preview-thumb';
-      img.src = URL.createObjectURL(f);
-      row.appendChild(img);
-    });
-    if (hint) hint.style.display = files.length ? 'none' : '';
-    if (files.length) {
-      _blob[p] = URL.createObjectURL(files[0]);
-      if (p === 'pin') _img('pin-prev-img','pin-prev-empty',_blob.pin);
-      if (p === 'ig')  _img('ig-prev-img','ig-prev-empty',_blob.ig);
-    }
+// ── File upload ──
+function spUpload(inp, p) {
+  const files=Array.from(inp.files).slice(0,4);
+  _files[p]=files;
+  if(files.length){
+    _blob[p]=URL.createObjectURL(files[0]);
+    if(p==='pin') _img('pin-prev-img','pin-prev-empty',_blob.pin);
+    if(p==='ig')  _img('ig-prev-img','ig-prev-empty',_blob.ig);
   }
 }
 
 // ── Previews ──
-function updatePinPreview() {
-  _img('pin-prev-img','pin-prev-empty', _blob.pin || '');
-  _t('pin-prev-title', _v('spc-pin-title') || 'Titel erscheint hier');
-  _t('pin-prev-desc',  _v('spc-pin-desc')  || 'Beschreibung erscheint hier…');
-  const url = _v('spc-pin-url');
-  _t('pin-prev-link', url ? url.replace(/^https?:\/\//,'').split('/')[0] : 'link.com');
+function previewPin() {
+  _img('pin-prev-img','pin-prev-empty',_blob.pin||'');
+  _t('pin-prev-title',_v('pin-title')||'Titel erscheint hier');
+  _t('pin-prev-desc', _v('pin-desc') ||'Beschreibung…');
+  const u=_v('pin-url');
+  _t('pin-prev-link',u?u.replace(/^https?:\/\//,'').split('/')[0]:'link.com');
 }
-function updateIgPreview() {
-  _img('ig-prev-img','ig-prev-empty', _blob.ig || '');
-  const cap = _v('spc-ig-caption');
-  const el  = $('ig-prev-caption');
-  if (el) el.innerHTML = '<strong>dekoire</strong> ' + (cap || 'Caption erscheint hier…');
-  _t('ig-prev-hashtags', _v('spc-ig-hashtags'));
+function previewIg() {
+  _img('ig-prev-img','ig-prev-empty',_blob.ig||'');
+  const c=_v('ig-caption'),el=$('ig-prev-cap');
+  if(el)el.innerHTML='<strong>dekoire</strong> '+(c||'Caption…');
+  _t('ig-prev-tags',_v('ig-hashtags'));
+}
+
+// ── Products ──
+async function loadProds() {
+  if(_prodsOk)return;
+  try {
+    _prods=await fetch('/api/products/list').then(r=>r.json());
+    _prodsOk=true;
+    renderProdTiles('pin'); renderProdTiles('ig');
+  } catch(_){}
+}
+function prodOpen(p) { loadProds(); renderProdTiles(p); }
+function prodClose(p) { /* keep tiles visible */ }
+function prodFilter(p) {
+  renderProdTiles(p, $(`${p}-prod-q`)?.value?.toLowerCase()||'');
+}
+function renderProdTiles(p, q='') {
+  const el=$(p+'-prod-tiles'); if(!el)return;
+  let list=q ? _prods.filter(x=>(x.titel||'').toLowerCase().includes(q)||(x.dekoire_id||'').toLowerCase().includes(q)) : _prods;
+  list=list.slice(0,7);
+  if(!list.length){el.innerHTML='<div class="prod-tile-empty">Keine Produkte</div>';return;}
+  el.innerHTML=list.map(r=>`
+    <div class="prod-tile${_selProd[p]?.id===r.id?' selected':''}" onmousedown="selProd('${p}',${JSON.stringify(r.id)})">
+      <img src="${r.image_url||''}" onerror="this.style.opacity='.3'" alt=""/>
+      <div class="prod-tile-name">${r.titel||r.dekoire_id||'–'}</div>
+    </div>`).join('');
+}
+function selProd(p, id) {
+  const r=_prods.find(x=>x.id===id); if(!r)return;
+  _selProd[p]=r;
+  // fill fields
+  if(p==='pin'){
+    _s('pin-title',r.pin_titel||r.titel||'');
+    _s('pin-desc', r.pin_beschreibung||'');
+    _s('pin-url',  r.pin_ziel_url||'');
+    _s('pin-alt',  r.pin_alt_text||'');
+    if(!_blob.pin&&r.image_url){_blob.pin=r.image_url;_img('pin-prev-img','pin-prev-empty',r.image_url);}
+    // pre-select board
+    if(r.pin_board_id){
+      _s('spc-board-id',r.pin_board_id);
+      const sel=$('spc-board-sel');
+      if(sel){for(const o of sel.options){if(o.value===r.pin_board_id){o.selected=true;break;}}}
+      const h=$('board-hint');if(h){h.textContent='✓ '+r.pin_board;h.style.color='#16a34a';}
+      _t('pin-prev-board',r.pin_board||'Board');
+    }
+    previewPin();
+  } else {
+    _s('ig-caption',  r.ig_description||'');
+    _s('ig-hashtags', r.ig_tags||'');
+    if(!_blob.ig&&r.image_url){_blob.ig=r.image_url;_img('ig-prev-img','ig-prev-empty',r.image_url);}
+    previewIg();
+  }
+  // badge
+  const badge=$(p+'-prod-sel');
+  if(badge){
+    badge.style.display='';
+    badge.innerHTML=`<span class="prod-sel-badge">
+      ${r.image_url?`<img src="${r.image_url}" alt=""/>`:''}
+      ${r.titel||r.dekoire_id||'–'}
+      <button class="prod-sel-clear" onclick="clearProd('${p}')" title="Zuordnung entfernen">✕</button>
+    </span>`;
+  }
+  renderProdTiles(p);
+}
+function clearProd(p) {
+  _selProd[p]=null;
+  const b=$(p+'-prod-sel');if(b)b.style.display='none';
+  if(p==='pin'){_s('pin-title','');_s('pin-desc','');_s('pin-url','');_s('pin-alt','');previewPin();}
+  else{_s('ig-caption','');_s('ig-hashtags','');previewIg();}
+  renderProdTiles(p);
 }
 
 // ── Per-field regen ──
-async function regenField(fieldKey, inputId, afterFn, btn) {
-  if (btn) btn.classList.add('loading');
+async function rf(field,inputId,afterFn,btn) {
+  if(btn)btn.classList.add('spin');
   try {
-    const res  = await fetch('/api/social/generate-field', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ field: fieldKey, title: _v('spc-pin-title') || _v('spc-ig-caption') || '' })
-    });
-    const data = await res.json();
-    if (data.value) { _s(inputId, data.value); if (afterFn) afterFn(); }
-  } catch(_) {}
-  finally { if (btn) btn.classList.remove('loading'); }
+    const r=await fetch('/api/social/generate-field',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({field,title:_v('pin-title')||_v('ig-caption')||''})});
+    const d=await r.json();
+    if(d.value){_s(inputId,d.value);if(afterFn)afterFn();}
+  }catch(_){}
+  finally{if(btn)btn.classList.remove('spin');}
 }
 
 // ── Full AI gen ──
 async function generateWithAI() {
-  const plat = _platform;
-  _status(plat === 'pinterest' ? 'pin' : 'ig', '✨ Generiert…', 'var(--muted)');
+  const p=_plat;
+  st('st-'+p,'✨ Generiert…','var(--muted)');
   try {
-    const res  = await fetch('/api/social/generate-field', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ field: plat === 'pinterest' ? 'pin_all' : 'ig_all', context: {} })
-    });
-    const data = await res.json();
-    if (plat === 'pinterest') {
-      if (data.pin_titel)        _s('spc-pin-title', data.pin_titel);
-      if (data.pin_beschreibung) _s('spc-pin-desc',  data.pin_beschreibung);
-      if (data.pin_alt_text)     _s('spc-pin-alt',   data.pin_alt_text);
-      updatePinPreview();
+    const d=await fetch('/api/social/generate-field',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({field:p==='pin'?'pin_all':'ig_all',context:{}})}).then(r=>r.json());
+    if(p==='pin'){
+      if(d.pin_titel)        _s('pin-title',d.pin_titel);
+      if(d.pin_beschreibung) _s('pin-desc', d.pin_beschreibung);
+      if(d.pin_alt_text)     _s('pin-alt',  d.pin_alt_text);
+      previewPin();
     } else {
-      if (data.ig_description) _s('spc-ig-caption',  data.ig_description);
-      if (data.ig_tags)        _s('spc-ig-hashtags', data.ig_tags);
-      updateIgPreview();
+      if(d.ig_description) _s('ig-caption',  d.ig_description);
+      if(d.ig_tags)        _s('ig-hashtags', d.ig_tags);
+      previewIg();
     }
-    _status(plat === 'pinterest' ? 'pin' : 'ig', '✓ Texte generiert', '#16a34a');
-  } catch(e) {
-    _status(plat === 'pinterest' ? 'pin' : 'ig', '❌ '+e.message, '#DC2626');
-  }
+    st('st-'+p,'✓ Texte generiert','#16a34a');
+  } catch(e){st('st-'+p,'❌ '+e.message,'#DC2626');}
 }
 
 // ── Post ──
-async function doPost(plat) {
-  const p    = plat || _platform;
-  const key  = p === 'pinterest' ? 'pin' : 'ig';
-  const files = _spFiles[key];
-  if (!files.length) { alert('Bitte zuerst ein Bild hochladen.'); return; }
-  if (p === 'pinterest') {
-    if (!_v('spc-board-id')) { alert('Bitte ein Board auswählen.'); return; }
-    if (!_v('spc-pin-title')) { alert('Bitte einen Titel eingeben.'); return; }
+async function doPost(p) {
+  const plat=p==='pin'?'pinterest':'instagram';
+  const files=_files[p];
+  const prodId=_selProd[p]?.id||null;
+  if(!files.length&&!_blob[p]){alert('Bitte ein Bild auswählen (auf die Vorschau klicken).');return;}
+  if(p==='pin'){
+    if(!_v('spc-board-id')){alert('Bitte ein Board auswählen.');return;}
+    if(!_v('pin-title')){alert('Bitte einen Titel eingeben.');return;}
   }
-  if (p === 'instagram' && !_v('spc-ig-caption')) { alert('Bitte eine Caption eingeben.'); return; }
+  if(p==='ig'&&!_v('ig-caption')){alert('Bitte eine Caption eingeben.');return;}
 
-  const isLater = document.querySelector(`input[name="spc-sched-${key}"]:checked`)?.value === 'later';
-  const schedDt = _v('spc-sched-dt-' + key);
-  _status(key, '📤 Postet…', 'var(--muted)');
+  const isLater=document.querySelector(`input[name="sc-${p}"]:checked`)?.value==='later';
+  const schedDt=_v('dt-'+p);
+  st('st-'+p,'📤 Postet…','var(--muted)');
 
-  const fd = new FormData();
-  fd.append('platform', p);
-  files.forEach(f => fd.append('images', f));
-  if (isLater && schedDt) fd.append('scheduled_at', schedDt);
-  if (p === 'pinterest') {
-    fd.append('pin_title',       _v('spc-pin-title'));
-    fd.append('pin_description', _v('spc-pin-desc'));
+  const fd=new FormData();
+  fd.append('platform',plat);
+  if(prodId) fd.append('product_id',prodId);
+  if(isLater&&schedDt) fd.append('scheduled_at',schedDt);
+
+  // attach files — if no real file but we have a product image URL, signal it
+  if(files.length){
+    files.forEach(f=>fd.append('images',f));
+  } else if(_blob[p]&&_selProd[p]?.image_url){
+    fd.append('image_url',_selProd[p].image_url); // server fallback: use URL directly
+  }
+
+  if(p==='pin'){
+    fd.append('pin_title',       _v('pin-title'));
+    fd.append('pin_description', _v('pin-desc'));
     fd.append('board_id',        _v('spc-board-id'));
-    fd.append('pin_link',        _v('spc-pin-url'));
-    fd.append('alt_text',        _v('spc-pin-alt'));
+    fd.append('pin_link',        _v('pin-url'));
+    fd.append('alt_text',        _v('pin-alt'));
   } else {
-    fd.append('caption',  _v('spc-ig-caption'));
-    fd.append('hashtags', _v('spc-ig-hashtags'));
+    fd.append('caption',  _v('ig-caption'));
+    fd.append('hashtags', _v('ig-hashtags'));
   }
 
   try {
-    const res  = await fetch('/api/social/standalone/post', { method:'POST', body: fd });
-    const data = await res.json();
-    if (!data.success) { _status(key, '❌ '+(data.error||'Fehler'), '#DC2626'); return; }
-    const link = data.post_url
-      ? ` <a href="${data.post_url}" target="_blank" rel="noopener" style="color:#059669;font-weight:600;text-decoration:underline;margin-left:6px;">→ Zum Post</a>`
-      : '';
-    _status(key, (isLater ? '🕐 Geplant!' : '✅ Erfolgreich gepostet!') + link, '#059669');
-  } catch(e) { _status(key, '❌ '+e.message, '#DC2626'); }
+    const ep=prodId?`/api/product/${prodId}/social/post`:'/api/social/standalone/post';
+    const d=await fetch(ep,{method:'POST',body:fd}).then(r=>r.json());
+    if(!d.success){st('st-'+p,'❌ '+(d.error||'Fehler'),'#DC2626');return;}
+    const link=d.post_url?` <a href="${d.post_url}" target="_blank" rel="noopener" style="color:#059669;font-weight:600;text-decoration:underline;">→ Zum Post</a>`:'';
+    st('st-'+p,(isLater?'🕐 Geplant!':'✅ Erfolgreich gepostet!')+link,'#059669');
+  } catch(e){st('st-'+p,'❌ '+e.message,'#DC2626');}
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded',()=>{
+  setPlatform('pinterest',$('tab-pin'));
   loadBoards();
-  setPlatform('pinterest', $('tab-pin'));
+  loadProds();
 });
 </script>
 {% include 'includes/footer.html' %}
