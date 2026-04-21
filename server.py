@@ -2165,9 +2165,25 @@ def product_legal_check(product_id):
             f = request.files["image"]
             raw_bytes = f.read()
             inline_img_bytes = raw_bytes
-            ext = (f.filename or "").split(".")[-1].lower()
-            inline_img_mime  = {"jpg":"image/jpeg","jpeg":"image/jpeg",
-                                 "png":"image/png","webp":"image/webp"}.get(ext, "image/jpeg")
+            # Detect actual format from file contents (not the extension),
+            # because mismatched extension vs. content causes Claude 400 errors.
+            try:
+                import io as _io
+                _pil_img = Image.open(_io.BytesIO(raw_bytes))
+                _fmt_map = {"JPEG": "image/jpeg", "PNG": "image/png",
+                            "WEBP": "image/webp", "GIF": "image/gif",
+                            "BMP":  "image/bmp",  "TIFF": "image/tiff"}
+                inline_img_mime = _fmt_map.get(_pil_img.format or "", "image/jpeg")
+            except Exception:
+                # Fallback: sniff magic bytes manually
+                if raw_bytes[:3] == b"\xff\xd8\xff":
+                    inline_img_mime = "image/jpeg"
+                elif raw_bytes[:8] == b"\x89PNG\r\n\x1a\n":
+                    inline_img_mime = "image/png"
+                elif raw_bytes[:4] == b"RIFF" and raw_bytes[8:12] == b"WEBP":
+                    inline_img_mime = "image/webp"
+                else:
+                    inline_img_mime = "image/jpeg"
     else:
         data = request.json or {}
 
