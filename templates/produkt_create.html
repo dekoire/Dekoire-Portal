@@ -186,6 +186,45 @@
   background: var(--c-100);
 }
 
+/* ── Legal Check sidebar widget ── */
+.lc-widget { padding: 14px 16px 12px; border-bottom: 1px solid var(--border); }
+.lc-widget-title { display:flex; align-items:center; gap:7px; font-size:.68rem; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--muted); margin-bottom:11px; }
+.lc-widget-empty { font-size:.78rem; color:var(--muted); margin-bottom:10px; line-height:1.4; }
+.lc-widget-run-btn { display:flex; align-items:center; justify-content:center; gap:6px; width:100%; padding:7px 10px; border:none; border-radius:8px; background:#EEF2FF; color:var(--btn); font-size:.8rem; font-weight:700; cursor:pointer; transition:background .15s; }
+.lc-widget-run-btn:hover { background:#dce5ff; }
+.lc-widget-status { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:9px; margin-bottom:10px; }
+.lc-widget-status.green  { background:#F0FDF4; } .lc-widget-status.yellow { background:#FFFBEB; } .lc-widget-status.red { background:#FEF2F2; }
+.lc-widget-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.lc-widget-status.green .lc-widget-dot { background:#22C55E; } .lc-widget-status.yellow .lc-widget-dot { background:#F59E0B; } .lc-widget-status.red .lc-widget-dot { background:#EF4444; }
+.lc-widget-status-text { flex:1; min-width:0; }
+.lc-widget-status-label { font-size:.78rem; font-weight:700; line-height:1.2; }
+.lc-widget-status.green .lc-widget-status-label { color:#15803D; } .lc-widget-status.yellow .lc-widget-status-label { color:#B45309; } .lc-widget-status.red .lc-widget-status-label { color:#B91C1C; }
+.lc-widget-score { font-size:.68rem; color:var(--muted); margin-top:1px; }
+.lc-widget-rerun { display:flex; align-items:center; justify-content:center; gap:5px; padding:5px 8px; border:1px solid var(--border); border-radius:7px; background:none; color:var(--muted); font-size:.72rem; cursor:pointer; transition:background .15s,color .15s; white-space:nowrap; flex-shrink:0; }
+.lc-widget-rerun:hover { background:var(--c-100); color:var(--text); }
+.lc-widget-loading { display:flex; align-items:center; gap:8px; font-size:.76rem; color:var(--muted); margin-bottom:8px; }
+.lc-widget-spin { width:14px; height:14px; border:2px solid var(--border); border-top-color:var(--btn); border-radius:50%; animation:lcSpin .7s linear infinite; flex-shrink:0; }
+.lc-widget-sec { margin-bottom:10px; }
+.lc-widget-sec-title { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--muted); margin-bottom:6px; display:flex; align-items:center; gap:5px; }
+.lc-widget-sec-badge { background:var(--c-100); color:var(--muted); font-size:.6rem; font-weight:700; padding:1px 5px; border-radius:8px; }
+.lc-widget-artist { display:flex; align-items:center; gap:6px; padding:5px 0; border-bottom:1px solid var(--c-100); font-size:.78rem; color:var(--text); }
+.lc-widget-artist:last-child { border-bottom:none; padding-bottom:0; }
+.lc-widget-artist-name { flex:1; min-width:0; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lc-widget-link { display:flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:5px; border:1px solid var(--border); background:var(--card); color:var(--muted); flex-shrink:0; text-decoration:none; font-size:.62rem; font-weight:700; transition:background .12s,color .12s,border-color .12s; }
+.lc-widget-link:hover { background:var(--btn); color:#fff; border-color:var(--btn); }
+.lc-widget-finding { display:flex; align-items:flex-start; gap:6px; padding:5px 0; border-bottom:1px solid var(--c-100); font-size:.75rem; color:var(--text); }
+.lc-widget-finding:last-child { border-bottom:none; padding-bottom:0; }
+.lc-widget-finding-icon { flex-shrink:0; margin-top:1px; }
+.lc-widget-finding-text { flex:1; min-width:0; }
+.lc-widget-finding-ref { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lc-widget-finding-type { font-size:.65rem; color:var(--muted); }
+.lc-widget-finding-links { display:flex; gap:4px; margin-top:3px; }
+.lc-widget-terms { display:flex; flex-wrap:wrap; gap:4px; }
+.lc-widget-term { font-size:.68rem; font-weight:700; padding:2px 7px; border-radius:5px; white-space:nowrap; }
+.lc-widget-term.high { background:#FEE2E2; color:#B91C1C; } .lc-widget-term.medium { background:#FEF3C7; color:#B45309; } .lc-widget-term.low { background:#F1F5F9; color:#475569; }
+.lc-widget-goto { display:flex; align-items:center; gap:5px; margin-top:8px; font-size:.72rem; color:var(--btn); font-weight:600; cursor:pointer; background:none; border:none; padding:0; text-align:left; }
+.lc-widget-goto:hover { text-decoration:underline; }
+
 /* ── Legal Check pane ── */
 .lc-intro { text-align:center; padding: 48px 24px; }
 .lc-intro-icon { width:56px; height:56px; margin: 0 auto 16px; display:flex; align-items:center; justify-content:center; background: #EEF2FF; border-radius: 50%; color: var(--btn); }
@@ -922,6 +961,60 @@
 
   <!-- ══ Right action panel ══ -->
   <aside class="action-panel">
+
+    <!-- ── Legal Check Widget ── -->
+    <div class="lc-widget" id="lcWidget">
+      <div class="lc-widget-title">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Legal Check
+      </div>
+      <div id="lcw-empty"><div class="lc-widget-empty">Wird automatisch nach der Bildanalyse gestartet.</div></div>
+      <div id="lcw-loading" style="display:none;" class="lc-widget-loading">
+        <div class="lc-widget-spin"></div>
+        Prüfung läuft …
+      </div>
+      <div id="lcw-results" style="display:none;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+          <div id="lcw-status" class="lc-widget-status green" style="flex:1;min-width:0;">
+            <div class="lc-widget-dot"></div>
+            <div class="lc-widget-status-text">
+              <div class="lc-widget-status-label" id="lcw-label">–</div>
+              <div class="lc-widget-score" id="lcw-score">–</div>
+            </div>
+          </div>
+          <button class="lc-widget-rerun" onclick="lcwRunCreate()" title="Neu prüfen">
+            <svg width="10" height="10" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Neu
+          </button>
+        </div>
+        <div class="lc-widget-sec" id="lcw-sec-artists" style="display:none;">
+          <div class="lc-widget-sec-title">
+            <svg width="10" height="10" fill="none" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Künstler <span class="lc-widget-sec-badge" id="lcw-artists-count">0</span>
+          </div>
+          <div id="lcw-artists"></div>
+        </div>
+        <div class="lc-widget-sec" id="lcw-sec-image" style="display:none;">
+          <div class="lc-widget-sec-title">
+            <svg width="10" height="10" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.7"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            Bildanalyse <span class="lc-widget-sec-badge" id="lcw-image-count">0</span>
+          </div>
+          <div id="lcw-image"></div>
+        </div>
+        <div class="lc-widget-sec" id="lcw-sec-text" style="display:none;">
+          <div class="lc-widget-sec-title">
+            <svg width="10" height="10" fill="none" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 2v6h6M16 13H8M16 17H8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Text-Risiken <span class="lc-widget-sec-badge" id="lcw-text-count">0</span>
+          </div>
+          <div class="lc-widget-terms" id="lcw-terms"></div>
+        </div>
+        <button class="lc-widget-goto" onclick="showPane('legal', document.querySelector('.sidebar-item[onclick*=legal]'))">
+          <svg width="11" height="11" fill="none" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Vollständigen Bericht öffnen
+        </button>
+      </div>
+    </div><!-- /lc-widget -->
+
     <div class="action-panel-title">
       <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Aktionen
@@ -1120,6 +1213,7 @@ async function runLegalCheck() {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     _lcRenderResults(data);
+    _lcwRenderWidget(data);
     loading.style.display = 'none';
     results.style.display = 'block';
   } catch(e) {
@@ -1129,6 +1223,54 @@ async function runLegalCheck() {
     intro.style.display   = 'block';
   }
 }
+
+/* ── Widget-only run (from sidebar "Neu" button without opening pane) ── */
+async function lcwRunCreate() {
+  document.getElementById('lcw-empty').style.display   = 'none';
+  document.getElementById('lcw-loading').style.display = 'block';
+  document.getElementById('lcw-results').style.display = 'none';
+  try {
+    await runLegalCheck();
+  } finally {
+    document.getElementById('lcw-loading').style.display = 'none';
+  }
+}
+
+/* ── Auto-run hook: triggered by app.js after analyzeImage() completes ── */
+window._afterAnalyze = function(_analysisData, file) {
+  // Show loading state in widget immediately
+  document.getElementById('lcw-empty').style.display   = 'none';
+  document.getElementById('lcw-loading').style.display = 'block';
+  document.getElementById('lcw-results').style.display = 'none';
+
+  // Kick off legal check — uses currentFile which is the just-uploaded image
+  const fieldData = {
+    titel:        (document.getElementById('f-titel')?.value        || '').trim(),
+    beschreibung: (document.getElementById('f-beschreibung')?.value || '').trim(),
+    tags:         (document.getElementById('f-tags')?.value         || '').trim(),
+  };
+
+  const fd = new FormData();
+  fd.append('data', JSON.stringify(fieldData));
+  if (file) fd.append('image', file);
+
+  fetch('/api/product/new/legal-check', { method:'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) throw new Error(data.error);
+      _lcRenderResults(data);
+      _lcwRenderWidget(data);
+      // Show results in pane too (without navigating to it)
+      document.getElementById('lc-intro').style.display   = 'none';
+      document.getElementById('lc-results').style.display = 'block';
+    })
+    .catch(err => {
+      console.warn('Legal check auto-run failed:', err.message);
+    })
+    .finally(() => {
+      document.getElementById('lcw-loading').style.display = 'none';
+    });
+};
 
 function _lcRenderResults(d) {
   const status  = (d.status || 'yellow').toLowerCase();
@@ -1233,6 +1375,62 @@ function _lcSevLabel(s)     { return { low:'Niedrig', medium:'Mittel', high:'Hoc
 function _lcCsLabel(c)      { return { protected:'Urheberrecht aktiv', likely_protected:'Wahrsch. geschützt', public_domain:'Gemeinfrei', unclear:'Unklar' }[c] || c || '–'; }
 function _lcImgTypeLabel(t) { return { artist_style:'Künstlerstil', specific_artwork:'Konkretes Werk', product_similarity:'Produktähnlichkeit', brand_visual:'Markenvisual', text_in_image:'Text im Bild' }[t] || t || '–'; }
 function _lcConfLabel(c)    { return { low:'Gering', medium:'Mittel', high:'Hoch' }[c] || c || '–'; }
+
+function _lcwRenderWidget(d) {
+  const status = (d.status || 'yellow').toLowerCase();
+  const labels = { green:'Geringes Risiko', yellow:'Erhöhtes Risiko', red:'Hohes Risiko' };
+  document.getElementById('lcw-empty').style.display   = 'none';
+  document.getElementById('lcw-results').style.display = 'block';
+  const statusEl = document.getElementById('lcw-status');
+  statusEl.className = 'lc-widget-status ' + status;
+  document.getElementById('lcw-label').textContent = labels[status] || 'Risiko unklar';
+  document.getElementById('lcw-score').textContent = `Score: ${(d.score??50)} / 100`;
+
+  const af = d.artistFindings || [];
+  document.getElementById('lcw-artists-count').textContent = af.length;
+  document.getElementById('lcw-sec-artists').style.display = af.length ? 'block' : 'none';
+  document.getElementById('lcw-artists').innerHTML = af.map(a => {
+    const name = _esc(a.name || '?');
+    const gUrl = `https://www.google.com/search?q=${encodeURIComponent((a.name||'')+' artist copyright')}`;
+    const wUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent((a.name||'').replace(/\s+/g,'_'))}`;
+    const dy   = a.deathYear ? ` <span style="font-size:.65rem;color:var(--muted);font-weight:400;">† ${a.deathYear}</span>` : '';
+    return `<div class="lc-widget-artist">
+      <div class="lc-widget-artist-name" title="${name}">${name}${dy}</div>
+      <a href="${gUrl}" target="_blank" rel="noopener noreferrer" class="lc-widget-link" title="Google">G</a>
+      <a href="${wUrl}" target="_blank" rel="noopener noreferrer" class="lc-widget-link" title="Wikipedia">W</a>
+    </div>`;
+  }).join('');
+
+  const iF = d.imageFindings || [];
+  document.getElementById('lcw-image-count').textContent = iF.length;
+  document.getElementById('lcw-sec-image').style.display = iF.length ? 'block' : 'none';
+  const imgIcons = { artist_style:'🎨', specific_artwork:'🖼', brand_visual:'™', product_similarity:'📦', text_in_image:'🔤' };
+  document.getElementById('lcw-image').innerHTML = iF.map(f => {
+    const ref  = _esc(f.reference || '–');
+    const gUrl = `https://www.google.com/search?q=${encodeURIComponent(f.reference||'')}`;
+    const wikiLink = (f.type==='artist_style'||f.type==='specific_artwork')
+      ? `<a href="https://en.wikipedia.org/wiki/${encodeURIComponent((f.reference||'').replace(/\s+/g,'_'))}" target="_blank" rel="noopener noreferrer" class="lc-widget-link" style="width:auto;padding:0 6px;font-size:.62rem;">Wikipedia ↗</a>`
+      : '';
+    return `<div class="lc-widget-finding">
+      <span class="lc-widget-finding-icon">${imgIcons[f.type]||'•'}</span>
+      <div class="lc-widget-finding-text">
+        <div class="lc-widget-finding-ref" title="${ref}">${ref}</div>
+        <div class="lc-widget-finding-type">${_lcImgTypeLabel(f.type)}</div>
+        <div class="lc-widget-finding-links">
+          <a href="${gUrl}" target="_blank" rel="noopener noreferrer" class="lc-widget-link" style="width:auto;padding:0 6px;font-size:.62rem;">Google ↗</a>
+          ${wikiLink}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const tf = d.textFindings || [];
+  document.getElementById('lcw-text-count').textContent = tf.length;
+  document.getElementById('lcw-sec-text').style.display = tf.length ? 'block' : 'none';
+  document.getElementById('lcw-terms').innerHTML = tf.map(f =>
+    `<span class="lc-widget-term ${f.severity||'low'}" title="${_esc(f.reason)}">${_esc(f.term)}</span>`
+  ).join('');
+}
 </script>
 
 {% include 'includes/footer.html' %}

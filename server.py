@@ -43,10 +43,32 @@ try:
 except ImportError:
     _SUPABASE_OK = False
 
-SCRIPT_DIR         = Path(__file__).parent
-CACHE_DIR          = SCRIPT_DIR / "cache"
-PRODUCT_PHOTOS_DIR = SCRIPT_DIR / "static" / "product-photos"
+SCRIPT_DIR          = Path(__file__).parent
+CACHE_DIR           = SCRIPT_DIR / "cache"
+PRODUCT_PHOTOS_DIR  = SCRIPT_DIR / "static" / "product-photos"
+LEGAL_CHECKS_DIR    = SCRIPT_DIR / "data" / "legal_checks"
 PRODUCT_PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
+LEGAL_CHECKS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _save_legal_check(product_id: str, result: dict) -> None:
+    """Persist a legal-check result to disk as JSON."""
+    try:
+        path = LEGAL_CHECKS_DIR / f"{product_id}.json"
+        path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def _load_legal_check(product_id: str) -> dict:
+    """Load a previously saved legal-check result. Returns {} if not found."""
+    try:
+        path = LEGAL_CHECKS_DIR / f"{product_id}.json"
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {}
 
 # ── Bootstrap config for secret key before app init ──────────────────────────
 
@@ -1247,10 +1269,12 @@ def product_edit(product_id):
     shopify_cfg = shops_cfg.get("shopify", {})
     etsy_cfg    = shops_cfg.get("etsy", {})
     amazon_cfg  = shops_cfg.get("amazon", {})
+    legal_check_result = _load_legal_check(product_id)
     return render_template("product_edit.html",
                            row                    = row,
                            error                  = error,
                            product_id             = product_id,
+                           legal_check_result     = legal_check_result,
                            header_logo            = cfg.get("header_logo",  "logo-white.png"),
                            header_title           = cfg.get("header_title", "Image Analyzer"),
                            page_title             = pt.get("title",    "Produkt bearbeiten"),
@@ -2229,9 +2253,24 @@ def product_legal_check(product_id):
 
         # Tag whether image was actually analysed
         result["_imageAnalysed"] = bool(img_data)
+
+        # Persist for later retrieval (skip for unsaved "new" products)
+        if product_id != "new":
+            _save_legal_check(product_id, result)
+
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/product/<product_id>/legal-check", methods=["GET"])
+@require_auth
+def product_legal_check_get(product_id):
+    """Return the most recently saved legal-check result for a product."""
+    result = _load_legal_check(product_id)
+    if not result:
+        return jsonify({}), 204   # No content — not yet run
+    return jsonify(result)
 
 @app.route("/settings")
 @require_auth

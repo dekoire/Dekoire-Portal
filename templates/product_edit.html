@@ -3080,8 +3080,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <script>
 /* ── Legal Risk Check ── */
-const _LC_PRODUCT_ID = {{ product_id | tojson }};
-const _LC_IMAGE_URL  = {{ (row.image_url or '') | tojson }};
+const _LC_PRODUCT_ID    = {{ product_id | tojson }};
+const _LC_IMAGE_URL     = {{ (row.image_url or '') | tojson }};
+const _LC_SAVED_RESULT  = {{ (legal_check_result or {}) | tojson }};
+
+// Auto-render saved result on page load
+document.addEventListener('DOMContentLoaded', () => {
+  if (_LC_SAVED_RESULT && _LC_SAVED_RESULT.status) {
+    _lcRenderResults(_LC_SAVED_RESULT);
+    _lcwRenderWidget(_LC_SAVED_RESULT);
+    // Show results pane directly (skip intro)
+    document.getElementById('lc-intro').style.display   = 'none';
+    document.getElementById('lc-results').style.display = 'block';
+  }
+});
 
 async function runLegalCheck() {
   const intro   = document.getElementById('lc-intro');

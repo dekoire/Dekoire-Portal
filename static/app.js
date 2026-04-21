@@ -236,6 +236,8 @@ async function analyzeImage() {
     showToast('Analyse abgeschlossen', 'success');
     generateSocialMedia();
     prefillShopsFromProduct(data);
+    // Optional hook for pages that want to act after analysis (e.g. auto legal check)
+    if (typeof window._afterAnalyze === 'function') window._afterAnalyze(data, currentFile);
   } catch (err) { hideLoading(); showToast('Fehler: '+err.message, 'error'); }
 }
 
