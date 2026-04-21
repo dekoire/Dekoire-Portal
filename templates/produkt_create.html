@@ -328,6 +328,8 @@
 .lc-artist-name { font-size:.88rem; font-weight:700; color:var(--text); margin-bottom:3px; }
 .lc-artist-meta { font-size:.74rem; color:var(--muted); margin-bottom:4px; }
 .lc-artist-assessment { font-size:.78rem; color:var(--text); line-height:1.5; }
+.lc-search-link { font-size:.7rem; font-weight:600; color:var(--btn); text-decoration:none; border:1px solid #C7D2FE; border-radius:4px; padding:1px 5px; white-space:nowrap; }
+.lc-search-link:hover { background:#EEF2FF; }
 .lc-img-finding { padding:10px 0; border-bottom:1px solid var(--c-100); }
 .lc-img-finding:last-child { border-bottom:none; padding-bottom:0; }
 .lc-img-ref-row { display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap; }
@@ -1358,11 +1360,14 @@ function _lcRenderResults(d) {
     afEl.innerHTML = af.map(a => {
       const initials = (a.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
       const deathInfo = a.deathYear ? `† ${a.deathYear}` : 'Todesjahr unbekannt';
+      const q = encodeURIComponent((a.name||'') + ' Künstler');
+      const gLink = `<a href="https://www.google.com/search?q=${q}" target="_blank" class="lc-search-link">Google ↗</a>`;
+      const wLink = `<a href="https://de.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(a.name||'')}" target="_blank" class="lc-search-link">Wikipedia ↗</a>`;
       return `<div class="lc-artist">
         <div class="lc-artist-avatar">${initials}</div>
         <div class="lc-artist-info">
           <div class="lc-artist-name">${_esc(a.name)} <span class="lc-badge lc-badge-${a.copyrightStatus||'unclear'}">${_lcCsLabel(a.copyrightStatus)}</span></div>
-          <div class="lc-artist-meta">${deathInfo}</div>
+          <div class="lc-artist-meta">${deathInfo} &nbsp;${gLink} ${wLink}</div>
           <div class="lc-artist-assessment">${_esc(a.assessment)}</div>
         </div>
       </div>`;
@@ -1387,16 +1392,22 @@ function _lcRenderResults(d) {
       ? '<div class="lc-empty">Kein Bild vorhanden — Bildanalyse nicht möglich. Erst Produkt speichern.</div>'
       : '<div class="lc-empty">Keine auffälligen Bildähnlichkeiten erkannt.</div>';
   } else {
-    ifEl.innerHTML = iF.map(f =>
-      `<div class="lc-img-finding">
+    ifEl.innerHTML = iF.map(f => {
+      const showLinks = f.type === 'artist_style' || f.type === 'specific_artwork';
+      const q = encodeURIComponent(f.reference || '');
+      const links = showLinks
+        ? ` <a href="https://www.google.com/search?q=${q}" target="_blank" class="lc-search-link">Google ↗</a> <a href="https://de.wikipedia.org/wiki/Special:Search?search=${q}" target="_blank" class="lc-search-link">Wikipedia ↗</a>`
+        : '';
+      return `<div class="lc-img-finding">
         <div class="lc-img-ref-row">
           <span class="lc-img-ref">${_esc(f.reference)}</span>
           <span class="lc-badge lc-badge-${f.type||'artist_style'}">${_lcImgTypeLabel(f.type)}</span>
           <span class="lc-badge lc-badge-${f.confidence||'low'}">${_lcConfLabel(f.confidence)}</span>
+          ${links}
         </div>
         <div class="lc-img-assessment">${_esc(f.assessment)}</div>
-      </div>`
-    ).join('');
+      </div>`;
+    }).join('');
   }
 
   const rc = d.recommendations || [];
