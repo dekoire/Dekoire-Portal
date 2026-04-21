@@ -230,7 +230,8 @@ async function analyzeImage() {
     if (data.error) { hideLoading(); showToast(data.error, 'error'); return; }
     currentData = data;
     populateAll(data);
-    document.getElementById('placeholder').style.display = 'none';
+    const _ph = document.getElementById('placeholder');
+    if (_ph) _ph.style.display = 'none';
     document.getElementById('pane-produktinfo').style.display = 'flex';
     document.getElementById('actionSaveBtn').disabled = false;
     document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
