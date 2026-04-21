@@ -1925,67 +1925,148 @@ def product_regen(product_id):
 
 # ── Legal Risk Check ──────────────────────────────────────────────────────────
 
-_LEGAL_CHECK_TEXT_PROMPT = """You are a legal risk assessment assistant specializing in art/poster products sold on Etsy and e-commerce platforms in the EU and USA.
+_LEGAL_CHECK_TEXT_PROMPT = """You are an expert legal risk analyst for art and poster products sold on Etsy and e-commerce platforms in the EU and USA. Your job is to catch potential trademark, copyright, and IP violations BEFORE products get listed. Missing a real risk is worse than flagging a potential one — be thorough and strict.
 
-Analyze the product information below and return a structured JSON risk assessment. Be professional, thorough, and use cautious language — never claim legal certainty.
+════════════════════════════════════════
+PRODUCT TO ANALYZE
+════════════════════════════════════════
+Title:       {title}
+Description: {description}
+Tags:        {tags}
 
-Product Title: {title}
-Product Description: {description}
-Tags / Keywords: {tags}
+════════════════════════════════════════
+STEP 1 — TEXT ANALYSIS (title, description, tags)
+════════════════════════════════════════
+Scan all text fields for:
+• Trademark/brand names — company names, product lines, car brands, fashion brands, tech brands, sports teams (e.g. Porsche, Nike, Supreme, Ferrari, Apple, Adidas, Disney, Coca-Cola, Louis Vuitton)
+• Artist or creator names — any recognizable artist living or deceased (e.g. Basquiat, Banksy, Warhol, Monet, Van Gogh, Dalí, Klimt, Haring, Kusama, Kaws, Lichtenstein)
+• Celebrity / person names — athletes, musicians, actors, public figures
+• Franchise / character names — fictional characters, universes, IP (e.g. Batman, Mickey Mouse, Star Wars, Harry Potter, Pokémon)
+• Risky claim phrases: "official", "licensed", "authorized", "original", "authentic", "inspired by [name]", "im Stil von [name]", "replica", "reproduction"
+Each finding → textFindings entry. If an artist name appears → also add to artistFindings.
 
+════════════════════════════════════════
+STEP 2 — IMAGE ANALYSIS
+════════════════════════════════════════
 {image_instruction}
 
-Return ONLY valid JSON (no markdown fences, no extra text), strictly matching this structure:
+────────────────────────────────────────
+2a) READ ALL TEXT IN THE IMAGE
+────────────────────────────────────────
+Read every piece of text visible in the image: signatures, inscriptions, logos, watermarks, labels, graffiti text, number plates, product labels, clothing text — everything.
+For each piece of text found:
+• If it contains a brand name, person name, artist signature, or trademark → add to imageFindings with type "text_in_image" AND severity "high" if it is a clear brand/person name.
+• If it contains an artist's signature → also add to artistFindings.
+
+────────────────────────────────────────
+2b) IDENTIFY BRANDS, PRODUCTS & LOGOS IN THE IMAGE
+────────────────────────────────────────
+Look for any visually identifiable branded items regardless of visible text:
+• VEHICLES: Even without readable text, the shape/design of branded vehicles is often trademarked. Porsche (distinctive 911/Cayenne silhouette), Ferrari (prancing horse body shape), Lamborghini, BMW, Mercedes, etc. → flag as RED if clearly identifiable.
+• LOGOS: Brand logos, even partial, distorted or stylized versions.
+• CONSUMER PRODUCTS: Sneaker designs (Air Jordan sole shape, Adidas triple stripes), tech products (iPhone form factor, Apple logo), luxury goods.
+• CHARACTERS & FIGURES: Cartoon characters, mascots, superhero costumes, even if drawn in an artistic style.
+• SPORTS: Team uniforms, club crests, team colors + number combinations.
+Flag with high confidence if the brand/product is unmistakable. Do NOT give the benefit of the doubt for clearly identifiable branded items.
+
+────────────────────────────────────────
+2c) ARTISTIC STYLE ANALYSIS
+────────────────────────────────────────
+Carefully evaluate the visual style, technique, brushwork, color palette, motifs, and composition. Ask: does this image strongly evoke a specific known artist?
+
+Check specifically for (this list is not exhaustive — use your full knowledge):
+• Jean-Michel Basquiat — crude neo-expressionist figures, crown motifs, skull imagery, text and words integrated into the painting, childlike raw lines, urban/street energy, dark outlines, multi-layered backgrounds with scrawled text or crossed-out words
+• Andy Warhol — repeated silkscreen-style celebrity portraits, bold flat colors, pop art aesthetic, high contrast
+• Banksy — stencil graffiti, political/satirical subjects, street art aesthetic, monochrome with color accents
+• Keith Haring — bold outlined cartoon-like figures, radiant baby, patterns of repeating shapes, thick black outlines
+• Salvador Dalí — melting objects, surrealist dreamscapes, hyper-realistic rendering of impossible scenes
+• Frida Kahlo — self-portrait style, Mexican folk art elements, floral headpieces, symbolic objects
+• Yayoi Kusama — polka dot obsession, infinity net patterns, pumpkins
+• KAWS — modified cartoon characters with X-shaped eyes and skull motifs, "Companion" figure
+• Roy Lichtenstein — halftone dot patterns, comic book panels, bold outlines, speech bubbles
+• Gustav Klimt — gold leaf ornamentation, decorative flat patterns, erotic symbolism
+• Egon Schiele — angular expressionist figures, visible contour lines, raw emotional portraits
+• Hokusai / Japanese woodblock — ukiyo-e style, The Great Wave aesthetic, flat color areas, bold outlines
+• Alphonse Mucha — Art Nouveau decorative borders, flowing female figures, floral frames
+• Mark Rothko — large color field rectangles, soft blurred edges, meditative mood
+• Jackson Pollock — drip painting, chaotic layered paint splatters
+• Cindy Sherman / street photography — photographic style works
+If there is a clear stylistic match, add to imageFindings (type "artist_style") AND add the artist to artistFindings. A strong match with a living artist or one who died within the last 70 years → HIGH severity.
+
+────────────────────────────────────────
+2d) SPECIFIC ARTWORK SIMILARITY
+────────────────────────────────────────
+Does the image closely resemble a specific iconic artwork or photograph?
+Examples: Mona Lisa, Starry Night, The Scream, Girl with a Pearl Earring, American Gothic, Nighthawks, The Birth of Venus, Vermeer works, specific Warhol prints, Banksy stencils.
+Flag as "specific_artwork" type with the artwork name and artist.
+
+════════════════════════════════════════
+STEP 3 — SCORING RULES (apply strictly)
+════════════════════════════════════════
+Start at 0. Add points for each finding:
+• Clearly identifiable branded vehicle (e.g. Porsche) in image: +50–65
+• Brand logo clearly visible in image: +45–60
+• Brand name in title or tags: +35–50
+• Artist name in title or tags: +25–40
+• Artist name or signature readable in the image: +40–55
+• Strong style match to living artist or artist dead <70 years: +30–45
+• Strong style match to artist dead >70 years but very close to specific work: +15–25
+• "Official"/"licensed"/"authorized" claim in text: +40–55
+• Celebrity/person name in title: +30–45
+• Franchise character clearly depicted: +45–60
+• Multiple medium-risk findings together compound → push toward RED
+• Score 0–34 = green, 35–69 = yellow, 70–100 = red
+
+════════════════════════════════════════
+OUTPUT — Return ONLY valid JSON, no markdown fences, no extra text:
+════════════════════════════════════════
 {{
   "status": "green",
   "score": 12,
-  "summary": "2–4 sentence overall risk assessment using phrases like potentially, may, could, appears to. Do NOT claim legal certainty.",
+  "summary": "2–4 sentences. Use cautious language: potentially, may, appears to, resembles, could be flagged. NEVER say legally safe or legally permitted.",
   "textFindings": [
     {{
-      "term": "exact problematic term or phrase found in the text",
+      "term": "exact term or phrase from the product text",
       "type": "brand",
-      "reason": "Why this term could pose a legal risk",
-      "severity": "low"
+      "reason": "Why this is a potential legal risk",
+      "severity": "high"
     }}
   ],
   "artistFindings": [
     {{
-      "name": "Artist or person name",
-      "deathYear": null,
+      "name": "Artist full name",
+      "deathYear": 1988,
       "copyrightStatus": "protected",
-      "assessment": "Short risk assessment for this reference"
+      "assessment": "Risk assessment for this artist reference (style match, name in text, or signature in image)"
     }}
   ],
   "imageFindings": [
     {{
-      "reference": "What the image resembles (artist style, specific artwork, brand visual, etc.)",
-      "type": "artist_style",
-      "confidence": "medium",
-      "assessment": "Brief assessment — use cautious language"
+      "reference": "What was identified (brand name, artwork name, style description, readable text)",
+      "type": "brand_visual",
+      "confidence": "high",
+      "assessment": "What was found and why it is a risk"
     }}
   ],
   "recommendations": [
-    "One specific actionable recommendation per item"
+    "One concrete actionable recommendation per item"
   ]
 }}
 
-Allowed values:
-- status: "green" | "yellow" | "red"
-- score: integer 0–100 (0–34 = green, 35–69 = yellow, 70–100 = red)
-- textFindings[].type: "brand" | "artist" | "claim" | "phrase"
-- textFindings[].severity: "low" | "medium" | "high"
-- artistFindings[].copyrightStatus: "protected" | "likely_protected" | "public_domain" | "unclear"
-- imageFindings[].type: "artist_style" | "specific_artwork" | "product_similarity" | "brand_visual"
-- imageFindings[].confidence: "low" | "medium" | "high"
+Allowed enum values:
+• status: "green" | "yellow" | "red"
+• score: integer 0–100
+• textFindings[].type: "brand" | "artist" | "claim" | "phrase" | "celebrity"
+• textFindings[].severity: "low" | "medium" | "high"
+• artistFindings[].copyrightStatus: "protected" | "likely_protected" | "public_domain" | "unclear"
+• imageFindings[].type: "artist_style" | "specific_artwork" | "product_similarity" | "brand_visual" | "text_in_image"
+• imageFindings[].confidence: "low" | "medium" | "high"
 
-Rules:
-- Empty arrays [] are perfectly fine when no issues are found
-- Flag: trademark terms, brand names, artist/person names, phrases like "official", "licensed", "original", "inspired by [name]", "im Stil von [name]"
-- For artists: estimate death year if known; apply 70-year post-mortem copyright rule (EU/US)
-- If text fields are empty, state that in summary and return mostly empty findings
-- Keep all text in the language of the product (German if German, English if English)
-- NEVER use phrases like "legally safe", "legally permitted", "guaranteed unproblematic"
-- DO use phrases like "geringes Risiko", "erhöhtes Risiko", "potenziell problematisch", "sollte manuell geprüft werden"
+Final rules:
+• Empty arrays [] are fine when nothing is found
+• ALWAYS write ALL output text in GERMAN — summary, reason, assessment, recommendations — everything in German regardless of the product language
+• NEVER use: "rechtlich sicher", "rechtlich erlaubt", "garantiert unproblematisch", "kein Risiko", "sicher zu verkaufen"
+• DO use: "potenziell problematisch", "erhöhtes Risiko", "sollte manuell geprüft werden", "könnte als Verletzung gewertet werden", "ähnelt stark dem Stil von", "starke visuelle Ähnlichkeit", "mögliche Urheberrechtsverletzung"
 """
 
 @app.route("/api/product/<product_id>/legal-check", methods=["POST"])
@@ -2009,9 +2090,13 @@ def product_legal_check(product_id):
                 pass
 
     # Allow client to override / supply fields (useful for "new" products)
-    for k in ("titel","beschreibung","tags","etsy_tags","image_url","etsy_title","etsy_description"):
+    # NOTE: only overwrite image_url if client sends a non-empty value,
+    # so we don't clobber a valid DB image_url with an empty JS string.
+    for k in ("titel","beschreibung","tags","etsy_tags","etsy_title","etsy_description"):
         if data.get(k) is not None:
             row[k] = data[k]
+    if data.get("image_url"):          # only override if truthy
+        row["image_url"] = data["image_url"]
 
     # ── Assemble text inputs ─────────────────────────────────────────────────
     title = (row.get("titel") or row.get("etsy_title") or "").strip()
@@ -2030,17 +2115,18 @@ def product_legal_check(product_id):
     has_image = bool(image_url)
     if has_image:
         image_instruction = (
-            "An image of the product is also provided. Analyze it visually for:\n"
-            "- Strong resemblance to a known artist's style\n"
-            "- Similarity to a specific well-known artwork\n"
-            "- Visual similarity to existing commercial products or brands\n"
-            "- Any logos, characters, or motifs that might be trademarked\n"
-            "Add your findings to the imageFindings array."
+            "An image of the product is attached. You MUST perform ALL four sub-steps "
+            "(2a through 2d) described below. Do not skip any step.\n\n"
+            "IMPORTANT: Be aggressive. If you can clearly identify a branded vehicle "
+            "(e.g. a Porsche), a logo, an artist's signature, or a distinctive artistic "
+            "style matching a known artist — flag it. Do not give the benefit of the doubt "
+            "for clearly identifiable IP. A Porsche silhouette alone, even without any text, "
+            "is a trademark risk. Basquiat-style painting elements are a copyright risk."
         )
     else:
         image_instruction = (
-            "No image was provided. Set imageFindings to [] and note the absence "
-            "of image analysis in the summary."
+            "No product image was provided. Skip steps 2a–2d entirely. "
+            "Set imageFindings to [] and note the absence of image analysis in your summary."
         )
 
     prompt = _LEGAL_CHECK_TEXT_PROMPT.format(
@@ -2059,22 +2145,43 @@ def product_legal_check(product_id):
     model = cfg.get("model", "claude-opus-4-5")
 
     try:
+        img_data = img_mime = None
+
         if has_image:
-            # Fetch image bytes
-            if image_url.startswith("/static/"):
-                local_path = SCRIPT_DIR / image_url.lstrip("/")
-                img_bytes  = local_path.read_bytes()
-            else:
-                import urllib.request as _ur
-                with _ur.urlopen(image_url, timeout=20) as _resp:
-                    img_bytes = _resp.read()
-            ext      = image_url.split(".")[-1].lower().split("?")[0]
-            mime     = {"jpg":"image/jpeg","jpeg":"image/jpeg","png":"image/png",
-                        "webp":"image/webp","gif":"image/gif"}.get(ext, "image/jpeg")
-            img_data = base64.standard_b64encode(img_bytes).decode()
-            raw = call_with_image(client, model, img_data, mime, prompt, max_tokens=2000)
+            # ── Try to fetch the image; fall back to text-only if it fails ──
+            try:
+                if image_url.startswith("/static/"):
+                    local_path = SCRIPT_DIR / image_url.lstrip("/")
+                    img_bytes  = local_path.read_bytes()
+                else:
+                    import urllib.request as _ur
+                    with _ur.urlopen(image_url, timeout=20) as _resp:
+                        img_bytes = _resp.read()
+                ext      = image_url.split(".")[-1].lower().split("?")[0]
+                img_mime = {"jpg":"image/jpeg","jpeg":"image/jpeg","png":"image/png",
+                            "webp":"image/webp","gif":"image/gif"}.get(ext, "image/jpeg")
+                img_data = base64.standard_b64encode(img_bytes).decode()
+            except Exception as img_err:
+                # Image could not be loaded — switch prompt to text-only mode
+                no_img_note = (
+                    f"(Hinweis: Bild konnte nicht geladen werden: {img_err}. "
+                    "Bitte nur Textfelder prüfen.)"
+                )
+                fallback_instruction = (
+                    "No product image was provided or image could not be loaded. "
+                    "Skip steps 2a–2d. Set imageFindings to []."
+                )
+                prompt = _LEGAL_CHECK_TEXT_PROMPT.format(
+                    title             = (title or "(not provided)") + " " + no_img_note,
+                    description       = desc    or "(not provided)",
+                    tags              = tags    or "(not provided)",
+                    image_instruction = fallback_instruction,
+                )
+
+        if img_data and img_mime:
+            raw = call_with_image(client, model, img_data, img_mime, prompt, max_tokens=3000)
         else:
-            raw = call_text(client, model, prompt, max_tokens=2000)
+            raw = call_text(client, model, prompt, max_tokens=3000)
 
         result = parse_json(raw)
 
@@ -2087,6 +2194,8 @@ def product_legal_check(product_id):
         result.setdefault("imageFindings",  [])
         result.setdefault("recommendations", [])
 
+        # Tag whether image was actually analysed
+        result["_imageAnalysed"] = bool(img_data)
         return jsonify(result)
     except Exception as e:
         return jsonify({"error": str(e)}), 500

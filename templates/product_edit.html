@@ -709,17 +709,23 @@
 .lc-finding-term { font-size:.86rem; font-weight:700; color:var(--text); margin-bottom:3px; }
 .lc-finding-reason { font-size:.78rem; color:var(--muted); line-height:1.5; }
 .lc-badge { font-size:.65rem; font-weight:700; letter-spacing:.3px; text-transform:uppercase; padding:2px 7px; border-radius:5px; flex-shrink:0; white-space:nowrap; }
-.lc-badge-brand  { background:#FEE2E2; color:#B91C1C; }
-.lc-badge-artist { background:#FEF3C7; color:#B45309; }
-.lc-badge-claim  { background:#EDE9FE; color:#6D28D9; }
-.lc-badge-phrase { background:#E0F2FE; color:#0369A1; }
-.lc-badge-low    { background:#F0FDF4; color:#15803D; }
-.lc-badge-medium { background:#FFFBEB; color:#B45309; }
-.lc-badge-high   { background:#FEF2F2; color:#B91C1C; }
+.lc-badge-brand        { background:#FEE2E2; color:#B91C1C; }
+.lc-badge-artist       { background:#FEF3C7; color:#B45309; }
+.lc-badge-claim        { background:#EDE9FE; color:#6D28D9; }
+.lc-badge-phrase       { background:#E0F2FE; color:#0369A1; }
+.lc-badge-celebrity    { background:#FCE7F3; color:#9D174D; }
+.lc-badge-low          { background:#F0FDF4; color:#15803D; }
+.lc-badge-medium       { background:#FFFBEB; color:#B45309; }
+.lc-badge-high         { background:#FEF2F2; color:#B91C1C; }
 .lc-badge-protected        { background:#FEF2F2; color:#B91C1C; }
 .lc-badge-likely_protected { background:#FEF3C7; color:#B45309; }
 .lc-badge-public_domain    { background:#F0FDF4; color:#15803D; }
 .lc-badge-unclear          { background:#F1F5F9; color:#64748B; }
+.lc-badge-text_in_image    { background:#FFF7ED; color:#C2410C; }
+.lc-badge-artist_style     { background:#FEF3C7; color:#B45309; }
+.lc-badge-specific_artwork { background:#EDE9FE; color:#6D28D9; }
+.lc-badge-product_similarity { background:#FEE2E2; color:#B91C1C; }
+.lc-badge-brand_visual     { background:#FEE2E2; color:#B91C1C; }
 /* Artist rows */
 .lc-artist { display:flex; align-items:flex-start; gap:12px; padding:10px 0; border-bottom:1px solid var(--c-100); }
 .lc-artist:last-child { border-bottom:none; padding-bottom:0; }
@@ -1742,6 +1748,7 @@
           <div class="lc-section-header">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
             Bildanalyse
+            <span class="lc-section-badge" id="lc-img-analysed-badge" style="margin-left:6px;"></span>
             <span class="lc-section-badge" id="lc-if-count">0</span>
           </div>
           <div class="lc-section-body" id="lc-image-findings">
@@ -3000,9 +3007,22 @@ function _lcRenderResults(d) {
   /* Image findings */
   const iF = d.imageFindings || [];
   document.getElementById('lc-if-count').textContent = iF.length;
+  // Show whether image was actually sent to the AI
+  const ifHdrBadge = document.getElementById('lc-img-analysed-badge');
+  if (ifHdrBadge) {
+    if (d._imageAnalysed === false) {
+      ifHdrBadge.textContent = 'Kein Bild';
+      ifHdrBadge.style.background = '#FFF7ED'; ifHdrBadge.style.color = '#C2410C';
+    } else if (d._imageAnalysed === true) {
+      ifHdrBadge.textContent = '✓ Bild analysiert';
+      ifHdrBadge.style.background = '#F0FDF4'; ifHdrBadge.style.color = '#15803D';
+    }
+  }
   const ifEl = document.getElementById('lc-image-findings');
   if (iF.length === 0) {
-    ifEl.innerHTML = '<div class="lc-empty">Keine auffälligen Bildähnlichkeiten erkannt.</div>';
+    ifEl.innerHTML = d._imageAnalysed === false
+      ? '<div class="lc-empty">Kein Bild vorhanden — Bildanalyse nicht möglich.</div>'
+      : '<div class="lc-empty">Keine auffälligen Bildähnlichkeiten erkannt.</div>';
   } else {
     ifEl.innerHTML = iF.map(f => {
       const typeBadge = `<span class="lc-badge lc-badge-${f.type||'artist_style'}">${_lcImgTypeLabel(f.type)}</span>`;
@@ -3037,18 +3057,19 @@ function _esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 function _lcTypeLabel(t) {
-  return { brand:'Marke', artist:'Künstler', claim:'Behauptung', phrase:'Formulierung' }[t] || t || '–';
+  return { brand:'Marke', artist:'Künstler', claim:'Behauptung', phrase:'Formulierung', celebrity:'Person/Promi' }[t] || t || '–';
 }
 function _lcSevLabel(s) {
   return { low:'Niedrig', medium:'Mittel', high:'Hoch' }[s] || s || '–';
 }
 function _lcCsLabel(c) {
-  return { protected:'Urheberrecht aktiv', likely_protected:'Wahrscheinlich geschützt',
+  return { protected:'Urheberrecht aktiv', likely_protected:'Wahrsch. geschützt',
            public_domain:'Gemeinfrei', unclear:'Unklar' }[c] || c || '–';
 }
 function _lcImgTypeLabel(t) {
   return { artist_style:'Künstlerstil', specific_artwork:'Konkretes Werk',
-           product_similarity:'Produktähnlichkeit', brand_visual:'Markenvisual' }[t] || t || '–';
+           product_similarity:'Produktähnlichkeit', brand_visual:'Markenvisual',
+           text_in_image:'Text im Bild' }[t] || t || '–';
 }
 function _lcConfLabel(c) {
   return { low:'Gering', medium:'Mittel', high:'Hoch' }[c] || c || '–';
