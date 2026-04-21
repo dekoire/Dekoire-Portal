@@ -1084,29 +1084,39 @@ async function runLegalCheck() {
   errEl.style.display   = 'none';
 
   try {
-    /* If the product was already saved, extract its ID from the edit-button href */
+    /* If the product was already saved, use its real ID so the server
+       can load image_url from DB. Otherwise fall back to "new". */
     let productId = 'new';
-    let imageUrl  = '';
     const editBtn = document.getElementById('actionEditBtn');
     if (editBtn && editBtn.href && editBtn.href.includes('/product/')) {
       const match = editBtn.href.match(/\/product\/([^/]+)/);
-      if (match) {
-        productId = match[1];
-        /* image_url will be fetched from DB by the server */
-      }
+      if (match) productId = match[1];
     }
 
-    const payload = {
+    const fieldData = {
       titel:        (document.getElementById('f-titel')?.value        || '').trim(),
       beschreibung: (document.getElementById('f-beschreibung')?.value || '').trim(),
       tags:         (document.getElementById('f-tags')?.value         || '').trim(),
-      image_url:    imageUrl,
     };
 
-    const res  = await fetch(`/api/product/${productId}/legal-check`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
-    });
+    let fetchOpts;
+
+    /* If the user has a file loaded (pre-save), send it directly as multipart
+       so the server can analyse the image without needing a stored thumbnail. */
+    if (typeof currentFile !== 'undefined' && currentFile) {
+      const fd = new FormData();
+      fd.append('data', JSON.stringify(fieldData));
+      fd.append('image', currentFile);
+      fetchOpts = { method:'POST', body: fd };
+    } else {
+      fetchOpts = {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(fieldData)
+      };
+    }
+
+    const res  = await fetch(`/api/product/${productId}/legal-check`, fetchOpts);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     _lcRenderResults(data);

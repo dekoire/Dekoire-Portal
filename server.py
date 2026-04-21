@@ -2072,11 +2072,31 @@ Final rules:
 @app.route("/api/product/<product_id>/legal-check", methods=["POST"])
 @require_auth
 def product_legal_check(product_id):
-    """Run a legal risk check on a product using Claude AI."""
-    data   = request.json or {}
-    cfg    = load_config()
+    """Run a legal risk check on a product using Claude AI.
 
-    # ── Load product data ────────────────────────────────────────────────────
+    Accepts either:
+    - multipart/form-data  → 'data' field (JSON string) + optional 'image' file
+    - application/json     → JSON body with text fields + optional image_url
+    """
+    cfg = load_config()
+
+    # ── Parse request (multipart or JSON) ────────────────────────────────────
+    inline_img_bytes = None
+    inline_img_mime  = None
+    if request.content_type and "multipart" in request.content_type:
+        import json as _json
+        data = _json.loads(request.form.get("data", "{}"))
+        if "image" in request.files:
+            f = request.files["image"]
+            raw_bytes = f.read()
+            inline_img_bytes = raw_bytes
+            ext = (f.filename or "").split(".")[-1].lower()
+            inline_img_mime  = {"jpg":"image/jpeg","jpeg":"image/jpeg",
+                                 "png":"image/png","webp":"image/webp"}.get(ext, "image/jpeg")
+    else:
+        data = request.json or {}
+
+    # ── Load product data from DB (for saved products) ────────────────────────
     row = {}
     if product_id != "new":
         sb_cfg = cfg.get("supabase", {})
@@ -2089,13 +2109,13 @@ def product_legal_check(product_id):
             except Exception:
                 pass
 
-    # Allow client to override / supply fields (useful for "new" products)
-    # NOTE: only overwrite image_url if client sends a non-empty value,
-    # so we don't clobber a valid DB image_url with an empty JS string.
+    # ── Merge client-supplied text fields ─────────────────────────────────────
+    # Only overwrite image_url if client sends a non-empty value so we don't
+    # clobber a valid DB image_url with an empty JS string.
     for k in ("titel","beschreibung","tags","etsy_tags","etsy_title","etsy_description"):
         if data.get(k) is not None:
             row[k] = data[k]
-    if data.get("image_url"):          # only override if truthy
+    if data.get("image_url"):
         row["image_url"] = data["image_url"]
 
     # ── Assemble text inputs ─────────────────────────────────────────────────
@@ -2147,8 +2167,21 @@ def product_legal_check(product_id):
     try:
         img_data = img_mime = None
 
-        if has_image:
-            # ── Try to fetch the image; fall back to text-only if it fails ──
+        if inline_img_bytes:
+            # ── Inline upload via multipart (no URL needed) ──────────────────
+            # Compress if needed
+            try:
+                if len(inline_img_bytes) > MAX_BYTES:
+                    tmp_path = save_and_compress(inline_img_bytes, "legal_check_tmp.jpg")
+                    inline_img_bytes = tmp_path.read_bytes()
+                    tmp_path.unlink(missing_ok=True)
+            except Exception:
+                pass
+            img_data = base64.standard_b64encode(inline_img_bytes).decode()
+            img_mime = inline_img_mime or "image/jpeg"
+
+        elif has_image:
+            # ── Fetch from stored URL / local path ───────────────────────────
             try:
                 if image_url.startswith("/static/"):
                     local_path = SCRIPT_DIR / image_url.lstrip("/")
