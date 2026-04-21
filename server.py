@@ -681,11 +681,62 @@ def call_text(client, model, prompt, max_tokens=1024):
     ).content[0].text.strip()
 
 def parse_json(raw: str) -> dict:
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    return json.loads(raw.strip())
+    """Robustly extract and parse the first JSON object from a raw Claude response.
+
+    Handles:
+    - Markdown code fences (```json ... ``` or ``` ... ```)
+    - Leading/trailing prose text
+    - Unicode / smart-quote issues
+    - BOM or whitespace padding
+    """
+    text = raw.strip().lstrip("\ufeff")  # strip BOM
+
+    # 1. Strip markdown code fences and try parsing the inner block
+    if "```" in text:
+        parts = re.split(r"```(?:json)?\s*", text)
+        for part in parts:
+            part = part.strip()
+            if part.startswith("{"):
+                try:
+                    return json.loads(part)
+                except json.JSONDecodeError:
+                    pass
+
+    # 2. Try direct parse (Claude returned clean JSON)
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    # 3. Find the outermost {...} block by brace-matching
+    start = text.find("{")
+    if start != -1:
+        depth = 0
+        for i in range(start, len(text)):
+            if text[i] == "{":
+                depth += 1
+            elif text[i] == "}":
+                depth -= 1
+                if depth == 0:
+                    candidate = text[start : i + 1]
+                    try:
+                        return json.loads(candidate)
+                    except json.JSONDecodeError:
+                        # Try replacing problematic unicode quotes before giving up
+                        fixed = (
+                            candidate
+                            .replace("\u201c", '"').replace("\u201d", '"')
+                            .replace("\u2018", "'").replace("\u2019", "'")
+                        )
+                        try:
+                            return json.loads(fixed)
+                        except json.JSONDecodeError:
+                            break  # fall through to error
+
+    raise ValueError(
+        f"Could not extract valid JSON from Claude response. "
+        f"First 400 chars: {text[:400]!r}"
+    )
 
 # ── Auth routes ───────────────────────────────────────────────────────────────
 
@@ -2173,10 +2224,15 @@ def product_legal_check(product_id):
             "Set imageFindings to [] and note the absence of image analysis in your summary."
         )
 
+    # Escape any literal { } in user-supplied text so str.format() doesn't
+    # interpret them as placeholders and raise a KeyError.
+    def _esc(s: str) -> str:
+        return s.replace("{", "{{").replace("}", "}}")
+
     prompt = _LEGAL_CHECK_TEXT_PROMPT.format(
-        title             = title   or "(not provided)",
-        description       = desc    or "(not provided)",
-        tags              = tags    or "(not provided)",
+        title             = _esc(title or "(not provided)"),
+        description       = _esc(desc  or "(not provided)"),
+        tags              = _esc(tags  or "(not provided)"),
         image_instruction = image_instruction,
     )
 
@@ -2229,9 +2285,9 @@ def product_legal_check(product_id):
                     "Skip steps 2a–2d. Set imageFindings to []."
                 )
                 prompt = _LEGAL_CHECK_TEXT_PROMPT.format(
-                    title             = (title or "(not provided)") + " " + no_img_note,
-                    description       = desc    or "(not provided)",
-                    tags              = tags    or "(not provided)",
+                    title             = _esc(title or "(not provided)") + " " + no_img_note,
+                    description       = _esc(desc  or "(not provided)"),
+                    tags              = _esc(tags  or "(not provided)"),
                     image_instruction = fallback_instruction,
                 )
 
