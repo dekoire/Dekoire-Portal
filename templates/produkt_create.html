@@ -330,6 +330,31 @@
 .lc-artist-assessment { font-size:.78rem; color:var(--text); line-height:1.5; }
 .lc-search-link { font-size:.7rem; font-weight:600; color:var(--btn); text-decoration:none; border:1px solid #C7D2FE; border-radius:4px; padding:1px 5px; white-space:nowrap; }
 .lc-search-link:hover { background:#EEF2FF; }
+/* ── Vision / Bildsuche pane ── */
+.vision-intro { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:32px 20px; text-align:center; }
+.vision-intro-icon { width:52px; height:52px; border-radius:14px; background:#EEF2FF; display:flex; align-items:center; justify-content:center; color:var(--btn); }
+.vision-intro-title { font-size:1rem; font-weight:700; color:var(--text); margin:0; }
+.vision-intro-sub { font-size:.82rem; color:var(--muted); margin:0; line-height:1.5; max-width:360px; }
+.vision-run-btn { display:inline-flex; align-items:center; gap:7px; padding:10px 20px; border-radius:8px; border:none; background:var(--btn); color:#fff; font-weight:700; font-size:.84rem; cursor:pointer; }
+.vision-run-btn:hover { background:#4338CA; }
+.vision-loading { display:flex; align-items:center; justify-content:center; gap:10px; padding:32px; color:var(--muted); font-size:.88rem; display:none; }
+.vision-error { background:#FEF2F2; border:1px solid #FCA5A5; border-radius:10px; padding:14px 18px; font-size:.84rem; color:#B91C1C; display:none; margin-bottom:16px; }
+.vision-results { display:none; }
+.vision-section { margin-bottom:24px; }
+.vision-section-title { font-size:.68rem; font-weight:700; letter-spacing:.5px; text-transform:uppercase; color:var(--muted); margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+.vision-section-title span { background:var(--c-100); border-radius:999px; padding:1px 7px; font-size:.65rem; }
+.vision-entities { display:flex; flex-wrap:wrap; gap:6px; }
+.vision-entity { background:var(--c-50); border:1px solid var(--border); border-radius:999px; padding:3px 10px; font-size:.78rem; color:var(--text); }
+.vision-entity.high { background:#EEF2FF; border-color:#C7D2FE; color:var(--btn); font-weight:600; }
+.vision-img-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.vision-img-link { display:block; aspect-ratio:1; border-radius:8px; overflow:hidden; border:1px solid var(--border); background:var(--c-50); }
+.vision-img-link img { width:100%; height:100%; object-fit:cover; display:block; }
+.vision-img-link:hover { border-color:var(--btn); }
+.vision-pages { display:flex; flex-direction:column; gap:6px; }
+.vision-page-link { font-size:.8rem; color:var(--btn); text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:block; }
+.vision-page-link:hover { text-decoration:underline; }
+.vision-not-configured { background:#FFFBEB; border:1px solid #FDE68A; border-radius:10px; padding:16px 20px; font-size:.84rem; color:#92400E; line-height:1.6; }
+.vision-not-configured code { background:#FEF3C7; border-radius:4px; padding:1px 5px; font-family:monospace; }
 .lc-img-finding { padding:10px 0; border-bottom:1px solid var(--c-100); }
 .lc-img-finding:last-child { border-bottom:none; padding-bottom:0; }
 .lc-img-ref-row { display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap; }
@@ -398,6 +423,10 @@
       <button class="sidebar-item" id="nav-legal" onclick="showPane('legal', this)">
         <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Legal Check
+      </button>
+      <button class="sidebar-item" id="nav-vision" onclick="showPane('vision', this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.6"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Bildsuche
       </button>
     </nav>
 
@@ -999,6 +1028,58 @@
 
     </div><!-- /pane-legal -->
 
+    <!-- ── Bildsuche (Google Vision) ── -->
+    <div class="settings-pane" id="pane-vision">
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.6"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Bildsuche im Web
+        </div>
+        <div class="settings-card-body">
+          <div id="vision-intro" class="vision-intro">
+            <div class="vision-intro-icon">
+              <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            </div>
+            <p class="vision-intro-title">Ähnliche Bilder im Web finden</p>
+            <p class="vision-intro-sub">Prüft über Google Cloud Vision, ob dieses Bild bereits im Web vorkommt oder ähnliche Bilder existieren. Erfordert einen Google Cloud Vision API-Key in der Konfiguration.</p>
+            <button class="vision-run-btn" onclick="runVisionCheck()">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              Bildsuche starten
+            </button>
+          </div>
+          <div id="vision-loading" class="vision-loading">
+            <div class="lc-widget-spin"></div>
+            Suche läuft …
+          </div>
+          <div id="vision-error" class="vision-error"></div>
+          <div id="vision-results" class="vision-results">
+            <div class="lc-rerun-row">
+              <button class="lc-rerun-btn" onclick="runVisionCheck()">
+                <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Neu suchen
+              </button>
+            </div>
+            <div id="vision-entities-section" class="vision-section" style="display:none">
+              <div class="vision-section-title">Erkannte Web-Entitäten <span id="vision-entity-count">0</span></div>
+              <div id="vision-entities" class="vision-entities"></div>
+            </div>
+            <div id="vision-full-section" class="vision-section" style="display:none">
+              <div class="vision-section-title" style="color:#DC2626;">Exakte Treffer <span id="vision-full-count">0</span></div>
+              <div id="vision-full" class="vision-img-grid"></div>
+            </div>
+            <div id="vision-similar-section" class="vision-section" style="display:none">
+              <div class="vision-section-title">Ähnliche Bilder <span id="vision-similar-count">0</span></div>
+              <div id="vision-similar" class="vision-img-grid"></div>
+            </div>
+            <div id="vision-pages-section" class="vision-section" style="display:none">
+              <div class="vision-section-title">Seiten mit ähnlichen Bildern <span id="vision-pages-count">0</span></div>
+              <div id="vision-pages" class="vision-pages"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /pane-vision -->
+
   </div><!-- /settings-content -->
 
   <!-- ══ Right action panel ══ -->
@@ -1319,6 +1400,7 @@ window._afterAnalyze = function(_analysisData, file) {
 };
 
 function _lcRenderResults(d) {
+  window._cachedLegalResult = d;  // cache for saving after product creation
   const status  = (d.status || 'yellow').toLowerCase();
   const score   = d.score ?? 50;
   const labels  = { green:'Geringes Risiko', yellow:'Erhöhtes Risiko', red:'Hohes Risiko' };
@@ -1485,6 +1567,91 @@ function _lcwRenderWidget(d) {
   document.getElementById('lcw-terms').innerHTML = tf.map(f =>
     `<span class="lc-widget-term ${f.severity||'low'}" title="${_esc(f.reason)}">${_esc(f.term)}</span>`
   ).join('');
+}
+</script>
+<script>
+/* ── Google Cloud Vision Bildsuche ── */
+async function runVisionCheck() {
+  const intro   = document.getElementById('vision-intro');
+  const loading = document.getElementById('vision-loading');
+  const results = document.getElementById('vision-results');
+  const errEl   = document.getElementById('vision-error');
+
+  intro.style.display   = 'none';
+  loading.style.display = 'flex';
+  results.style.display = 'none';
+  errEl.style.display   = 'none';
+
+  try {
+    if (!currentFile) throw new Error('Kein Bild geladen — bitte zuerst ein Bild hochladen.');
+    const fd = new FormData();
+    fd.append('image', currentFile);
+    const res  = await fetch('/api/vision-check', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.error === 'not_configured') {
+      errEl.innerHTML = '<strong>Google Cloud Vision nicht konfiguriert.</strong><br>Füge <code>google_cloud_vision_key</code> in deine <code>config.json</code> ein und starte den Server neu.';
+      errEl.style.display = 'block';
+      intro.style.display = 'block';
+      loading.style.display = 'none';
+      return;
+    }
+    if (data.error) throw new Error(data.error);
+    _renderVisionResults(data);
+    loading.style.display = 'none';
+    results.style.display = 'block';
+  } catch(e) {
+    loading.style.display = 'none';
+    errEl.textContent = '⚠ ' + e.message;
+    errEl.style.display = 'block';
+    intro.style.display = 'block';
+  }
+}
+
+function _renderVisionResults(d) {
+  const entities = d.entities || [];
+  const similar  = d.similarImages || [];
+  const full     = d.fullMatches   || [];
+  const pages    = d.pages         || [];
+
+  // Entities
+  const entSec = document.getElementById('vision-entities-section');
+  if (entities.length) {
+    document.getElementById('vision-entity-count').textContent = entities.length;
+    document.getElementById('vision-entities').innerHTML = entities.map(e =>
+      `<span class="vision-entity${e.score >= 0.5 ? ' high' : ''}">${e.description}</span>`
+    ).join('');
+    entSec.style.display = '';
+  } else { entSec.style.display = 'none'; }
+
+  // Full matches
+  const fullSec = document.getElementById('vision-full-section');
+  if (full.length) {
+    document.getElementById('vision-full-count').textContent = full.length;
+    document.getElementById('vision-full').innerHTML = full.map(url =>
+      `<a href="${url}" target="_blank" class="vision-img-link"><img src="${url}" onerror="this.parentElement.style.display='none'" /></a>`
+    ).join('');
+    fullSec.style.display = '';
+  } else { fullSec.style.display = 'none'; }
+
+  // Similar images
+  const simSec = document.getElementById('vision-similar-section');
+  if (similar.length) {
+    document.getElementById('vision-similar-count').textContent = similar.length;
+    document.getElementById('vision-similar').innerHTML = similar.map(url =>
+      `<a href="${url}" target="_blank" class="vision-img-link"><img src="${url}" onerror="this.parentElement.style.display='none'" /></a>`
+    ).join('');
+    simSec.style.display = '';
+  } else { simSec.style.display = 'none'; }
+
+  // Pages
+  const pgSec = document.getElementById('vision-pages-section');
+  if (pages.length) {
+    document.getElementById('vision-pages-count').textContent = pages.length;
+    document.getElementById('vision-pages').innerHTML = pages.map(p =>
+      `<a href="${p.url}" target="_blank" class="vision-page-link" title="${p.url}">${p.title || p.url}</a>`
+    ).join('');
+    pgSec.style.display = '';
+  } else { pgSec.style.display = 'none'; }
 }
 </script>
 

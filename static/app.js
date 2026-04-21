@@ -691,6 +691,14 @@ async function saveProduct() {
           editBtn.href = `/product/${editId}`;
           editBtn.style.display = '';
         }
+        // Persist cached legal-check result under the new product ID
+        if (window._cachedLegalResult) {
+          fetch(`/api/product/${editId}/legal-check/store`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(window._cachedLegalResult)
+          }).catch(() => {});
+        }
       }
 
       // Discord notification

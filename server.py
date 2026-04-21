@@ -13,6 +13,7 @@ import webbrowser
 from pathlib import Path
 from threading import Timer
 from typing import Optional
+from datetime import datetime as _dt
 
 import anthropic
 from flask import (Flask, jsonify, redirect, render_template,
@@ -54,8 +55,10 @@ LEGAL_CHECKS_DIR.mkdir(parents=True, exist_ok=True)
 def _save_legal_check(product_id: str, result: dict) -> None:
     """Persist a legal-check result to disk as JSON."""
     try:
+        to_save = dict(result)
+        to_save.setdefault("_runDate", _dt.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"))
         path = LEGAL_CHECKS_DIR / f"{product_id}.json"
-        path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+        path.write_text(json.dumps(to_save, ensure_ascii=False, indent=2), encoding="utf-8")
     except Exception:
         pass
 
@@ -2345,6 +2348,86 @@ def product_legal_check_get(product_id):
     if not result:
         return jsonify({}), 204   # No content — not yet run
     return jsonify(result)
+
+
+@app.route("/api/product/<product_id>/legal-check/store", methods=["POST"])
+@require_auth
+def product_legal_check_store(product_id):
+    """Store a pre-computed legal-check result (e.g. after product creation)."""
+    if product_id == "new":
+        return jsonify({"error": "Produkt-ID erforderlich"}), 400
+    data = request.json or {}
+    if data:
+        _save_legal_check(product_id, data)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/vision-check", methods=["POST"])
+@require_auth
+def vision_check():
+    """Google Cloud Vision Web Detection — finds similar/matching images on the web."""
+    cfg     = load_config()
+    api_key = cfg.get("google_cloud_vision_key", "").strip()
+    if not api_key:
+        return jsonify({"error": "not_configured"}), 400
+
+    f = request.files.get("image")
+    if not f:
+        # Check for JSON body with image_url (product_edit mode)
+        body = request.json or {}
+        image_url = body.get("image_url", "").strip()
+        if image_url:
+            import urllib.request as _ur2
+            import ssl as _ssl2
+            try:
+                ctx2 = _ssl2.create_default_context()
+                with _ur2.urlopen(image_url, timeout=15, context=ctx2) as resp2:
+                    raw = resp2.read()
+            except Exception as e:
+                return jsonify({"error": f"Bild-URL konnte nicht geladen werden: {e}"}), 400
+        else:
+            return jsonify({"error": "Kein Bild übermittelt"}), 400
+    else:
+        raw = f.read()
+
+    try:
+        tmp = save_and_compress(raw, "vision_tmp.jpg")
+        raw = tmp.read_bytes()
+        tmp.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+    b64 = base64.standard_b64encode(raw).decode()
+    payload = json.dumps({
+        "requests": [{
+            "image": {"content": b64},
+            "features": [{"type": "WEB_DETECTION", "maxResults": 20}]
+        }]
+    }).encode()
+
+    import urllib.request as _ur
+    req = _ur.Request(
+        f"https://vision.googleapis.com/v1/images:annotate?key={api_key}",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST"
+    )
+    try:
+        import ssl as _ssl
+        ctx = _ssl.create_default_context()
+        with _ur.urlopen(req, timeout=30, context=ctx) as resp:
+            result = json.loads(resp.read())
+        wd = result.get("responses", [{}])[0].get("webDetection", {})
+        return jsonify({
+            "entities":     [{"description": e.get("description",""), "score": round(e.get("score",0),2)}
+                             for e in wd.get("webEntities", []) if e.get("description")],
+            "similarImages": [i.get("url","") for i in wd.get("visuallySimilarImages", []) if i.get("url")][:12],
+            "fullMatches":   [i.get("url","") for i in wd.get("fullMatchingImages", []) if i.get("url")][:6],
+            "pages":         [{"url": p.get("url",""), "title": p.get("pageTitle","")}
+                             for p in wd.get("pagesWithMatchingImages", []) if p.get("url")][:8],
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/settings")
 @require_auth
