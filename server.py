@@ -242,10 +242,33 @@ def image_meta(file_bytes: bytes) -> dict:
     }
 
 def encode_from_path(path: Path) -> tuple[str, str]:
-    mime_map = {".jpg": "image/jpeg", ".jpeg": "image/jpeg",
-                ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif"}
-    data = base64.standard_b64encode(path.read_bytes()).decode()
-    return data, mime_map.get(path.suffix.lower(), "image/jpeg")
+    """Base64-encode an image and detect its real MIME type from the bytes,
+    not the file extension (mismatched extensions cause Claude 400 errors)."""
+    raw  = path.read_bytes()
+    data = base64.standard_b64encode(raw).decode()
+    # Detect actual format via Pillow; fall back to magic bytes
+    mime = _detect_mime(raw)
+    return data, mime
+
+
+def _detect_mime(raw: bytes) -> str:
+    """Return the real MIME type of image bytes, independent of file extension."""
+    try:
+        img = Image.open(io.BytesIO(raw))
+        return {
+            "JPEG": "image/jpeg", "PNG": "image/png",
+            "WEBP": "image/webp", "GIF": "image/gif",
+            "BMP":  "image/bmp",  "TIFF": "image/tiff",
+        }.get(img.format or "", "image/jpeg")
+    except Exception:
+        # Magic-byte fallback
+        if raw[:3] == b"\xff\xd8\xff":
+            return "image/jpeg"
+        if raw[:8] == b"\x89PNG\r\n\x1a\n":
+            return "image/png"
+        if raw[:4] == b"RIFF" and raw[8:12] == b"WEBP":
+            return "image/webp"
+        return "image/jpeg"
 
 # ── Slug helper ──────────────────────────────────────────────────────────────
 
@@ -1982,9 +2005,7 @@ def product_regen(product_id):
             import urllib.request as _ur
             with _ur.urlopen(image_url, timeout=15) as resp:
                 img_bytes = resp.read()
-        ext  = image_url.split(".")[-1].lower().split("?")[0]
-        mime = {"jpg":"image/jpeg","jpeg":"image/jpeg","png":"image/png",
-                "webp":"image/webp","gif":"image/gif"}.get(ext, "image/jpeg")
+        mime     = _detect_mime(img_bytes)
         img_data = base64.standard_b64encode(img_bytes).decode()
         raw  = call_with_image(client, model, img_data, mime,
                                f"{PRIVACY}\n\n{REGEN_PROMPTS[field]}", max_tokens=256)
@@ -2165,25 +2186,7 @@ def product_legal_check(product_id):
             f = request.files["image"]
             raw_bytes = f.read()
             inline_img_bytes = raw_bytes
-            # Detect actual format from file contents (not the extension),
-            # because mismatched extension vs. content causes Claude 400 errors.
-            try:
-                import io as _io
-                _pil_img = Image.open(_io.BytesIO(raw_bytes))
-                _fmt_map = {"JPEG": "image/jpeg", "PNG": "image/png",
-                            "WEBP": "image/webp", "GIF": "image/gif",
-                            "BMP":  "image/bmp",  "TIFF": "image/tiff"}
-                inline_img_mime = _fmt_map.get(_pil_img.format or "", "image/jpeg")
-            except Exception:
-                # Fallback: sniff magic bytes manually
-                if raw_bytes[:3] == b"\xff\xd8\xff":
-                    inline_img_mime = "image/jpeg"
-                elif raw_bytes[:8] == b"\x89PNG\r\n\x1a\n":
-                    inline_img_mime = "image/png"
-                elif raw_bytes[:4] == b"RIFF" and raw_bytes[8:12] == b"WEBP":
-                    inline_img_mime = "image/webp"
-                else:
-                    inline_img_mime = "image/jpeg"
+            inline_img_mime  = _detect_mime(raw_bytes)
     else:
         data = request.json or {}
 
@@ -2286,9 +2289,7 @@ def product_legal_check(product_id):
                     import urllib.request as _ur
                     with _ur.urlopen(image_url, timeout=20) as _resp:
                         img_bytes = _resp.read()
-                ext      = image_url.split(".")[-1].lower().split("?")[0]
-                img_mime = {"jpg":"image/jpeg","jpeg":"image/jpeg","png":"image/png",
-                            "webp":"image/webp","gif":"image/gif"}.get(ext, "image/jpeg")
+                img_mime = _detect_mime(img_bytes)
                 img_data = base64.standard_b64encode(img_bytes).decode()
             except Exception as img_err:
                 # Image could not be loaded — switch prompt to text-only mode
