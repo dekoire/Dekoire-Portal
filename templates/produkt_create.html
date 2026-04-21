@@ -185,6 +185,80 @@
   color: var(--text);
   background: var(--c-100);
 }
+
+/* ── Legal Check pane ── */
+.lc-intro { text-align:center; padding: 48px 24px; }
+.lc-intro-icon { width:56px; height:56px; margin: 0 auto 16px; display:flex; align-items:center; justify-content:center; background: #EEF2FF; border-radius: 50%; color: var(--btn); }
+.lc-intro-title { font-size:1.05rem; font-weight:700; color:var(--text); margin-bottom:8px; }
+.lc-intro-sub { font-size:.82rem; color:var(--muted); max-width:400px; margin:0 auto 24px; line-height:1.55; }
+.lc-run-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 24px; border:none; border-radius:9px; background:var(--btn); color:#fff; font-size:.9rem; font-weight:700; cursor:pointer; transition:background .15s; }
+.lc-run-btn:hover { background:#4338CA; }
+.lc-run-btn:disabled { opacity:.5; cursor:not-allowed; }
+.lc-loading { display:none; text-align:center; padding:48px 24px; }
+.lc-loading-spinner { width:38px; height:38px; border:3px solid var(--border); border-top-color:var(--btn); border-radius:50%; animation:lcSpin .75s linear infinite; margin:0 auto 14px; }
+@keyframes lcSpin { to { transform:rotate(360deg); } }
+.lc-loading-text { font-size:.88rem; color:var(--muted); font-weight:600; }
+.lc-results { display:none; }
+.lc-rerun-row { display:flex; justify-content:flex-end; margin-bottom:20px; }
+.lc-rerun-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 16px; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--text); font-size:.8rem; font-weight:600; cursor:pointer; transition:background .15s; }
+.lc-rerun-btn:hover { background:var(--c-100); }
+.lc-status-card { border-radius:14px; padding:24px 28px; margin-bottom:20px; display:flex; align-items:flex-start; gap:20px; }
+.lc-status-card.green  { background:#F0FDF4; border:1.5px solid #86EFAC; }
+.lc-status-card.yellow { background:#FFFBEB; border:1.5px solid #FCD34D; }
+.lc-status-card.red    { background:#FEF2F2; border:1.5px solid #FCA5A5; }
+.lc-status-light { flex-shrink:0; width:58px; height:58px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.75rem; }
+.lc-status-card.green  .lc-status-light { background:#DCFCE7; }
+.lc-status-card.yellow .lc-status-light { background:#FEF9C3; }
+.lc-status-card.red    .lc-status-light { background:#FEE2E2; }
+.lc-status-info { flex:1; min-width:0; }
+.lc-status-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
+.lc-status-label { font-size:1.1rem; font-weight:800; }
+.lc-status-card.green  .lc-status-label { color:#16A34A; }
+.lc-status-card.yellow .lc-status-label { color:#D97706; }
+.lc-status-card.red    .lc-status-label { color:#DC2626; }
+.lc-score-pill { font-size:.78rem; font-weight:700; padding:3px 11px; border-radius:20px; }
+.lc-status-card.green  .lc-score-pill { background:#DCFCE7; color:#15803D; }
+.lc-status-card.yellow .lc-score-pill { background:#FEF9C3; color:#B45309; }
+.lc-status-card.red    .lc-score-pill { background:#FEE2E2; color:#B91C1C; }
+.lc-status-summary { font-size:.85rem; color:var(--text); line-height:1.65; }
+.lc-section { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:16px; }
+.lc-section-header { display:flex; align-items:center; gap:9px; padding:11px 18px; background:var(--c-50); border-bottom:1px solid var(--border); font-size:.82rem; font-weight:700; color:var(--text); }
+.lc-section-badge { margin-left:auto; font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:10px; background:var(--c-100); color:var(--muted); }
+.lc-section-body { padding:16px 18px; }
+.lc-empty { font-size:.82rem; color:var(--muted); font-style:italic; }
+.lc-finding { display:flex; align-items:flex-start; gap:10px; padding:10px 0; border-bottom:1px solid var(--c-100); }
+.lc-finding:last-child { border-bottom:none; padding-bottom:0; }
+.lc-finding-left { flex:1; min-width:0; }
+.lc-finding-term { font-size:.86rem; font-weight:700; color:var(--text); margin-bottom:3px; }
+.lc-finding-reason { font-size:.78rem; color:var(--muted); line-height:1.5; }
+.lc-badge { font-size:.65rem; font-weight:700; letter-spacing:.3px; text-transform:uppercase; padding:2px 7px; border-radius:5px; flex-shrink:0; white-space:nowrap; }
+.lc-badge-brand  { background:#FEE2E2; color:#B91C1C; }
+.lc-badge-artist { background:#FEF3C7; color:#B45309; }
+.lc-badge-claim  { background:#EDE9FE; color:#6D28D9; }
+.lc-badge-phrase { background:#E0F2FE; color:#0369A1; }
+.lc-badge-low    { background:#F0FDF4; color:#15803D; }
+.lc-badge-medium { background:#FFFBEB; color:#B45309; }
+.lc-badge-high   { background:#FEF2F2; color:#B91C1C; }
+.lc-badge-protected        { background:#FEF2F2; color:#B91C1C; }
+.lc-badge-likely_protected { background:#FEF3C7; color:#B45309; }
+.lc-badge-public_domain    { background:#F0FDF4; color:#15803D; }
+.lc-badge-unclear          { background:#F1F5F9; color:#64748B; }
+.lc-artist { display:flex; align-items:flex-start; gap:12px; padding:10px 0; border-bottom:1px solid var(--c-100); }
+.lc-artist:last-child { border-bottom:none; padding-bottom:0; }
+.lc-artist-avatar { width:36px; height:36px; border-radius:50%; background:var(--c-100); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--muted); font-size:.82rem; font-weight:700; }
+.lc-artist-info { flex:1; min-width:0; }
+.lc-artist-name { font-size:.88rem; font-weight:700; color:var(--text); margin-bottom:3px; }
+.lc-artist-meta { font-size:.74rem; color:var(--muted); margin-bottom:4px; }
+.lc-artist-assessment { font-size:.78rem; color:var(--text); line-height:1.5; }
+.lc-img-finding { padding:10px 0; border-bottom:1px solid var(--c-100); }
+.lc-img-finding:last-child { border-bottom:none; padding-bottom:0; }
+.lc-img-ref-row { display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap; }
+.lc-img-ref { font-size:.88rem; font-weight:700; color:var(--text); }
+.lc-img-assessment { font-size:.78rem; color:var(--muted); line-height:1.5; }
+.lc-rec { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid var(--c-100); font-size:.84rem; color:var(--text); line-height:1.5; }
+.lc-rec:last-child { border-bottom:none; padding-bottom:0; }
+.lc-rec-num { flex-shrink:0; width:22px; height:22px; border-radius:50%; background:#EEF2FF; color:var(--btn); display:flex; align-items:center; justify-content:center; font-size:.7rem; font-weight:700; margin-top:1px; }
+.lc-error { background:#FEF2F2; border:1px solid #FCA5A5; border-radius:10px; padding:16px 20px; font-size:.84rem; color:#B91C1C; display:none; margin-bottom:16px; }
 </style>
 </head>
 <body>
@@ -233,6 +307,10 @@
       <button class="sidebar-item" id="nav-meta" onclick="showPane('meta', this)">
         <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 2v6h6M8 13h8M8 17h6M8 9h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Meta Daten
+      </button>
+      <button class="sidebar-item" id="nav-legal" onclick="showPane('legal', this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Legal Check
       </button>
     </nav>
 
@@ -758,6 +836,81 @@
 
     </div><!-- /pane-meta -->
 
+    <!-- ══ Legal Risk Check ══ -->
+    <div class="settings-pane" id="pane-legal">
+
+      <div id="lc-intro" class="lc-intro">
+        <div class="lc-intro-icon">
+          <svg width="26" height="26" fill="none" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="lc-intro-title">Legal Risk Check</div>
+        <p class="lc-intro-sub">Automatisierte Risikoeinschätzung für Titel, Beschreibung und Tags. Prüft auf mögliche Marken-, Urheber- und Plattformrisiken.<br><strong>Keine Rechtsberatung.</strong> Felder müssen nicht gespeichert sein — es werden die aktuellen Eingaben aus dem Formular verwendet.</p>
+        <button class="lc-run-btn" onclick="runLegalCheck()">
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Prüfung starten
+        </button>
+      </div>
+
+      <div id="lc-loading" class="lc-loading">
+        <div class="lc-loading-spinner"></div>
+        <div class="lc-loading-text">Analyse läuft … das kann 10–20 Sekunden dauern</div>
+      </div>
+
+      <div id="lc-error" class="lc-error"></div>
+
+      <div id="lc-results" class="lc-results">
+        <div class="lc-rerun-row">
+          <button class="lc-rerun-btn" onclick="runLegalCheck()">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Neu prüfen
+          </button>
+        </div>
+        <div id="lc-status-card" class="lc-status-card green">
+          <div class="lc-status-light" id="lc-status-emoji">🟢</div>
+          <div class="lc-status-info">
+            <div class="lc-status-row">
+              <span class="lc-status-label" id="lc-status-label">Geringes Risiko</span>
+              <span class="lc-score-pill" id="lc-score-pill">Score: –</span>
+            </div>
+            <div class="lc-status-summary" id="lc-status-summary"></div>
+          </div>
+        </div>
+        <div class="lc-section">
+          <div class="lc-section-header">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Text-Risiken
+            <span class="lc-section-badge" id="lc-tf-count">0</span>
+          </div>
+          <div class="lc-section-body" id="lc-text-findings"><div class="lc-empty">Keine auffälligen Begriffe gefunden.</div></div>
+        </div>
+        <div class="lc-section">
+          <div class="lc-section-header">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Künstler / Referenzen
+            <span class="lc-section-badge" id="lc-af-count">0</span>
+          </div>
+          <div class="lc-section-body" id="lc-artist-findings"><div class="lc-empty">Keine Künstlerreferenzen erkannt.</div></div>
+        </div>
+        <div class="lc-section">
+          <div class="lc-section-header">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            Bildanalyse
+            <span class="lc-section-badge" id="lc-if-count">0</span>
+          </div>
+          <div class="lc-section-body" id="lc-image-findings"><div class="lc-empty">Keine auffälligen Bildähnlichkeiten erkannt.</div></div>
+        </div>
+        <div class="lc-section">
+          <div class="lc-section-header">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Handlungsempfehlungen
+            <span class="lc-section-badge" id="lc-rc-count">0</span>
+          </div>
+          <div class="lc-section-body" id="lc-recommendations"><div class="lc-empty">Keine spezifischen Empfehlungen.</div></div>
+        </div>
+      </div><!-- /lc-results -->
+
+    </div><!-- /pane-legal -->
+
   </div><!-- /settings-content -->
 
   <!-- ══ Right action panel ══ -->
@@ -908,6 +1061,149 @@ async function doLogout() {
     });
   });
 })();
+</script>
+
+<script>
+/* ── Legal Risk Check (create mode) ── */
+async function runLegalCheck() {
+  const intro   = document.getElementById('lc-intro');
+  const loading = document.getElementById('lc-loading');
+  const results = document.getElementById('lc-results');
+  const errEl   = document.getElementById('lc-error');
+
+  intro.style.display   = 'none';
+  loading.style.display = 'block';
+  results.style.display = 'none';
+  errEl.style.display   = 'none';
+
+  try {
+    /* If the product was already saved, extract its ID from the edit-button href */
+    let productId = 'new';
+    let imageUrl  = '';
+    const editBtn = document.getElementById('actionEditBtn');
+    if (editBtn && editBtn.href && editBtn.href.includes('/product/')) {
+      const match = editBtn.href.match(/\/product\/([^/]+)/);
+      if (match) {
+        productId = match[1];
+        /* image_url will be fetched from DB by the server */
+      }
+    }
+
+    const payload = {
+      titel:        (document.getElementById('f-titel')?.value        || '').trim(),
+      beschreibung: (document.getElementById('f-beschreibung')?.value || '').trim(),
+      tags:         (document.getElementById('f-tags')?.value         || '').trim(),
+      image_url:    imageUrl,
+    };
+
+    const res  = await fetch(`/api/product/${productId}/legal-check`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    _lcRenderResults(data);
+    loading.style.display = 'none';
+    results.style.display = 'block';
+  } catch(e) {
+    loading.style.display = 'none';
+    errEl.textContent     = '⚠ Fehler bei der Prüfung: ' + e.message;
+    errEl.style.display   = 'block';
+    intro.style.display   = 'block';
+  }
+}
+
+function _lcRenderResults(d) {
+  const status  = (d.status || 'yellow').toLowerCase();
+  const score   = d.score ?? 50;
+  const labels  = { green:'Geringes Risiko', yellow:'Erhöhtes Risiko', red:'Hohes Risiko' };
+  const emojis  = { green:'🟢', yellow:'🟡', red:'🔴' };
+
+  const card = document.getElementById('lc-status-card');
+  card.className = 'lc-status-card ' + status;
+  document.getElementById('lc-status-emoji').textContent   = emojis[status]  || '🟡';
+  document.getElementById('lc-status-label').textContent   = labels[status]  || 'Risiko unklar';
+  document.getElementById('lc-score-pill').textContent     = `Score: ${score} / 100`;
+  document.getElementById('lc-status-summary').textContent = d.summary || '';
+
+  const tf = d.textFindings || [];
+  document.getElementById('lc-tf-count').textContent = tf.length;
+  const tfEl = document.getElementById('lc-text-findings');
+  if (tf.length === 0) {
+    tfEl.innerHTML = '<div class="lc-empty">Keine auffälligen Begriffe gefunden.</div>';
+  } else {
+    tfEl.innerHTML = tf.map(f =>
+      `<div class="lc-finding">
+        <div class="lc-finding-left">
+          <div class="lc-finding-term">"${_esc(f.term)}"</div>
+          <div class="lc-finding-reason">${_esc(f.reason)}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+          <span class="lc-badge lc-badge-${f.type||'phrase'}">${_lcTypeLabel(f.type)}</span>
+          <span class="lc-badge lc-badge-${f.severity||'low'}">${_lcSevLabel(f.severity)}</span>
+        </div>
+      </div>`
+    ).join('');
+  }
+
+  const af = d.artistFindings || [];
+  document.getElementById('lc-af-count').textContent = af.length;
+  const afEl = document.getElementById('lc-artist-findings');
+  if (af.length === 0) {
+    afEl.innerHTML = '<div class="lc-empty">Keine Künstlerreferenzen erkannt.</div>';
+  } else {
+    afEl.innerHTML = af.map(a => {
+      const initials = (a.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const deathInfo = a.deathYear ? `† ${a.deathYear}` : 'Todesjahr unbekannt';
+      return `<div class="lc-artist">
+        <div class="lc-artist-avatar">${initials}</div>
+        <div class="lc-artist-info">
+          <div class="lc-artist-name">${_esc(a.name)} <span class="lc-badge lc-badge-${a.copyrightStatus||'unclear'}">${_lcCsLabel(a.copyrightStatus)}</span></div>
+          <div class="lc-artist-meta">${deathInfo}</div>
+          <div class="lc-artist-assessment">${_esc(a.assessment)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  const iF = d.imageFindings || [];
+  document.getElementById('lc-if-count').textContent = iF.length;
+  const ifEl = document.getElementById('lc-image-findings');
+  if (iF.length === 0) {
+    ifEl.innerHTML = '<div class="lc-empty">Keine auffälligen Bildähnlichkeiten erkannt.</div>';
+  } else {
+    ifEl.innerHTML = iF.map(f =>
+      `<div class="lc-img-finding">
+        <div class="lc-img-ref-row">
+          <span class="lc-img-ref">${_esc(f.reference)}</span>
+          <span class="lc-badge lc-badge-${f.type||'artist_style'}">${_lcImgTypeLabel(f.type)}</span>
+          <span class="lc-badge lc-badge-${f.confidence||'low'}">${_lcConfLabel(f.confidence)}</span>
+        </div>
+        <div class="lc-img-assessment">${_esc(f.assessment)}</div>
+      </div>`
+    ).join('');
+  }
+
+  const rc = d.recommendations || [];
+  document.getElementById('lc-rc-count').textContent = rc.length;
+  const rcEl = document.getElementById('lc-recommendations');
+  if (rc.length === 0) {
+    rcEl.innerHTML = '<div class="lc-empty">Keine spezifischen Empfehlungen.</div>';
+  } else {
+    rcEl.innerHTML = rc.map((r,i) =>
+      `<div class="lc-rec"><div class="lc-rec-num">${i+1}</div><div>${_esc(r)}</div></div>`
+    ).join('');
+  }
+}
+
+function _esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function _lcTypeLabel(t)    { return { brand:'Marke', artist:'Künstler', claim:'Behauptung', phrase:'Formulierung' }[t] || t || '–'; }
+function _lcSevLabel(s)     { return { low:'Niedrig', medium:'Mittel', high:'Hoch' }[s] || s || '–'; }
+function _lcCsLabel(c)      { return { protected:'Urheberrecht aktiv', likely_protected:'Wahrscheinlich geschützt', public_domain:'Gemeinfrei', unclear:'Unklar' }[c] || c || '–'; }
+function _lcImgTypeLabel(t) { return { artist_style:'Künstlerstil', specific_artwork:'Konkretes Werk', product_similarity:'Produktähnlichkeit', brand_visual:'Markenvisual' }[t] || t || '–'; }
+function _lcConfLabel(c)    { return { low:'Gering', medium:'Mittel', high:'Hoch' }[c] || c || '–'; }
 </script>
 
 {% include 'includes/footer.html' %}

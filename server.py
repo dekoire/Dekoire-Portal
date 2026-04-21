@@ -1923,6 +1923,174 @@ def product_regen(product_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# ── Legal Risk Check ──────────────────────────────────────────────────────────
+
+_LEGAL_CHECK_TEXT_PROMPT = """You are a legal risk assessment assistant specializing in art/poster products sold on Etsy and e-commerce platforms in the EU and USA.
+
+Analyze the product information below and return a structured JSON risk assessment. Be professional, thorough, and use cautious language — never claim legal certainty.
+
+Product Title: {title}
+Product Description: {description}
+Tags / Keywords: {tags}
+
+{image_instruction}
+
+Return ONLY valid JSON (no markdown fences, no extra text), strictly matching this structure:
+{{
+  "status": "green",
+  "score": 12,
+  "summary": "2–4 sentence overall risk assessment using phrases like potentially, may, could, appears to. Do NOT claim legal certainty.",
+  "textFindings": [
+    {{
+      "term": "exact problematic term or phrase found in the text",
+      "type": "brand",
+      "reason": "Why this term could pose a legal risk",
+      "severity": "low"
+    }}
+  ],
+  "artistFindings": [
+    {{
+      "name": "Artist or person name",
+      "deathYear": null,
+      "copyrightStatus": "protected",
+      "assessment": "Short risk assessment for this reference"
+    }}
+  ],
+  "imageFindings": [
+    {{
+      "reference": "What the image resembles (artist style, specific artwork, brand visual, etc.)",
+      "type": "artist_style",
+      "confidence": "medium",
+      "assessment": "Brief assessment — use cautious language"
+    }}
+  ],
+  "recommendations": [
+    "One specific actionable recommendation per item"
+  ]
+}}
+
+Allowed values:
+- status: "green" | "yellow" | "red"
+- score: integer 0–100 (0–34 = green, 35–69 = yellow, 70–100 = red)
+- textFindings[].type: "brand" | "artist" | "claim" | "phrase"
+- textFindings[].severity: "low" | "medium" | "high"
+- artistFindings[].copyrightStatus: "protected" | "likely_protected" | "public_domain" | "unclear"
+- imageFindings[].type: "artist_style" | "specific_artwork" | "product_similarity" | "brand_visual"
+- imageFindings[].confidence: "low" | "medium" | "high"
+
+Rules:
+- Empty arrays [] are perfectly fine when no issues are found
+- Flag: trademark terms, brand names, artist/person names, phrases like "official", "licensed", "original", "inspired by [name]", "im Stil von [name]"
+- For artists: estimate death year if known; apply 70-year post-mortem copyright rule (EU/US)
+- If text fields are empty, state that in summary and return mostly empty findings
+- Keep all text in the language of the product (German if German, English if English)
+- NEVER use phrases like "legally safe", "legally permitted", "guaranteed unproblematic"
+- DO use phrases like "geringes Risiko", "erhöhtes Risiko", "potenziell problematisch", "sollte manuell geprüft werden"
+"""
+
+@app.route("/api/product/<product_id>/legal-check", methods=["POST"])
+@require_auth
+def product_legal_check(product_id):
+    """Run a legal risk check on a product using Claude AI."""
+    data   = request.json or {}
+    cfg    = load_config()
+
+    # ── Load product data ────────────────────────────────────────────────────
+    row = {}
+    if product_id != "new":
+        sb_cfg = cfg.get("supabase", {})
+        if _SUPABASE_OK and sb_cfg.get("url") and sb_cfg.get("anon_key"):
+            try:
+                sb  = _sb_create(sb_cfg["url"], sb_cfg["anon_key"])
+                res = sb.table(sb_cfg.get("table_name","image_analyses")) \
+                        .select("*").eq("id", product_id).single().execute()
+                row = res.data or {}
+            except Exception:
+                pass
+
+    # Allow client to override / supply fields (useful for "new" products)
+    for k in ("titel","beschreibung","tags","etsy_tags","image_url","etsy_title","etsy_description"):
+        if data.get(k) is not None:
+            row[k] = data[k]
+
+    # ── Assemble text inputs ─────────────────────────────────────────────────
+    title = (row.get("titel") or row.get("etsy_title") or "").strip()
+    desc  = (row.get("beschreibung") or row.get("etsy_description") or "").strip()
+    raw_tags = row.get("tags") or row.get("etsy_tags") or ""
+    if isinstance(raw_tags, list):
+        tags = ", ".join(str(t) for t in raw_tags if t)
+    else:
+        tags = str(raw_tags).strip()
+    image_url = (row.get("image_url") or "").strip()
+
+    if not any([title, desc, tags, image_url]):
+        return jsonify({"error": "Keine Produktdaten verfügbar für die Prüfung."}), 400
+
+    # ── Build prompt ─────────────────────────────────────────────────────────
+    has_image = bool(image_url)
+    if has_image:
+        image_instruction = (
+            "An image of the product is also provided. Analyze it visually for:\n"
+            "- Strong resemblance to a known artist's style\n"
+            "- Similarity to a specific well-known artwork\n"
+            "- Visual similarity to existing commercial products or brands\n"
+            "- Any logos, characters, or motifs that might be trademarked\n"
+            "Add your findings to the imageFindings array."
+        )
+    else:
+        image_instruction = (
+            "No image was provided. Set imageFindings to [] and note the absence "
+            "of image analysis in the summary."
+        )
+
+    prompt = _LEGAL_CHECK_TEXT_PROMPT.format(
+        title             = title   or "(not provided)",
+        description       = desc    or "(not provided)",
+        tags              = tags    or "(not provided)",
+        image_instruction = image_instruction,
+    )
+
+    # ── Call Claude ──────────────────────────────────────────────────────────
+    try:
+        client, _ = get_client()
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 500
+
+    model = cfg.get("model", "claude-opus-4-5")
+
+    try:
+        if has_image:
+            # Fetch image bytes
+            if image_url.startswith("/static/"):
+                local_path = SCRIPT_DIR / image_url.lstrip("/")
+                img_bytes  = local_path.read_bytes()
+            else:
+                import urllib.request as _ur
+                with _ur.urlopen(image_url, timeout=20) as _resp:
+                    img_bytes = _resp.read()
+            ext      = image_url.split(".")[-1].lower().split("?")[0]
+            mime     = {"jpg":"image/jpeg","jpeg":"image/jpeg","png":"image/png",
+                        "webp":"image/webp","gif":"image/gif"}.get(ext, "image/jpeg")
+            img_data = base64.standard_b64encode(img_bytes).decode()
+            raw = call_with_image(client, model, img_data, mime, prompt, max_tokens=2000)
+        else:
+            raw = call_text(client, model, prompt, max_tokens=2000)
+
+        result = parse_json(raw)
+
+        # Ensure required keys exist with safe defaults
+        result.setdefault("status", "yellow")
+        result.setdefault("score",  50)
+        result.setdefault("summary", "")
+        result.setdefault("textFindings",   [])
+        result.setdefault("artistFindings", [])
+        result.setdefault("imageFindings",  [])
+        result.setdefault("recommendations", [])
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/settings")
 @require_auth
 def settings_page():
