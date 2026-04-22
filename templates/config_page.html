@@ -6,6 +6,20 @@
 <title>Einstellungen – {{ header_title }}</title>
 <link rel="stylesheet" href="/static/style.css" />
 <style>
+/* ── Folder picker row ── */
+.folder-pick-row { display: flex; gap: 8px; align-items: center; }
+.folder-pick-row input { flex: 1; min-width: 0; }
+.folder-pick-btn {
+  flex-shrink: 0; display: flex; align-items: center; gap: 6px;
+  padding: 0 12px; height: 36px; border-radius: 3px;
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--text); font-size: .8rem; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+  transition: background .14s, border-color .14s, color .14s;
+}
+.folder-pick-btn:hover { background: #EEF2FF; border-color: var(--btn); color: var(--btn); }
+.folder-pick-btn svg { flex-shrink: 0; }
+
 /* ── Settings layout ── */
 .settings-layout {
   display: flex;
@@ -46,7 +60,7 @@
   align-items: center;
   gap: 9px;
   padding: 9px 12px;
-  border-radius: 8px;
+  border-radius: 3px;
   font-size: .85rem;
   font-weight: 500;
   color: var(--muted);
@@ -107,6 +121,73 @@
 
 /* sidebar-group-label → now in style.css */
 
+/* ── Category rows ── */
+.cat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px 7px 8px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  transition: background .12s;
+}
+.cat-row:hover { background: var(--c-100); }
+.cat-row.cat-dragging { opacity: .3; }
+.cat-row.cat-drop-before { border-top: 2px solid var(--btn); }
+.cat-drag-handle {
+  cursor: grab;
+  color: var(--c-300);
+  font-size: 14px;
+  line-height: 1;
+  letter-spacing: -1.5px;
+  user-select: none;
+  flex-shrink: 0;
+  padding: 0 2px;
+}
+.cat-drag-handle:hover { color: var(--muted); }
+.cat-drag-handle:active { cursor: grabbing; }
+.cat-name-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #EEF2FF;
+  color: var(--btn);
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: .78rem;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cat-name-pill svg { flex-shrink: 0; }
+.cat-count-badge {
+  font-size: .72rem;
+  color: var(--muted);
+  background: var(--c-100);
+  border-radius: 20px;
+  padding: 2px 7px;
+  flex-shrink: 0;
+}
+.cat-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  padding: 4px 5px;
+  border-radius: 3px;
+  font-size: .75rem;
+  line-height: 1;
+  transition: color .12s, background .12s;
+  display: flex;
+  align-items: center;
+}
+.cat-action-btn:hover { color: var(--text); background: var(--border); }
+.cat-action-btn.danger:hover { color: #DC2626; background: #FEF2F2; }
+
 /* ── Save bar ── */
 .settings-save-bar {
   bottom: 0;
@@ -114,6 +195,40 @@
   padding: 14px 0;
   display: flex;
   justify-content: flex-end;
+}
+
+/* ── API Test Bar ── */
+.api-test-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px 14px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+.api-test-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 13px; border-radius: 3px;
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--text); font-size: .8rem; font-weight: 600;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  transition: background .14s, border-color .14s, color .14s;
+}
+.api-test-btn:hover:not(:disabled) { background: #EEF2FF; border-color: var(--btn); color: var(--btn); }
+.api-test-btn:disabled { opacity: .5; cursor: not-allowed; }
+.api-test-result {
+  font-size: .8rem; font-weight: 600; display: flex; align-items: center; gap: 5px;
+  flex: 1; min-width: 0;
+}
+.api-test-result.ok    { color: #16A34A; }
+.api-test-result.err   { color: #DC2626; }
+.api-test-result.spin  { color: var(--muted); }
+.api-test-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  background: currentColor;
+}
+.api-test-dot.spin {
+  background: transparent; border: 2px solid var(--border);
+  border-top-color: var(--btn); border-radius: 50%;
+  animation: spin .7s linear infinite;
 }
 </style>
 </head>
@@ -142,6 +257,16 @@
         KI &amp; Analyse
       </button>
 
+      <div class="sidebar-group-label">Künstliche Intelligenzen</div>
+      <button class="sidebar-item" onclick="showPane('ai-routing',this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M12 2a9 9 0 0 1 9 9c0 3.18-1.65 5.97-4.13 7.6L15 21H9l-1.87-2.4A9 9 0 0 1 12 2z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 17v1a3 3 0 0 0 6 0v-1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        KI-Aufgaben &amp; Routing
+      </button>
+      <button class="sidebar-item" onclick="showPane('ai-keys',this)">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        API Keys
+      </button>
+
       <div class="sidebar-group-label">Zugangsdaten</div>
       <button class="sidebar-item" onclick="showPane('credentials',this)">
         <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -151,7 +276,11 @@
       <div class="sidebar-group-label">System</div>
       <button class="sidebar-item" onclick="showPane('database',this)">
         <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3" stroke="currentColor" stroke-width="1.6"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5" stroke="currentColor" stroke-width="1.6"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3" stroke="currentColor" stroke-width="1.6"/></svg>
-        Datenbank &amp; Export
+        Datenbank
+      </button>
+      <button class="sidebar-item" id="nav-export" onclick="showPane('export',this);initExportPane()">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M16 12l-4 4m0 0-4-4m4 4V4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Export &amp; Speicher
       </button>
       <button class="sidebar-item" onclick="showPane('notifications',this)">
         <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -169,13 +298,22 @@
       </button>
       <button class="sidebar-item" id="nav-extapps" onclick="showPane('extapps',this);loadExtApps()">
         <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>
-        External Apps
+        App Dashboard
+      </button>
+      <button class="sidebar-item" id="nav-aitools" onclick="showPane('aitools',this);aitRender();orbLoad()">
+        <!-- Siri-like gradient orb icon -->
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+          <defs><linearGradient id="aiNavGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#8B5CF6"/><stop offset="100%" stop-color="#06B6D4"/></linearGradient></defs>
+          <circle cx="12" cy="12" r="9" fill="url(#aiNavGrad)" opacity=".85"/>
+          <text x="12" y="16" text-anchor="middle" font-size="8" font-weight="900" fill="#fff" font-family="system-ui,sans-serif">AI</text>
+        </svg>
+        KI Tools
       </button>
 
       <div class="sidebar-group-label">Verwaltung</div>
       <button class="sidebar-item" onclick="showPane('users',this);loadUsers()">
         <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        Nutzer
+        Nutzermanagement
       </button>
 
     </nav>
@@ -224,27 +362,302 @@
       </div>
     </div>
 
+    <!-- ══ KI-Routing ══ -->
+<div class="settings-pane" id="pane-ai-routing">
+  <div class="settings-card">
+    <div class="settings-card-header">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 2a9 9 0 0 1 9 9c0 3.18-1.65 5.97-4.13 7.6L15 21H9l-1.87-2.4A9 9 0 0 1 12 2z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 17v1a3 3 0 0 0 6 0v-1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      KI-Aufgaben &amp; Routing
+      <span style="margin-left:8px;font-size:.72rem;font-weight:400;color:var(--muted);">Wähle pro Aufgabe die passende KI</span>
+    </div>
+    <div class="settings-card-body">
+      <p style="font-size:.82rem;color:var(--muted);margin:0 0 20px;line-height:1.6;">
+        Weise jeder Aufgabe die KI zu, die am besten geeignet ist. Nutze die Stärken jedes Modells gezielt.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        {% set ai_routing = cfg.get('ai_routing', {}) %}
+        {% set ai_tasks = [
+          ('image_analysis',  'Bildanalyse',   'Erkennt Stil, Farben, Komposition und Bildinhalt per Vision-API'),
+          ('text_creation',   'Texterstellung', 'Erstellt Produkttitel, Beschreibungen und Marketingtexte'),
+          ('seo',             'SEO',            'Generiert Keywords, Meta-Tags und Suchbeschreibungen'),
+          ('social_media',    'Social Media',   'Erstellt Pinterest-Pins, Instagram-Captions und Hashtags'),
+          ('legal',           'Legal Check',    'Prüft Markenschutz, Urheberrecht und rechtliche Risiken'),
+        ] %}
+        {% for task_key, task_label, task_desc in ai_tasks %}
+        <div style="display:flex;align-items:center;gap:16px;padding:14px 16px;{% if not loop.last %}border-bottom:1px solid var(--border);{% endif %}">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:2px;">{{ task_label }}</div>
+            <div style="font-size:.75rem;color:var(--muted);">{{ task_desc }}</div>
+          </div>
+          <select id="ai-routing-{{ task_key }}" style="width:160px;padding:7px 10px;border:1px solid var(--border);border-radius:3px;font-size:.83rem;background:var(--card);color:var(--text);">
+            <option value="claude"      {% if ai_routing.get(task_key,'claude') == 'claude'      %}selected{% endif %}>Claude (Anthropic)</option>
+            <option value="openai"      {% if ai_routing.get(task_key,'')       == 'openai'      %}selected{% endif %}>ChatGPT (OpenAI)</option>
+            <option value="gemini"      {% if ai_routing.get(task_key,'')       == 'gemini'      %}selected{% endif %}>Gemini (Google)</option>
+            <option value="perplexity"  {% if ai_routing.get(task_key,'')       == 'perplexity'  %}selected{% endif %}>Perplexity</option>
+          </select>
+        </div>
+        {% endfor %}
+      </div>
+      <div style="margin-top:16px;display:flex;align-items:center;gap:12px;">
+        <button class="btn btn-primary" onclick="saveAiRouting()">Routing speichern</button>
+        <span id="ai-routing-status" style="font-size:.82rem;color:var(--muted);"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ AI API Keys ══ -->
+<div class="settings-pane" id="pane-ai-keys">
+
+  <!-- Claude / Anthropic -->
+  <div class="settings-card">
+    <div class="settings-card-header">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 2a9 9 0 0 1 9 9c0 3.18-1.65 5.97-4.13 7.6L15 21H9l-1.87-2.4A9 9 0 0 1 12 2z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 17v1a3 3 0 0 0 6 0v-1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Anthropic – Claude API Key
+      <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener"
+         style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:600;color:var(--btn);text-decoration:none;padding:4px 9px;border:1px solid var(--btn);border-radius:3px;background:transparent;transition:background .12s;"
+         onmouseover="this.style.background='#EEF2FF'" onmouseout="this.style.background='transparent'">
+        <svg width="11" height="11" fill="none" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        console.anthropic.com
+      </a>
+    </div>
+    <div class="settings-card-body">
+      <div style="background:var(--c-50);border:1px solid var(--border);border-radius:8px;padding:10px 13px;margin-bottom:16px;font-size:.8rem;color:var(--muted);line-height:1.6;">
+        <strong style="color:var(--text);">Wo finde ich den Key?</strong><br>
+        → <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--btn);">console.anthropic.com/settings/keys</a>
+        → „Create Key" → Namen vergeben → Key einmalig kopieren und hier einfügen.
+      </div>
+      <div class="settings-grid">
+        <div class="settings-field settings-field-full">
+          <label>API Key</label>
+          <div class="pw-wrap">
+            <input type="password" id="s-api-key" placeholder="sk-ant-… (leer = unverändert)" />
+            <div class="pw-actions">
+              <button type="button" class="pw-btn" onclick="togglePw('s-api-key',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+              <button type="button" class="pw-btn" onclick="copyPw('s-api-key',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+            </div>
+          </div>
+          <span class="settings-hint">Leer lassen, um den gespeicherten Key beizubehalten.</span>
+        </div>
+      </div>
+    </div>
+    <div class="api-test-bar">
+      <button class="api-test-btn" onclick="testApi('anthropic',this,{key:document.getElementById('s-api-key').value.trim()})">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/></svg>
+        Verbindung testen
+      </button>
+      <div class="api-test-result" id="test-result-anthropic"></div>
+    </div>
+  </div>
+
+  <!-- OpenAI / ChatGPT -->
+  <div class="settings-card">
+    <div class="settings-card-header">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.99 5.99 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073zM13.26 22.43a4.476 4.476 0 0 1-2.876-1.04l.141-.081 4.779-2.758a.795.795 0 0 0 .392-.681v-6.737l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494zM3.6 18.304a4.47 4.47 0 0 1-.535-3.014l.142.085 4.783 2.759a.771.771 0 0 0 .78 0l5.843-3.369v2.332a.08.08 0 0 1-.033.062L9.74 19.95a4.5 4.5 0 0 1-6.14-1.646zM2.34 7.896a4.485 4.485 0 0 1 2.366-1.973V11.6a.766.766 0 0 0 .388.676l5.815 3.355-2.02 1.168a.076.076 0 0 1-.071 0l-4.83-2.786A4.504 4.504 0 0 1 2.34 7.872zm16.597 3.855l-5.843-3.369 2.02-1.168a.076.076 0 0 1 .071 0l4.83 2.791a4.494 4.494 0 0 1-.676 8.105v-5.678a.79.79 0 0 0-.402-.681zm2.01-3.023l-.141-.085-4.774-2.782a.776.776 0 0 0-.785 0L9.409 9.23V6.897a.066.066 0 0 1 .028-.061l4.83-2.787a4.5 4.5 0 0 1 6.68 4.66zm-12.64 4.135l-2.02-1.164a.08.08 0 0 1-.038-.057V6.075a4.5 4.5 0 0 1 7.375-3.453l-.142.08L8.704 5.46a.795.795 0 0 0-.393.681zm1.097-2.365l2.602-1.5 2.607 1.5v2.999l-2.597 1.5-2.607-1.5z"/></svg>
+      OpenAI – ChatGPT API Key
+      <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener"
+         style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:600;color:#10A37F;text-decoration:none;padding:4px 9px;border:1px solid #10A37F;border-radius:3px;background:transparent;transition:background .12s;"
+         onmouseover="this.style.background='#F0FDF9'" onmouseout="this.style.background='transparent'">
+        <svg width="11" height="11" fill="none" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        platform.openai.com
+      </a>
+    </div>
+    <div class="settings-card-body">
+      <div style="background:var(--c-50);border:1px solid var(--border);border-radius:8px;padding:10px 13px;margin-bottom:16px;font-size:.8rem;color:var(--muted);line-height:1.6;">
+        <strong style="color:var(--text);">Wo finde ich den Key?</strong><br>
+        → <a href="https://platform.openai.com/api-keys" target="_blank" style="color:#10A37F;">platform.openai.com/api-keys</a>
+        → „Create new secret key" → Key einmalig kopieren und hier einfügen. Aktiviere Usage Limits unter „Billing" um unerwartete Kosten zu vermeiden.
+      </div>
+      <div class="settings-grid">
+        <div class="settings-field settings-field-full">
+          <label>API Key</label>
+          <div class="pw-wrap">
+            <input type="password" id="s-openai-key" placeholder="sk-… (leer = unverändert)"
+                   value="" autocomplete="off" />
+            <div class="pw-actions">
+              <button type="button" class="pw-btn" onclick="togglePw('s-openai-key',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+              <button type="button" class="pw-btn" onclick="copyPw('s-openai-key',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+            </div>
+          </div>
+          <span class="settings-hint">Leer lassen, um den gespeicherten Key beizubehalten.</span>
+        </div>
+        <div class="settings-field">
+          <label>Organisation ID <span class="opt-badge">optional</span></label>
+          <input type="text" id="s-openai-org" placeholder="org-…"
+                 value="{{ cfg.get('openai',{}).get('org_id','') }}" />
+          <span class="settings-hint">Nur nötig bei mehreren Organisationen im OpenAI-Konto.</span>
+        </div>
+        <div class="settings-field">
+          <label>Modell</label>
+          <select id="s-openai-model">
+            {% set oai_model = cfg.get('openai',{}).get('model','gpt-4o') %}
+            <option value="gpt-4o"          {% if oai_model == 'gpt-4o'          %}selected{% endif %}>GPT-4o</option>
+            <option value="gpt-4o-mini"     {% if oai_model == 'gpt-4o-mini'     %}selected{% endif %}>GPT-4o mini</option>
+            <option value="gpt-4-turbo"     {% if oai_model == 'gpt-4-turbo'     %}selected{% endif %}>GPT-4 Turbo</option>
+            <option value="o1-preview"      {% if oai_model == 'o1-preview'      %}selected{% endif %}>o1-preview</option>
+            <option value="o1-mini"         {% if oai_model == 'o1-mini'         %}selected{% endif %}>o1-mini</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="api-test-bar">
+      <button class="api-test-btn" onclick="testApi('openai',this,{key:document.getElementById('s-openai-key').value.trim()})">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/></svg>
+        Verbindung testen
+      </button>
+      <div class="api-test-result" id="test-result-openai"></div>
+    </div>
+  </div>
+
+</div>
+
     <!-- ══ Credentials ══ -->
     <div class="settings-pane" id="pane-credentials">
+      <p style="font-size:.82rem;color:var(--muted);margin:0 0 4px;padding:0 2px;">KI-API-Keys (Claude, OpenAI) findest du jetzt unter <strong>Künstliche Intelligenzen → API Keys</strong>.</p>
+
+      <!-- Google Ads API -->
       <div class="settings-card">
         <div class="settings-card-header">
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M15 7h3a5 5 0 0 1 0 10h-3m-6 0H6A5 5 0 0 1 6 7h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-          Anthropic API Key
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M11 8v3l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Google Ads API <span class="opt-badge">Optional – SEO Keyword Validierung</span>
+        </div>
+        <div class="settings-card-body">
+
+          <!-- Info box -->
+          <div style="background:var(--c-50,#f8f8fc);border:1px solid var(--border);border-radius:8px;padding:10px 13px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.6;">
+            <strong style="color:var(--text);">Wozu?</strong> Damit werden SEO-Keywords gegen echte Google Suchdaten validiert (Volumen, CPC). Ohne diese Einstellungen läuft die Analyse nur über KI.<br>
+            <strong style="color:var(--text);">Wo bekomme ich das?</strong> Alle Schritte: <a href="https://console.cloud.google.com/auth/clients" target="_blank" style="color:var(--btn);">Google Cloud Console</a> → OAuth Client erstellen, dann <a href="https://developers.google.com/oauthplayground" target="_blank" style="color:var(--btn);">OAuth Playground</a> für den Refresh Token.
+          </div>
+
+          <div class="settings-grid">
+
+            <!-- 1. Developer Token -->
+            <div class="settings-field settings-field-full">
+              <label>
+                1. Developer Token
+                <span class="opt-badge">aus Google Ads Manager</span>
+              </label>
+              <div class="pw-wrap">
+                <input type="password" id="s-gads-dev-token"
+                       value="{{ cfg.get('google_ads_api',{}).get('developer_token','') }}"
+                       placeholder="z.B. ABcDeFgHiJkLmN…" autocomplete="off"/>
+                <div class="pw-actions">
+                  <button type="button" class="pw-btn" onclick="togglePw('s-gads-dev-token',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-gads-dev-token',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+                </div>
+              </div>
+              <span class="settings-hint">→ <a href="https://ads.google.com/aw/apicenter" target="_blank" style="color:var(--btn);">ads.google.com/aw/apicenter</a> → Developer Token kopieren (braucht Manager-Konto)</span>
+            </div>
+
+            <!-- 2. Client ID -->
+            <div class="settings-field">
+              <label>2. Client ID <span class="opt-badge">aus Google Cloud</span></label>
+              <input type="text" id="s-gads-client-id"
+                     value="{{ cfg.get('google_ads_api',{}).get('client_id','') }}"
+                     placeholder="372369678503-xxx.apps.googleusercontent.com" autocomplete="off"/>
+              <span class="settings-hint">→ <a href="https://console.cloud.google.com/auth/clients" target="_blank" style="color:var(--btn);">Google Cloud → Auth → Clients</a> → OAuth-Client (Typ: Webanwendung) → Client-ID</span>
+            </div>
+
+            <!-- 3. Client Secret -->
+            <div class="settings-field">
+              <label>3. Client Secret <span class="opt-badge">aus Google Cloud</span></label>
+              <div class="pw-wrap">
+                <input type="password" id="s-gads-client-secret"
+                       value="{{ cfg.get('google_ads_api',{}).get('client_secret','') }}"
+                       placeholder="GOCSPX-…" autocomplete="off"/>
+                <div class="pw-actions">
+                  <button type="button" class="pw-btn" onclick="togglePw('s-gads-client-secret',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-gads-client-secret',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+                </div>
+              </div>
+              <span class="settings-hint">→ Gleiche Seite wie Client ID → Clientschlüssel (beginnt mit GOCSPX-)</span>
+            </div>
+
+            <!-- 4. Refresh Token -->
+            <div class="settings-field settings-field-full">
+              <label>4. Refresh Token <span class="opt-badge">einmalig generieren</span></label>
+              <div class="pw-wrap">
+                <input type="password" id="s-gads-refresh-token"
+                       value="{{ cfg.get('google_ads_api',{}).get('refresh_token','') }}"
+                       placeholder="1//04kwcze…" autocomplete="off"/>
+                <div class="pw-actions">
+                  <button type="button" class="pw-btn" onclick="togglePw('s-gads-refresh-token',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-gads-refresh-token',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+                </div>
+              </div>
+              <span class="settings-hint">→ <a href="https://developers.google.com/oauthplayground" target="_blank" style="color:var(--btn);">OAuth Playground</a> → Zahnrad → eigene Credentials eintragen → Scope: <code>https://www.googleapis.com/auth/adwords</code> → Authorize → Exchange → Refresh Token kopieren</span>
+            </div>
+
+            <!-- 5. Customer ID -->
+            <div class="settings-field">
+              <label>5. Customer ID <span class="opt-badge">ohne Bindestriche</span></label>
+              <input type="text" id="s-gads-customer-id"
+                     value="{{ cfg.get('google_ads_api',{}).get('customer_id','') }}"
+                     placeholder="1234567890" autocomplete="off"/>
+              <span class="settings-hint">→ <a href="https://ads.google.com" target="_blank" style="color:var(--btn);">Google Ads</a> → oben rechts deine Konto-ID (10-stellig, ohne Bindestriche eintragen)</span>
+            </div>
+
+            <!-- 6. Zielmarkt -->
+            <div class="settings-field">
+              <label>6. Zielmarkt <span class="opt-badge">für Keyword-Volumen</span></label>
+              <select id="s-gads-geo-target">
+                <option value="2276" {{ 'selected' if cfg.get('google_ads_api',{}).get('geo_target','2276') == '2276' else '' }}>Deutschland (DE)</option>
+                <option value="2040" {{ 'selected' if cfg.get('google_ads_api',{}).get('geo_target','') == '2040' else '' }}>Österreich (AT)</option>
+                <option value="2756" {{ 'selected' if cfg.get('google_ads_api',{}).get('geo_target','') == '2756' else '' }}>Schweiz (CH)</option>
+                <option value="2826" {{ 'selected' if cfg.get('google_ads_api',{}).get('geo_target','') == '2826' else '' }}>United Kingdom (UK)</option>
+                <option value="2840" {{ 'selected' if cfg.get('google_ads_api',{}).get('geo_target','') == '2840' else '' }}>United States (US)</option>
+              </select>
+              <span class="settings-hint">In welchem Land sollen die Suchdaten gemessen werden?</span>
+            </div>
+
+          </div>
+        </div>
+        <div class="api-test-bar">
+          <button class="api-test-btn" onclick="testApi('google-ads',this,{
+            developer_token: document.getElementById('s-gads-dev-token').value.trim(),
+            client_id:       document.getElementById('s-gads-client-id').value.trim(),
+            client_secret:   document.getElementById('s-gads-client-secret').value.trim(),
+            refresh_token:   document.getElementById('s-gads-refresh-token').value.trim(),
+            customer_id:     document.getElementById('s-gads-customer-id').value.trim()
+          })">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/></svg>
+            Verbindung testen
+          </button>
+          <div class="api-test-result" id="test-result-google-ads"></div>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.6"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Google Cloud Vision API Key
         </div>
         <div class="settings-card-body">
           <div class="settings-grid">
             <div class="settings-field settings-field-full">
               <label>API Key</label>
               <div class="pw-wrap">
-                <input type="password" id="s-api-key" placeholder="sk-ant-… (leer = unverändert)" />
+                <input type="password" id="s-gcv-key"
+                       value="{{ cfg.get('google_cloud_vision_key','') }}"
+                       placeholder="AIza…" autocomplete="off" />
                 <div class="pw-actions">
-                  <button type="button" class="pw-btn" onclick="togglePw('s-api-key',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
-                  <button type="button" class="pw-btn" onclick="copyPw('s-api-key',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="togglePw('s-gcv-key',this)" title="Anzeigen">{% include 'icons/eye.svg' %}</button>
+                  <button type="button" class="pw-btn" onclick="copyPw('s-gcv-key',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
                 </div>
               </div>
-              <span class="settings-hint">Leer lassen, um den gespeicherten Key beizubehalten.</span>
+              <span class="settings-hint">
+                Wird für die <strong>Bildsuche</strong> (ähnliche Bilder im Web finden) genutzt.<br/>
+                Google Cloud Console → APIs &amp; Dienste → Anmeldedaten → API-Schlüssel erstellen → <em>Cloud Vision API</em> aktivieren.
+              </span>
             </div>
           </div>
+        </div>
+        <div class="api-test-bar">
+          <button class="api-test-btn" onclick="testApi('vision',this,{key:document.getElementById('s-gcv-key').value.trim()})">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/></svg>
+            Verbindung testen
+          </button>
+          <div class="api-test-result" id="test-result-vision"></div>
         </div>
       </div>
 
@@ -330,6 +743,16 @@
             </div>
           </div>
         </div>
+        <div class="api-test-bar">
+          <button class="api-test-btn" onclick="testApi('supabase',this,{
+            url:     document.getElementById('s-sb-url').value.trim(),
+            anon_key:document.getElementById('s-sb-key').value.trim()
+          })">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/></svg>
+            Verbindung testen
+          </button>
+          <div class="api-test-result" id="test-result-supabase"></div>
+        </div>
       </div>
 
       <div class="settings-card">
@@ -355,6 +778,16 @@
               <input type="text" id="s-ig-post-userid" value="{{ cfg.get('instagram_posting',{}).get('user_id','') }}" placeholder="17841400000000000" />
             </div>
           </div>
+        </div>
+        <div class="api-test-bar">
+          <button class="api-test-btn" onclick="testApi('instagram',this,{
+            token:   document.getElementById('s-ig-post-token').value.trim(),
+            user_id: document.getElementById('s-ig-post-userid').value.trim()
+          })">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/></svg>
+            Verbindung testen
+          </button>
+          <div class="api-test-result" id="test-result-instagram"></div>
         </div>
       </div>
 
@@ -457,6 +890,15 @@
             <input type="hidden" id="s-pin-post-token" value="{{ cfg.get('pinterest_posting',{}).get('access_token','') }}" />
           </div>
         </div>
+        <div class="api-test-bar">
+          <button class="api-test-btn" onclick="testApi('pinterest',this,{
+            token: (document.getElementById('s-pin-token-prod').value || document.getElementById('s-pin-token-sandbox').value).trim()
+          })">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/></svg>
+            Verbindung testen
+          </button>
+          <div class="api-test-result" id="test-result-pinterest"></div>
+        </div>
       </div>
 
       <!-- ── Bilder-Generator ── -->
@@ -504,7 +946,7 @@
               <label>Neues Board erstellen</label>
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                 <input type="text" id="pin-new-board-name" placeholder="Board-Name" style="flex:1;min-width:160px;" />
-                <select id="pin-new-board-privacy" style="padding:9px 10px;border:1px solid var(--border);border-radius:8px;font-size:.875rem;background:var(--card);color:var(--text);">
+                <select id="pin-new-board-privacy" style="padding:9px 10px;border:1px solid var(--border);border-radius:3px;font-size:.875rem;background:var(--card);color:var(--text);">
                   <option value="PUBLIC">Öffentlich</option>
                   <option value="PROTECTED">Geheim</option>
                 </select>
@@ -551,6 +993,17 @@
             </div>
           </div>
         </div>
+        <div class="api-test-bar">
+          <button class="api-test-btn" onclick="testApi('shopify',this,{
+            url:      document.getElementById('s-shopify-url').value.trim(),
+            api_key:  document.getElementById('s-shopify-key').value.trim(),
+            password: document.getElementById('s-shopify-pass').value.trim()
+          })">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/></svg>
+            Verbindung testen
+          </button>
+          <div class="api-test-result" id="test-result-shopify"></div>
+        </div>
       </div>
 
       <!-- ── Etsy ── -->
@@ -576,6 +1029,16 @@
               <input type="text" id="s-etsy-shopid" value="{{ etsy_cfg.get('shop_id','') }}" placeholder="z.B. 12345678" />
             </div>
           </div>
+        </div>
+        <div class="api-test-bar">
+          <button class="api-test-btn" onclick="testApi('etsy',this,{
+            api_key: document.getElementById('s-etsy-key').value.trim(),
+            shop_id: document.getElementById('s-etsy-shopid').value.trim()
+          })">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/></svg>
+            Verbindung testen
+          </button>
+          <div class="api-test-result" id="test-result-etsy"></div>
         </div>
       </div>
 
@@ -672,36 +1135,168 @@ CREATE POLICY "select_auth" ON image_analyses FOR SELECT TO authenticated USING 
         </div>
       </div>
 
+    </div>
+
+    <!-- ══ Export & Speicher ══ -->
+    <div class="settings-pane" id="pane-export">
+
+      <!-- Speicherort -->
       <div class="settings-card">
         <div class="settings-card-header">
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M16 12l-4 4m0 0-4-4m4 4V4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Export-Einstellungen
+          Speicherort für Bilddateien
+        </div>
+        <div class="settings-card-body">
+
+          <div class="settings-grid">
+            <div class="settings-field settings-field-full">
+              <label>Speicherziel</label>
+              <select id="s-export-destination"
+                      onchange="toggleExportDest(this.value)">
+                <option value="local"
+                  {% if cfg.get('export',{}).get('destination','local') == 'local' %}selected{% endif %}>
+                  Lokal / Netzlaufwerk
+                </option>
+                <option value="google_drive"
+                  {% if cfg.get('export',{}).get('destination','local') == 'google_drive' %}selected{% endif %}>
+                  Google Drive
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ── Lokal ── -->
+          <div id="export-local-section" style="margin-top:16px;">
+            <div class="settings-grid">
+              <div class="settings-field settings-field-full">
+                <label>Ordnerpfad</label>
+                <div class="folder-pick-row">
+                  <input type="text" id="s-final-folder"
+                         value="{{ cfg.get('export',{}).get('final_files_folder','Final Files') }}"
+                         placeholder="Final Files" />
+                  <button type="button" class="folder-pick-btn" onclick="pickFolder('s-final-folder')">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    Durchsuchen
+                  </button>
+                </div>
+                <span class="settings-hint">
+                  Absoluter Pfad oder relativ zum Server-Verzeichnis.<br/>
+                  Pro Produkt wird ein Unterordner <code>ID_Titel/</code> mit dem Originalbild angelegt.
+                </span>
+              </div>
+              <div class="settings-field">
+                <label>Unterordner pro Produkt</label>
+                <select id="s-create-folder">
+                  <option value="true"  {% if cfg.get('export',{}).get('create_folder', True) %}selected{% endif %}>Ja</option>
+                  <option value="false" {% if not cfg.get('export',{}).get('create_folder', True) %}selected{% endif %}>Nein</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Google Drive ── -->
+          <div id="export-gdrive-section" style="display:none;margin-top:16px;">
+
+            <div id="gdrive-lib-warning" style="display:none;
+                 background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;
+                 padding:11px 14px;margin-bottom:14px;font-size:.82rem;color:#92400E;">
+              ⚠ Python-Bibliothek fehlt. Bitte auf dem Server ausführen:<br/>
+              <code style="font-family:monospace;background:#FEF9C3;padding:2px 5px;border-radius:3px;">
+                pip install google-api-python-client google-auth
+              </code>
+            </div>
+
+            <div class="settings-grid">
+              <div class="settings-field settings-field-full">
+                <label>Google Drive Ordner-ID</label>
+                <input type="text" id="s-gdrive-folder-id"
+                       value="{{ cfg.get('export',{}).get('gdrive',{}).get('folder_id','') }}"
+                       placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" />
+                <span class="settings-hint">
+                  Die ID aus der Ordner-URL:<br/>
+                  <code>drive.google.com/drive/folders/<strong>ORDNER-ID-HIER</strong></code>
+                </span>
+              </div>
+
+              <div class="settings-field settings-field-full">
+                <label>Service Account JSON
+                  <span class="opt-badge">Schlüssel einfügen</span>
+                </label>
+                <textarea id="s-gdrive-creds" class="settings-textarea" rows="7"
+                          placeholder='{"type":"service_account","project_id":"mein-projekt","private_key_id":"...","client_email":"name@mein-projekt.iam.gserviceaccount.com",...}'>{{ cfg.get('export',{}).get('gdrive',{}).get('credentials_json','') }}</textarea>
+                <span class="settings-hint">
+                  Den vollständigen JSON-Inhalt der heruntergeladenen Schlüsseldatei hier einfügen.
+                </span>
+              </div>
+
+              <div class="settings-field">
+                <label>Unterordner pro Produkt</label>
+                <select id="s-gdrive-subfolder">
+                  <option value="true"  {% if cfg.get('export',{}).get('gdrive',{}).get('create_subfolder', True) %}selected{% endif %}>Ja – <code>ID_Titel/</code></option>
+                  <option value="false" {% if not cfg.get('export',{}).get('gdrive',{}).get('create_subfolder', True) %}selected{% endif %}>Nein – direkt in Zielordner</option>
+                </select>
+              </div>
+
+              <div class="settings-field" style="display:flex;flex-direction:column;justify-content:flex-end;gap:8px;">
+                <label style="visibility:hidden">Test</label>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                  <button class="btn" onclick="testGdrive()" id="btn-test-gdrive"
+                          style="display:inline-flex;align-items:center;gap:6px;">
+                    <svg width="13" height="13" fill="none" viewBox="0 0 24 24">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                      <polyline points="22 4 12 14.01 9 11.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    Verbindung testen
+                  </button>
+                  <span id="gdrive-test-status" style="font-size:.82rem;color:var(--muted);"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Setup guide -->
+            <div style="margin-top:16px;padding:14px 16px;background:#EEF2FF;
+                        border-radius:10px;font-size:.81rem;line-height:1.6;color:var(--text);">
+              <strong style="display:block;margin-bottom:6px;">Einrichtung in 4 Schritten</strong>
+              <ol style="margin:0;padding-left:18px;">
+                <li>
+                  <a href="https://console.cloud.google.com/" target="_blank" style="color:var(--btn);">Google Cloud Console</a>
+                  öffnen → Projekt anlegen → <em>Google Drive API</em> aktivieren
+                </li>
+                <li>IAM &amp; Admin → Dienstkonten → Neues Dienstkonto erstellen → Schlüssel (JSON) herunterladen</li>
+                <li>Google Drive öffnen → Zielordner → <em>Teilen</em> → Service Account E-Mail eintragen</li>
+                <li>JSON-Inhalt oben einfügen, Ordner-ID eingeben, speichern &amp; testen</li>
+              </ol>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Allgemeine Optionen -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-2.82-1.17l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9 1.65 1.65 0 0 0 4.27 7.18l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+                  stroke="currentColor" stroke-width="1.6"/>
+          </svg>
+          Allgemeine Optionen
         </div>
         <div class="settings-card-body">
           <div class="settings-grid">
-            <div class="settings-field settings-field-full">
-              <label>Final Files Ordner</label>
-              <input type="text" id="s-final-folder" value="{{ cfg.get('export',{}).get('final_files_folder','Final Files') }}" placeholder="Final Files" />
-              <span class="settings-hint">Beim Export wird ein Unterordner <code>ID_Titel/</code> mit dem Bild angelegt.</span>
-            </div>
-            <div class="settings-field">
-              <label>Ordner beim Export anlegen</label>
-              <select id="s-create-folder">
-                <option value="true"  {% if cfg.get('export',{}).get('create_folder', True) %}selected{% endif %}>Ja</option>
-                <option value="false" {% if not cfg.get('export',{}).get('create_folder', True) %}selected{% endif %}>Nein</option>
-              </select>
-            </div>
             <div class="settings-field">
               <label>In Supabase speichern</label>
               <select id="s-save-supabase">
                 <option value="true"  {% if cfg.get('export',{}).get('save_to_supabase', True) %}selected{% endif %}>Ja</option>
                 <option value="false" {% if not cfg.get('export',{}).get('save_to_supabase', True) %}selected{% endif %}>Nein</option>
               </select>
+              <span class="settings-hint">Produktdaten in der Supabase-Datenbank speichern.</span>
             </div>
           </div>
         </div>
       </div>
-    </div>
+
+    </div><!-- /pane-export -->
 
     <!-- ══ Social Media ══ -->
     <div class="settings-pane" id="pane-social">
@@ -716,10 +1311,6 @@ CREATE POLICY "select_auth" ON image_analyses FOR SELECT TO authenticated USING 
               <label>Standard Ziel-URL</label>
               <input type="text" id="s-pin-url" value="{{ cfg.get('pinterest',{}).get('target_url','https://dekoire.com') }}" />
             </div>
-          </div>
-          <div class="settings-field" style="margin-top:12px;">
-            <label>Boards (eine pro Zeile)</label>
-            <textarea id="s-pin-boards" class="settings-textarea" rows="10">{{ '\n'.join(cfg.get('pinterest',{}).get('boards',[])) }}</textarea>
           </div>
         </div>
       </div>
@@ -898,12 +1489,17 @@ CREATE POLICY "select_auth" ON image_analyses FOR SELECT TO authenticated USING 
     <!-- ══ Benachrichtigungen ══ -->
     <div class="settings-pane" id="pane-notifications">
 
+      <!-- Discord – Produkte -->
       <div class="settings-card">
         <div class="settings-card-header">
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Discord Webhook
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color:#5865F2;"><path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z"/></svg>
+          Discord Webhook – Produkte
         </div>
         <div class="settings-card-body">
+          <div style="background:var(--c-50);border:1px solid var(--border);border-radius:8px;padding:10px 13px;margin-bottom:16px;font-size:.8rem;color:var(--muted);line-height:1.6;">
+            <strong style="color:var(--text);">Was passiert hier?</strong> Jedes Mal wenn ein Produkt <strong>angelegt</strong> oder <strong>bearbeitet</strong> wird, sendet das System automatisch eine Nachricht an diesen Webhook. Enthalten sind: Titel, Tags, Farben, Bildformat, DPI sowie der Speicherstatus (Excel, Ordner, Supabase).<br>
+            <strong style="color:var(--text);">Wo bekomme ich den Webhook?</strong> → <a href="https://discord.com/developers/applications" target="_blank" style="color:#5865F2;">Discord Server → Einstellungen → Integrationen → Webhooks → Neuer Webhook → URL kopieren</a>
+          </div>
           <div class="settings-grid">
             <div class="settings-field settings-field-full">
               <label>Webhook URL</label>
@@ -916,40 +1512,29 @@ CREATE POLICY "select_auth" ON image_analyses FOR SELECT TO authenticated USING 
                   <button type="button" class="pw-btn" onclick="copyPw('s-discord-webhook',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
                 </div>
               </div>
-              <span class="settings-hint">
-                Discord → Servereinstellungen → Integrationen → Webhooks → Neuer Webhook → URL kopieren.<br/>
-                Wird beim Speichern eines Produkts (Anlegen &amp; Editieren) automatisch benachrichtigt.
-              </span>
             </div>
           </div>
-
-          <div style="margin-top:14px;">
-            <button class="btn btn-primary" onclick="testDiscordWebhook()">
-              <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Test-Nachricht senden
-            </button>
-          </div>
-
-          <div style="margin-top:20px;">
-            <div style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Was wird gesendet?</div>
-            <div style="display:flex;flex-direction:column;gap:5px;font-size:.82rem;color:var(--text);">
-              <div style="display:flex;gap:8px;align-items:flex-start;">
-                <span>🎨</span><span><strong>Produkt anlegen</strong> — Alle Bilddaten: Titel, Beschreibung, Tags, Farben, Ausrichtung, DPI, Aufnahmedatum + Speicher-Status (Excel, Ordner, Supabase)</span>
-              </div>
-              <div style="display:flex;gap:8px;align-items:flex-start;">
-                <span>✏️</span><span><strong>Produkt editieren</strong> — Geänderte Felder mit Vorher/Nachher-Vergleich + Speicher-Status</span>
-              </div>
-            </div>
-          </div>
+        </div>
+        <div class="api-test-bar">
+          <button class="api-test-btn" onclick="testDiscordWebhook('s-discord-webhook','test-result-discord-products')">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Test-Nachricht senden
+          </button>
+          <div class="api-test-result" id="test-result-discord-products"></div>
         </div>
       </div>
 
+      <!-- Discord – Social Media -->
       <div class="settings-card">
         <div class="settings-card-header">
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color:#5865F2;"><path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026c.462-.62.874-1.275 1.226-1.963.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z"/></svg>
           Discord Webhook – Social Media
         </div>
         <div class="settings-card-body">
+          <div style="background:var(--c-50);border:1px solid var(--border);border-radius:8px;padding:10px 13px;margin-bottom:16px;font-size:.8rem;color:var(--muted);line-height:1.6;">
+            <strong style="color:var(--text);">Was passiert hier?</strong> Sobald eine <strong>Social-Media-Kampagne</strong> (Pinterest Pin oder Instagram Post) gepostet oder geplant wird, erhältst du eine Benachrichtigung in diesem Channel. Ideal um das Team immer auf dem neuesten Stand zu halten.<br>
+            <strong style="color:var(--text);">Wo bekomme ich den Webhook?</strong> → <a href="https://discord.com/developers/applications" target="_blank" style="color:#5865F2;">Discord Server → Einstellungen → Integrationen → Webhooks → Neuer Webhook (separater Channel empfohlen) → URL kopieren</a>
+          </div>
           <div class="settings-grid">
             <div class="settings-field settings-field-full">
               <label>Webhook URL</label>
@@ -962,9 +1547,15 @@ CREATE POLICY "select_auth" ON image_analyses FOR SELECT TO authenticated USING 
                   <button type="button" class="pw-btn" onclick="copyPw('s-campaigns-discord',this)" title="Kopieren">{% include 'icons/copy.svg' %}</button>
                 </div>
               </div>
-              <span class="settings-hint">Wird automatisch benachrichtigt, wenn eine Social-Media-Kampagne (Pinterest, Instagram) gepostet oder geplant wird.</span>
             </div>
           </div>
+        </div>
+        <div class="api-test-bar">
+          <button class="api-test-btn" onclick="testApi('discord',this,{url:document.getElementById('s-campaigns-discord').value.trim()})">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Test-Nachricht senden
+          </button>
+          <div class="api-test-result" id="test-result-discord-social"></div>
         </div>
       </div>
 
@@ -972,6 +1563,32 @@ CREATE POLICY "select_auth" ON image_analyses FOR SELECT TO authenticated USING 
 
     <!-- ══ External Apps ══ -->
     <div class="settings-pane" id="pane-extapps">
+
+      <!-- Kategorien / Cluster -->
+      <div class="settings-card" id="catManageCard">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Cluster
+          <span style="margin-left:auto;font-size:.72rem;color:var(--muted);font-weight:400;">Reihenfolge per Drag &amp; Drop ändern</span>
+        </div>
+        <div class="settings-card-body">
+          <!-- Category chips list (drag-sortable) -->
+          <div id="catList" style="display:flex;flex-direction:column;gap:4px;margin-bottom:14px;"></div>
+          <div id="catEmpty" style="display:none;font-size:.82rem;color:var(--muted);padding:6px 0 10px;">Noch keine Cluster. Erstelle deinen ersten:</div>
+          <!-- Create row -->
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="cat-name-input" class="settings-input"
+              placeholder="z.B. Social Media"
+              style="flex:1;height:34px;font-size:.83rem;"
+              onkeydown="if(event.key==='Enter')createCategory()" />
+            <button class="btn btn-primary" onclick="createCategory()"
+              style="white-space:nowrap;height:34px;padding:0 13px;font-size:.82rem;gap:5px;">
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+              Neu
+            </button>
+          </div>
+        </div>
+      </div>
 
       <!-- Add / Edit form -->
       <div class="settings-card" id="extAppFormCard">
@@ -993,8 +1610,8 @@ CREATE POLICY "select_auth" ON image_analyses FOR SELECT TO authenticated USING 
             <div class="settings-field">
               <label>Hintergrundfarbe</label>
               <div style="display:flex;gap:8px;align-items:center;">
-                <input type="color" id="ea-bgcolor" value="#EEF2FF" style="width:40px;height:36px;border:1px solid var(--border);border-radius:6px;padding:2px;cursor:pointer;" />
-                <input type="text" id="ea-bgcolor-txt" value="#EEF2FF" maxlength="7" style="width:90px;" oninput="syncColor('txt')" />
+                <input type="color" id="ea-bgcolor" value="#ffffff" style="width:40px;height:36px;border:1px solid var(--border);border-radius:6px;padding:2px;cursor:pointer;" />
+                <input type="text" id="ea-bgcolor-txt" value="#ffffff" maxlength="7" style="width:90px;" oninput="syncColor('txt')" />
               </div>
             </div>
             <div class="settings-field">
@@ -1259,6 +1876,141 @@ ALTER TABLE app_config ENABLE ROW LEVEL SECURITY;</pre>
 
     </div><!-- /pane-dbconfig -->
 
+    <!-- ══ KI Tools / AI Launcher ══ -->
+    <div class="settings-pane" id="pane-aitools">
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <defs><linearGradient id="aiHdrGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#8B5CF6"/><stop offset="100%" stop-color="#06B6D4"/></linearGradient></defs>
+            <circle cx="12" cy="12" r="9" fill="url(#aiHdrGrad)" opacity=".9"/>
+            <text x="12" y="16" text-anchor="middle" font-size="8" font-weight="900" fill="#fff" font-family="system-ui,sans-serif">AI</text>
+          </svg>
+          KI Tools &amp; Schnellzugriff
+        </div>
+        <div class="settings-card-body">
+          <p style="font-size:.83rem;color:var(--muted);margin:0 0 20px;line-height:1.6;">
+            Füge KI-Tools wie ChatGPT, Claude oder Midjourney hinzu. Sie erscheinen als Schnellzugriff-Kacheln im Header-Orb oben rechts.
+            Das Favicon wird automatisch aus der URL geladen.
+          </p>
+
+          <!-- Add form -->
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:24px;">
+            <div class="settings-field">
+              <label>Name</label>
+              <input type="text" id="ait-name" placeholder="z.B. ChatGPT" onkeydown="if(event.key==='Enter')aitAdd()">
+            </div>
+            <div class="settings-field">
+              <label>URL</label>
+              <input type="text" id="ait-url" placeholder="https://chatgpt.com" onkeydown="if(event.key==='Enter')aitAdd()">
+            </div>
+            <button onclick="aitAdd()" style="height:36px;padding:0 16px;background:var(--btn);color:#fff;border:none;border-radius:3px;font-size:.83rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .15s;" onmouseover="this.style.background='var(--btn-h)'" onmouseout="this.style.background='var(--btn)'">
+              <svg width="13" height="13" fill="none" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:4px;"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              Hinzufügen
+            </button>
+          </div>
+
+          <!-- Tool list -->
+          <div id="ait-list"></div>
+        </div>
+      </div>
+
+      <!-- Orb appearance -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 8v4l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Orb Erscheinung
+        </div>
+        <div class="settings-card-body">
+          <p style="font-size:.83rem;color:var(--muted);margin:0 0 18px;line-height:1.6;">
+            Passe den animierten Header-Orb an. Wähle 4 Farbstopps für den Farbverlauf und optional ein Logo-Bild.
+          </p>
+
+          <!-- Gradient stops -->
+          <div class="settings-field" style="margin-bottom:18px;">
+            <label style="margin-bottom:10px;">Farbverlauf (4 Stopps, animiert)</label>
+            <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+              <label style="display:flex;flex-direction:column;align-items:center;gap:5px;font-size:.72rem;color:var(--muted);font-weight:600;cursor:pointer;">
+                <input type="color" id="orb-c1" value="#8B5CF6" oninput="orbPreview()" style="width:42px;height:38px;border:1px solid var(--border);border-radius:3px;padding:2px;cursor:pointer;">
+                Stop 1
+              </label>
+              <label style="display:flex;flex-direction:column;align-items:center;gap:5px;font-size:.72rem;color:var(--muted);font-weight:600;cursor:pointer;">
+                <input type="color" id="orb-c2" value="#4F46E5" oninput="orbPreview()" style="width:42px;height:38px;border:1px solid var(--border);border-radius:3px;padding:2px;cursor:pointer;">
+                Stop 2
+              </label>
+              <label style="display:flex;flex-direction:column;align-items:center;gap:5px;font-size:.72rem;color:var(--muted);font-weight:600;cursor:pointer;">
+                <input type="color" id="orb-c3" value="#06B6D4" oninput="orbPreview()" style="width:42px;height:38px;border:1px solid var(--border);border-radius:3px;padding:2px;cursor:pointer;">
+                Stop 3
+              </label>
+              <label style="display:flex;flex-direction:column;align-items:center;gap:5px;font-size:.72rem;color:var(--muted);font-weight:600;cursor:pointer;">
+                <input type="color" id="orb-c4" value="#8B5CF6" oninput="orbPreview()" style="width:42px;height:38px;border:1px solid var(--border);border-radius:3px;padding:2px;cursor:pointer;">
+                Stop 4
+              </label>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
+                <div id="orb-live-preview" style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#8B5CF6,#4F46E5,#06B6D4,#8B5CF6);background-size:300% 300%;animation:aiOrbGrad 4s ease infinite;display:flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:900;color:#fff;letter-spacing:-.5px;flex-shrink:0;">AI</div>
+                <span style="font-size:.72rem;color:var(--muted);font-weight:600;">Vorschau</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Logo upload -->
+          <div class="settings-field" style="margin-bottom:18px;">
+            <label>Logo <span style="font-weight:400;color:var(--muted);font-size:.75em;">(optional – ersetzt den "AI" Text im Orb)</span></label>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+
+              <!-- Drop zone / click to upload -->
+              <label id="orb-logo-zone" for="orb-logo-file" style="
+                display:flex;align-items:center;gap:10px;
+                border:2px dashed var(--border);border-radius:3px;
+                padding:10px 16px;cursor:pointer;flex:1;min-width:180px;
+                background:var(--c-50);transition:border-color .15s,background .15s;
+              " onmouseenter="this.style.borderColor='var(--btn)';this.style.background='#EEF2FF'"
+                 onmouseleave="this.style.borderColor='var(--border)';this.style.background='var(--c-50)'">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--muted);">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span id="orb-logo-label" style="font-size:.82rem;color:var(--muted);font-weight:500;">Bild hochladen oder hierher ziehen</span>
+                <input type="file" id="orb-logo-file" accept="image/*" style="display:none;" onchange="orbFileLoad(this)">
+              </label>
+
+              <!-- Live orb preview -->
+              <div style="display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;">
+                <div id="orb-logo-preview" style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#8B5CF6,#4F46E5,#06B6D4,#8B5CF6);background-size:300% 300%;animation:aiOrbGrad 4s ease infinite;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:.55rem;font-weight:900;color:#fff;letter-spacing:-.5px;">AI</div>
+                <span style="font-size:.7rem;color:var(--muted);font-weight:600;">Vorschau</span>
+              </div>
+
+              <!-- Remove button (hidden until logo set) -->
+              <button id="orb-logo-remove" onclick="orbLogoRemove()" style="display:none;padding:6px 12px;background:none;border:1px solid #FECACA;border-radius:3px;color:#DC2626;font-size:.8rem;font-weight:600;cursor:pointer;flex-shrink:0;transition:background .15s;" onmouseover="this.style.background='#FEF2F2'" onmouseleave="this.style.background='none'">
+                Entfernen
+              </button>
+            </div>
+          </div>
+
+          <!-- Save + Reset -->
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button onclick="orbSave()" style="padding:7px 18px;background:var(--btn);color:#fff;border:none;border-radius:3px;font-size:.83rem;font-weight:700;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--btn-h)'" onmouseout="this.style.background='var(--btn)'">
+              Speichern
+            </button>
+            <button onclick="orbReset()" style="padding:7px 14px;background:none;border:1px solid var(--border);border-radius:3px;font-size:.83rem;font-weight:600;color:var(--muted);cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--c-100)'" onmouseout="this.style.background='none'">
+              Zurücksetzen
+            </button>
+            <span id="orb-save-msg" style="font-size:.8rem;color:#16A34A;font-weight:600;align-self:center;display:none;">✓ Gespeichert</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>
+          Vorschau Kacheln
+        </div>
+        <div class="settings-card-body">
+          <p style="font-size:.78rem;color:var(--muted);margin:0 0 12px;">So sehen die Kacheln im Header-Dropdown aus:</p>
+          <div class="ai-tiles" id="ait-preview" style="background:var(--c-50);border:1px solid var(--border);border-radius:6px;min-height:60px;"></div>
+        </div>
+      </div>
+    </div><!-- /pane-aitools -->
+
     <!-- ── Save bar ── -->
     <div class="settings-save-bar">
       <button class="btn btn-primary settings-save-btn" onclick="saveSettings()">
@@ -1281,6 +2033,132 @@ function showPane(name, btn) {
   document.getElementById('pane-' + name).classList.add('active');
   btn.classList.add('active');
 }
+
+/* ── Export pane helpers ── */
+async function pickFolder(inputId) {
+  const input = document.getElementById(inputId);
+  const btn   = event.currentTarget;
+  const origText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" opacity=".3"/><path d="M12 3a9 9 0 0 1 9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="transform-origin:center;animation:spinIt .7s linear infinite"/></svg> …';
+  try {
+    const res  = await fetch('/api/pick-folder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ start: input?.value?.trim() || '' }),
+    });
+    const data = await res.json();
+    if (data.path) {
+      input.value = data.path;
+      input.dispatchEvent(new Event('input'));
+    }
+  } catch(e) {
+    console.warn('[pickFolder]', e);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origText;
+  }
+}
+
+function toggleExportDest(val) {
+  const local  = document.getElementById('export-local-section');
+  const gdrive = document.getElementById('export-gdrive-section');
+  if (!local || !gdrive) return;
+  if (val === 'google_drive') {
+    local.style.display  = 'none';
+    gdrive.style.display = '';
+  } else {
+    local.style.display  = '';
+    gdrive.style.display = 'none';
+  }
+}
+
+async function initExportPane() {
+  // Apply current destination visibility
+  const dest = document.getElementById('s-export-destination')?.value || 'local';
+  toggleExportDest(dest);
+  // Check if google library is installed
+  try {
+    const res  = await fetch('/api/gdrive-status');
+    const data = await res.json();
+    const warn = document.getElementById('gdrive-lib-warning');
+    if (warn) warn.style.display = data.available ? 'none' : '';
+  } catch { /* ignore */ }
+}
+
+async function testGdrive() {
+  const btn      = document.getElementById('btn-test-gdrive');
+  const statusEl = document.getElementById('gdrive-test-status');
+  const creds    = document.getElementById('s-gdrive-creds')?.value.trim()     || '';
+  const folderId = document.getElementById('s-gdrive-folder-id')?.value.trim() || '';
+
+  btn.disabled     = true;
+  statusEl.style.color = 'var(--muted)';
+  statusEl.textContent = 'Verbinde …';
+
+  try {
+    const res  = await fetch('/api/test-gdrive', {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify({ credentials_json: creds, folder_id: folderId }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      statusEl.style.color = '#16A34A';
+      let msg = `✓ Ordner "${data.folder_name}" erreichbar`;
+      if (data.sa_email) msg += ` · ${data.sa_email}`;
+      statusEl.textContent = msg;
+    } else {
+      statusEl.style.color = '#DC2626';
+      statusEl.textContent = `✗ ${data.error}`;
+    }
+  } catch (e) {
+    statusEl.style.color = '#DC2626';
+    statusEl.textContent = '✗ Verbindungsfehler';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Apply destination visibility on page load if export pane is already active
+document.addEventListener('DOMContentLoaded', () => {
+  const dest = document.getElementById('s-export-destination')?.value || 'local';
+  toggleExportDest(dest);
+
+  // ── Deep-link via ?pane=<paneId> ──
+  const params  = new URLSearchParams(window.location.search);
+  const paneParam = params.get('pane');
+  if (paneParam) {
+    const paneNavBtn = document.getElementById('nav-' + paneParam);
+    if (paneNavBtn) {
+      const clickFn = paneNavBtn.getAttribute('onclick');
+      if (clickFn) paneNavBtn.click();
+      else showPane(paneParam, paneNavBtn);
+    }
+  }
+
+  // ── Deep-link from /apps edit button: ?edit_app=<id>#external-apps ──
+  const editApp = params.get('edit_app');
+  if (editApp) {
+    // Navigate to extapps pane
+    const navBtn = document.getElementById('nav-extapps');
+    if (navBtn) { showPane('extapps', navBtn); }
+    // Load apps, then open edit form for this app
+    loadExtApps().then(() => {
+      const rows = document.querySelectorAll('#extAppList .ea-list-row');
+      for (const row of rows) {
+        if (row.dataset.appId === editApp) {
+          // Find the edit button inside the row and click it
+          const editBtn = row.querySelector('button[onclick^="editExtApp"]');
+          if (editBtn) editBtn.click();
+          break;
+        }
+      }
+    }).catch(() => {});
+    // Clean URL
+    window.history.replaceState({}, '', window.location.pathname + '#external-apps');
+  }
+});
 
 /* ── Password helpers ── */
 function getPinEnv() {
@@ -1382,14 +2260,18 @@ async function saveSettings() {
       table_name:       document.getElementById('s-sb-table').value.trim(),
     },
     export: {
-      final_files_folder: document.getElementById('s-final-folder').value.trim(),
-      create_folder:      document.getElementById('s-create-folder').value === 'true',
-      save_to_supabase:   document.getElementById('s-save-supabase').value === 'true',
+      destination:        document.getElementById('s-export-destination')?.value || 'local',
+      final_files_folder: document.getElementById('s-final-folder')?.value.trim() || 'Final Files',
+      create_folder:      document.getElementById('s-create-folder')?.value === 'true',
+      save_to_supabase:   document.getElementById('s-save-supabase')?.value === 'true',
+      gdrive: {
+        folder_id:         document.getElementById('s-gdrive-folder-id')?.value.trim()  || '',
+        credentials_json:  document.getElementById('s-gdrive-creds')?.value.trim()      || '',
+        create_subfolder:  document.getElementById('s-gdrive-subfolder')?.value === 'true',
+      },
     },
     pinterest: {
       target_url: document.getElementById('s-pin-url').value.trim(),
-      boards: document.getElementById('s-pin-boards').value
-        .split('\n').map(s => s.trim()).filter(Boolean),
     },
     instagram: {
       default_location: document.getElementById('s-ig-default-loc').value.trim(),
@@ -1458,8 +2340,24 @@ async function saveSettings() {
   };
 
   if (apiKey)  payload.anthropic_api_key = apiKey;
+  const openaiKey = document.getElementById('s-openai-key')?.value.trim();
+  if (openaiKey) payload.openai_api_key = openaiKey;
+  payload.openai = {
+    org_id: document.getElementById('s-openai-org')?.value.trim() || '',
+    model:  document.getElementById('s-openai-model')?.value || 'gpt-4o',
+  };
   if (admPass) payload.admin_password    = admPass;
   if (secKey)  payload.app_secret_key    = secKey;
+  const gcvKey = document.getElementById('s-gcv-key')?.value.trim();
+  if (gcvKey)  payload.google_cloud_vision_key = gcvKey;
+  payload.google_ads_api = {
+    developer_token: document.getElementById('s-gads-dev-token')?.value.trim()   || '',
+    client_id:       document.getElementById('s-gads-client-id')?.value.trim()   || '',
+    client_secret:   document.getElementById('s-gads-client-secret')?.value.trim()|| '',
+    refresh_token:   document.getElementById('s-gads-refresh-token')?.value.trim()|| '',
+    customer_id:     document.getElementById('s-gads-customer-id')?.value.trim() || '',
+    geo_target:      document.getElementById('s-gads-geo-target')?.value         || '2276',
+  };
 
   try {
     const res  = await fetch('/api/config', {
@@ -1587,41 +2485,246 @@ async function createUser() {
 }
 
 /* ── Discord test ── */
-async function testDiscordWebhook() {
-  const url = document.getElementById('s-discord-webhook').value.trim();
-  if (!url) { showToast('Bitte zuerst Webhook URL eingeben und speichern.', false); return; }
-  // Save first, then test
-  await saveSettings();
+async function testDiscordWebhook(inputId, resultId) {
+  inputId  = inputId  || 's-discord-webhook';
+  resultId = resultId || 'test-result-discord-products';
+  const url = document.getElementById(inputId)?.value.trim()
+           || document.getElementById('s-discord-webhook')?.value.trim();
+  if (!url) { showToast('Bitte zuerst eine Webhook URL eingeben.', false); return; }
+  const btn = event?.currentTarget;
+  if (btn) btn.disabled = true;
+  const resEl = document.getElementById(resultId);
+  if (resEl) { resEl.className = 'api-test-result spin'; resEl.innerHTML = '<span class="api-test-dot spin"></span> Wird gesendet…'; }
   try {
-    const res  = await fetch('/api/notify/discord', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        type: 'create',
-        payload: {
-          dekoire_id: 'TEST-001', dateiname: 'test-image.jpg',
-          titel: 'Test Benachrichtigung', beschreibung: 'Dies ist eine Test-Nachricht von Image Analyzer.',
-          kunstart: 'Fotografie', epoche: 'Contemporary',
-          dominante_farben: ['Blau', 'Weiß'], tags: ['test', 'notification'],
-          breite_px: 4000, hoehe_px: 3000, ausrichtung: 'Horizontal',
-          seitenverhaeltnis: '4:3', datei_groesse_kb: 8192, aufnahmedatum: new Date().toLocaleDateString('de-DE'),
-        },
-        result: {image_url: '', folder: 'Final Files/TEST-001_Test'},
-        changes: [],
-      }),
+    const r = await fetch('/api/test-discord', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({webhook_url: url})
     });
-    const data = await res.json();
-    if (data.success) showToast('✅ Test-Nachricht gesendet!', true);
-    else if (data.skipped) showToast('Webhook URL nicht konfiguriert.', false);
-    else showToast('Fehler: ' + data.error, false);
-  } catch(e) { showToast('Verbindungsfehler: ' + e.message, false); }
+    const d = await r.json();
+    if (resEl) {
+      if (d.ok) { resEl.className='api-test-result ok'; resEl.innerHTML='<span class="api-test-dot"></span> Test-Nachricht gesendet ✓'; }
+      else       { resEl.className='api-test-result err'; resEl.innerHTML='<span class="api-test-dot"></span> Fehler: '+(d.error||'unbekannt'); }
+    }
+  } catch(e) {
+    if (resEl) { resEl.className='api-test-result err'; resEl.innerHTML='<span class="api-test-dot"></span> Netzwerkfehler'; }
+  } finally { if (btn) btn.disabled = false; }
+}
+
+/* ── KI Routing save ── */
+async function saveAiRouting() {
+  const tasks = ['image_analysis','text_creation','seo','social_media','legal'];
+  const routing = {};
+  tasks.forEach(t => {
+    const el = document.getElementById('ai-routing-' + t);
+    if (el) routing[t] = el.value;
+  });
+  const statusEl = document.getElementById('ai-routing-status');
+  if (statusEl) statusEl.textContent = 'Speichern…';
+  try {
+    const cfg = await fetch('/api/config').then(r=>r.json()).catch(()=>({}));
+    await fetch('/api/config', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({...cfg, ai_routing: routing})
+    });
+    if (statusEl) { statusEl.textContent = '✓ Gespeichert'; setTimeout(()=>statusEl.textContent='', 2500); }
+    showToast('KI-Routing gespeichert.', true);
+  } catch(e) {
+    if (statusEl) statusEl.textContent = 'Fehler';
+    showToast('Fehler beim Speichern.', false);
+  }
 }
 
 /* ══ External Apps ══ */
 const ICON_SVG_MAP = {{ icon_svgs | tojson | safe }};
-let _selectedPreset = '';
+let _selectedPreset  = '';
 let _uploadedIconUrl = '';
-let _editingAppId = '';
+let _editingAppId    = '';
+let _eaCategories    = [];  // loaded from API
+let _eaList          = [];  // loaded by loadExtApps
+
+/* ── Category management ── */
+async function loadCategories() {
+  try {
+    const res = await fetch('/api/app-categories');
+    _eaCategories = await res.json();
+  } catch(e) { _eaCategories = []; }
+  renderCategoryList();
+}
+
+/* ── Helper: count apps per category ── */
+function _catAppCount(catId) {
+  // _eaList is loaded by loadExtApps — may not exist yet
+  if (typeof _eaList !== 'undefined' && Array.isArray(_eaList))
+    return _eaList.filter(a => a.category === catId).length;
+  return 0;
+}
+
+function renderCategoryList() {
+  const list  = document.getElementById('catList');
+  const empty = document.getElementById('catEmpty');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!_eaCategories.length) {
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  _eaCategories.forEach(cat => {
+    const count = _catAppCount(cat.id);
+    const row = document.createElement('div');
+    row.className = 'cat-row';
+    row.dataset.catId = cat.id;
+    row.draggable = true;
+    row.innerHTML = `
+      <span class="cat-drag-handle" title="Verschieben">⠿</span>
+      <div id="cat-display-${cat.id}" class="cat-name-pill" style="flex:1;">
+        <svg width="10" height="10" fill="none" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        <span id="cat-label-${cat.id}">${_esc(cat.name)}</span>
+      </div>
+      <input type="text" id="cat-edit-${cat.id}" value="${_esc(cat.name)}"
+        class="settings-input"
+        style="flex:1;font-size:.82rem;height:28px;padding:0 8px;display:none;"
+        onkeydown="if(event.key==='Enter')saveRenameCategory('${cat.id}');if(event.key==='Escape')cancelRenameCategory('${cat.id}')" />
+      ${count > 0 ? `<span class="cat-count-badge">${count} App${count !== 1 ? 's' : ''}</span>` : ''}
+      <button class="cat-action-btn" id="cat-rename-btn-${cat.id}"
+        onclick="startRenameCategory('${cat.id}')" title="Umbenennen">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="cat-action-btn" id="cat-save-btn-${cat.id}"
+        onclick="saveRenameCategory('${cat.id}')" title="Speichern"
+        style="display:none;color:#16a34a;">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="cat-action-btn danger" onclick="deleteCategory('${cat.id}')" title="Löschen">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>`;
+    list.appendChild(row);
+  });
+
+  _initCatDrag();
+}
+
+function _esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── Drag-to-reorder categories ── */
+let _catDragSrc = null;
+function _initCatDrag() {
+  const rows = document.querySelectorAll('#catList .cat-row');
+  rows.forEach(row => {
+    row.addEventListener('dragstart', e => {
+      _catDragSrc = row;
+      row.classList.add('cat-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    row.addEventListener('dragend', () => {
+      _catDragSrc = null;
+      document.querySelectorAll('#catList .cat-row').forEach(r => {
+        r.classList.remove('cat-dragging','cat-drop-before');
+      });
+    });
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (row === _catDragSrc) return;
+      document.querySelectorAll('#catList .cat-row').forEach(r => r.classList.remove('cat-drop-before'));
+      row.classList.add('cat-drop-before');
+    });
+    row.addEventListener('dragleave', () => row.classList.remove('cat-drop-before'));
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!_catDragSrc || _catDragSrc === row) return;
+      row.classList.remove('cat-drop-before');
+      const list = document.getElementById('catList');
+      list.insertBefore(_catDragSrc, row);
+      // Sync _eaCategories order
+      const newOrder = [...list.querySelectorAll('.cat-row')].map(r => r.dataset.catId);
+      _eaCategories = newOrder.map(id => _eaCategories.find(c => c.id === id)).filter(Boolean);
+      _catSaveOrder();
+    });
+  });
+}
+
+async function _catSaveOrder() {
+  try {
+    await fetch('/api/app-categories/reorder', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(_eaCategories.map(c => c.id))
+    });
+    showToast('Reihenfolge gespeichert.', true);
+  } catch(e) { showToast('Fehler beim Speichern.', false); }
+}
+
+function startRenameCategory(id) {
+  document.getElementById(`cat-label-${id}`).style.display   = 'none';
+  document.getElementById(`cat-edit-${id}`).style.display    = '';
+  document.getElementById(`cat-rename-btn-${id}`).style.display = 'none';
+  document.getElementById(`cat-save-btn-${id}`).style.display   = '';
+  document.getElementById(`cat-edit-${id}`).focus();
+}
+function cancelRenameCategory(id) {
+  document.getElementById(`cat-label-${id}`).style.display   = '';
+  document.getElementById(`cat-edit-${id}`).style.display    = 'none';
+  document.getElementById(`cat-rename-btn-${id}`).style.display = '';
+  document.getElementById(`cat-save-btn-${id}`).style.display   = 'none';
+}
+async function saveRenameCategory(id) {
+  const name = document.getElementById(`cat-edit-${id}`).value.trim();
+  if (!name) return;
+  try {
+    await fetch(`/api/app-categories/${id}`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name})
+    });
+    const cat = _eaCategories.find(c => c.id === id);
+    if (cat) cat.name = name;
+    renderCategoryList();
+    loadExtApps(); // refresh app rows with updated category names
+    showToast('Kategorie umbenannt.', true);
+  } catch(e) { showToast('Fehler.', false); }
+}
+
+async function createCategory() {
+  const inp  = document.getElementById('cat-name-input');
+  const name = inp.value.trim();
+  if (!name) { inp.focus(); return; }
+  try {
+    const res = await fetch('/api/app-categories', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name})
+    });
+    const cat = await res.json();
+    _eaCategories.push(cat);
+    renderCategoryList();
+    loadExtApps(); // show dropdowns
+    inp.value = '';
+    showToast(`Kategorie „${name}" erstellt.`, true);
+  } catch(e) { showToast('Fehler beim Erstellen.', false); }
+}
+
+async function deleteCategory(id) {
+  if (!confirm('Kategorie löschen? Alle Zuweisungen werden entfernt.')) return;
+  try {
+    await fetch(`/api/app-categories/${id}`, {method: 'DELETE'});
+    _eaCategories = _eaCategories.filter(c => c.id !== id);
+    renderCategoryList();
+    loadExtApps();
+    showToast('Kategorie gelöscht.', true);
+  } catch(e) { showToast('Fehler beim Löschen.', false); }
+}
+
+async function setAppCategory(appId, catId) {
+  try {
+    await fetch(`/api/external-apps/${appId}`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({category: catId})
+    });
+    showToast('Kategorie gespeichert.', true);
+  } catch(e) { showToast('Fehler.', false); }
+}
 
 function toggleIconType() {
   const type = document.getElementById('ea-icon-type').value;
@@ -1714,9 +2817,12 @@ async function loadExtApps() {
   const empty   = document.getElementById('extAppListEmpty');
   loading.style.display = 'block';
   empty.style.display   = 'none';
+  // Always reload categories so dropdowns are up-to-date
+  await loadCategories();
   try {
     const res  = await fetch('/api/external-apps');
     const apps = await res.json();
+    _eaList = apps;  // store for _catAppCount
     loading.style.display = 'none';
     document.getElementById('extAppCount').textContent = apps.length + ' Apps';
     if (!apps.length) { empty.style.display = 'block'; return; }
@@ -1739,27 +2845,53 @@ async function loadExtApps() {
       row.className = 'ea-list-row';
       row.dataset.appId = a.id;
       row.draggable = true;
-      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);';
+      row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);';
+      const isFav = !!a.favorite;
+      const catOpts = _eaCategories.map(c =>
+        `<option value="${c.id}" ${a.category === c.id ? 'selected' : ''}>${c.name}</option>`
+      ).join('');
+
       row.innerHTML = `
-        <span class="ea-drag-handle" title="Ziehen zum Sortieren">⠿</span>
-        <div style="width:36px;height:36px;border-radius:8px;background:${a.bg_color||'#EEF2FF'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span class="ea-drag-handle" title="Ziehen zum Sortieren" style="margin-top:10px;">⠿</span>
+        <div style="width:38px;height:38px;border-radius:9px;background:${a.bg_color||'#ffffff'};display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;border:1px solid var(--border);">
           ${iconHtml}
         </div>
         <div style="flex:1;min-width:0;">
-          <div style="font-weight:600;font-size:.85rem;">${a.name}</div>
-          <div style="font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px;">${a.url}</div>
+          <div style="font-weight:600;font-size:.85rem;margin-bottom:1px;">${a.name}</div>
+          <div style="font-size:.73rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:6px;">${a.url}</div>
+          <div style="display:inline-flex;align-items:center;gap:5px;background:var(--c-100);border-radius:7px;padding:3px 8px;">
+            <svg width="10" height="10" fill="none" viewBox="0 0 24 24" style="color:var(--muted);flex-shrink:0;"><path d="M4 6h16M4 12h16M4 18h7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span style="font-size:.68rem;font-weight:600;color:var(--muted);white-space:nowrap;">Cluster</span>
+            ${_eaCategories.length ? `
+            <select onchange="setAppCategory('${a.id}', this.value)"
+              style="font-size:.74rem;border:none;background:transparent;color:var(--text);cursor:pointer;padding:0;font-weight:500;outline:none;max-width:140px;">
+              <option value="">– keiner –</option>
+              ${catOpts}
+            </select>` : `
+            <span style="font-size:.72rem;color:var(--muted);font-style:italic;">–</span>
+            <a href="#catManageCard" onclick="document.getElementById('catManageCard').scrollIntoView({behavior:'smooth'});document.getElementById('cat-name-input').focus();return false;"
+              style="font-size:.7rem;color:var(--btn);font-weight:600;text-decoration:none;white-space:nowrap;">+ Erstellen</a>`}
+          </div>
         </div>
-        <button onclick="editExtApp(${JSON.stringify(a).replace(/"/g,'&quot;')})"
-          style="background:none;border:1px solid var(--border);cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:6px;display:flex;align-items:center;gap:4px;font-size:.72rem;font-weight:600;white-space:nowrap;" title="Bearbeiten">
-          <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Bearbeiten
-        </button>
-        <a href="${a.url}" target="_blank" style="color:var(--muted);text-decoration:none;padding:4px;border-radius:4px;display:flex;" title="Öffnen">
-          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </a>
-        <button onclick="deleteExtApp('${a.id}')" style="background:none;border:none;cursor:pointer;color:#DC2626;padding:4px;border-radius:4px;display:flex;" title="Löschen">
-          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>`;
+        <div style="display:flex;align-items:center;gap:2px;flex-shrink:0;padding-top:2px;">
+          <button onclick="toggleFavorite('${a.id}', this)"
+            data-fav="${isFav}"
+            style="background:none;border:none;cursor:pointer;padding:4px 5px;border-radius:4px;display:flex;align-items:center;font-size:14px;color:${isFav ? '#EAB308' : 'var(--c-300)'};"
+            title="${isFav ? 'Favorit entfernen' : 'Als Favorit markieren'}">
+            ${isFav ? '★' : '☆'}
+          </button>
+          <button onclick="editExtApp(${JSON.stringify(a).replace(/"/g,'&quot;')})"
+            style="background:none;border:1px solid var(--border);cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:3px;display:flex;align-items:center;gap:4px;font-size:.72rem;font-weight:600;white-space:nowrap;" title="Bearbeiten">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Bearbeiten
+          </button>
+          <a href="${a.url}" target="_blank" style="color:var(--muted);text-decoration:none;padding:4px;border-radius:4px;display:flex;" title="Öffnen">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <button onclick="deleteExtApp('${a.id}')" style="background:none;border:none;cursor:pointer;color:#DC2626;padding:4px;border-radius:4px;display:flex;" title="Löschen">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>`;
 
       // ── drag events on the row ──
       row.addEventListener('dragstart', e => {
@@ -1789,6 +2921,8 @@ async function loadExtApps() {
 
       list.insertBefore(row, empty);
     });
+    // Refresh category counts now that _eaList is populated
+    renderCategoryList();
   } catch(e) {
     loading.textContent = 'Fehler: ' + e.message;
   }
@@ -1808,6 +2942,27 @@ async function _eaSaveOrder() {
   } catch(e) { showToast('Fehler beim Speichern.', false); }
 }
 
+async function toggleFavorite(appId, btn) {
+  const isFav = btn.dataset.fav === 'true';
+  const newFav = !isFav;
+  try {
+    await fetch(`/api/external-apps/${appId}`, {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify({favorite: newFav}),
+    });
+    // Update button visually
+    btn.dataset.fav     = String(newFav);
+    btn.textContent     = newFav ? '★' : '☆';
+    btn.style.color     = newFav ? '#EAB308' : 'var(--muted)';
+    btn.style.borderColor = newFav ? '#FDE047' : 'var(--border)';
+    btn.title           = newFav ? 'Favorit entfernen' : 'Als Favorit markieren';
+    showToast(newFav ? '⭐ Als Favorit gespeichert' : 'Favorit entfernt', true);
+  } catch(e) {
+    showToast('Fehler beim Speichern.', false);
+  }
+}
+
 function editExtApp(a) {
   // Scroll form into view
   document.getElementById('extAppFormCard')?.scrollIntoView({behavior:'smooth', block:'start'});
@@ -1816,8 +2971,8 @@ function editExtApp(a) {
   document.getElementById('ea-edit-id').value       = a.id;
   document.getElementById('ea-name').value           = a.name  || '';
   document.getElementById('ea-url').value            = a.url   || '';
-  document.getElementById('ea-bgcolor').value        = a.bg_color   || '#EEF2FF';
-  document.getElementById('ea-bgcolor-txt').value    = a.bg_color   || '#EEF2FF';
+  document.getElementById('ea-bgcolor').value        = a.bg_color   || '#ffffff';
+  document.getElementById('ea-bgcolor-txt').value    = a.bg_color   || '#ffffff';
   document.getElementById('ea-icon-color').value     = a.icon_color || '#FFFFFF';
   document.getElementById('ea-icon-color-txt').value = a.icon_color || '#FFFFFF';
   document.getElementById('ea-icon-type').value      = a.icon_type  || 'favicon';
@@ -1915,8 +3070,8 @@ function resetExtAppForm() {
   document.getElementById('ea-edit-id').value    = '';
   document.getElementById('ea-name').value        = '';
   document.getElementById('ea-url').value         = '';
-  document.getElementById('ea-bgcolor').value     = '#EEF2FF';
-  document.getElementById('ea-bgcolor-txt').value = '#EEF2FF';
+  document.getElementById('ea-bgcolor').value     = '#ffffff';
+  document.getElementById('ea-bgcolor-txt').value = '#ffffff';
   document.getElementById('ea-icon-color').value     = '#FFFFFF';
   document.getElementById('ea-icon-color-txt').value = '#FFFFFF';
   document.getElementById('ea-icon-type').value   = 'favicon';
@@ -2072,6 +3227,246 @@ fetch('/api/pinterest/redirect-uri').then(r=>r.json()).then(d=>{
   }
 })();
 </script>
+<script>
+/* ── KI Tools (AI Launcher) ── */
+function _aitGet()  { try { return JSON.parse(localStorage.getItem('ai_tools')||'[]'); } catch { return []; } }
+function _aitSet(a) { localStorage.setItem('ai_tools', JSON.stringify(a)); }
+
+function aitAdd() {
+  const nameEl = document.getElementById('ait-name');
+  const urlEl  = document.getElementById('ait-url');
+  const name = nameEl.value.trim();
+  let   url  = urlEl.value.trim();
+  if (!name || !url) { showToast('Bitte Name und URL eingeben.', false); return; }
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  try { new URL(url); } catch { showToast('Bitte eine gültige URL eingeben.', false); return; }
+  const domain  = new URL(url).hostname;
+  const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+  const tools   = _aitGet();
+  tools.push({ name, url, favicon });
+  _aitSet(tools);
+  nameEl.value = ''; urlEl.value = '';
+  aitRender();
+  showToast(`„${name}" hinzugefügt!`, true);
+}
+
+function aitRemove(i) {
+  const tools = _aitGet();
+  const name  = tools[i]?.name || '';
+  tools.splice(i, 1);
+  _aitSet(tools);
+  aitRender();
+  showToast(`„${name}" entfernt.`, true);
+}
+
+function aitMoveUp(i) {
+  const tools = _aitGet();
+  if (i === 0) return;
+  [tools[i-1], tools[i]] = [tools[i], tools[i-1]];
+  _aitSet(tools); aitRender();
+}
+
+function aitRender() {
+  const list    = document.getElementById('ait-list');
+  const preview = document.getElementById('ait-preview');
+  const tools   = _aitGet();
+
+  if (list) {
+    if (!tools.length) {
+      list.innerHTML = '<p style="color:var(--muted);font-size:.83rem;text-align:center;padding:20px 0;">Noch keine Tools hinzugefügt.</p>';
+    } else {
+      list.innerHTML = tools.map((t, i) => `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--c-50);">
+          ${t.favicon
+            ? `<img src="${t.favicon}" width="28" height="28" style="border-radius:4px;object-fit:contain;flex-shrink:0;" onerror="this.outerHTML='<div style=\\'width:28px;height:28px;border-radius:4px;background:linear-gradient(135deg,#8B5CF6,#06B6D4);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;color:#fff;flex-shrink:0;\\'>${(t.name||'?')[0].toUpperCase()}</div>'">`
+            : `<div style="width:28px;height:28px;border-radius:4px;background:linear-gradient(135deg,#8B5CF6,#06B6D4);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;color:#fff;flex-shrink:0;">${(t.name||'?')[0].toUpperCase()}</div>`}
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:.85rem;color:var(--text);">${t.name}</div>
+            <div style="font-size:.72rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.url}</div>
+          </div>
+          ${i > 0 ? `<button onclick="aitMoveUp(${i})" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;border-radius:3px;display:flex;" title="Nach oben"><svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>` : '<span style="width:21px;"></span>'}
+          <a href="${t.url}" target="_blank" style="color:var(--muted);display:flex;padding:4px;border-radius:3px;" title="Öffnen">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <button onclick="aitRemove(${i})" style="background:none;border:none;cursor:pointer;color:var(--muted);display:flex;padding:4px;border-radius:3px;transition:color .15s;" title="Entfernen" onmouseover="this.style.color='#DC2626'" onmouseout="this.style.color='var(--muted)'">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+      `).join('');
+    }
+  }
+
+  if (preview) {
+    if (!tools.length) {
+      preview.innerHTML = '<div class="ai-tiles-empty">Keine Tools – füge oben welche hinzu.</div>';
+    } else {
+      preview.innerHTML = tools.map(t => `
+        <div class="ai-tile" style="pointer-events:none;">
+          ${t.favicon
+            ? `<img src="${t.favicon}" alt="" onerror="this.outerHTML='<div class=\\'ai-tile-letter\\'>${(t.name||'?')[0].toUpperCase()}</div>'">`
+            : `<div class="ai-tile-letter">${(t.name||'?')[0].toUpperCase()}</div>`}
+          <span>${t.name}</span>
+        </div>
+      `).join('');
+    }
+  }
+}
+
+/* Auto-render when pane is opened */
+document.getElementById('nav-aitools')?.addEventListener('click', () => setTimeout(() => { aitRender(); orbLoad(); }, 50));
+
+/* ── Orb appearance config ── */
+function _orbGet() { try { return JSON.parse(localStorage.getItem('ai_orb_config') || '{}'); } catch { return {}; } }
+function _orbSet(o) { localStorage.setItem('ai_orb_config', JSON.stringify(o)); }
+
+/* In-memory staging for uploaded logo (base64 data URL) */
+let _orbLogoData = null;
+
+function orbLoad() {
+  const cfg = _orbGet();
+  const colors = cfg.colors || ['#8B5CF6','#4F46E5','#06B6D4','#8B5CF6'];
+  ['orb-c1','orb-c2','orb-c3','orb-c4'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (el) el.value = colors[i] || '#8B5CF6';
+  });
+  /* Restore saved logo */
+  _orbLogoData = cfg.logo_url || null;
+  _orbApplyLogoPreview(_orbLogoData);
+  orbPreview();
+}
+
+function orbFileLoad(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('Bitte eine Bilddatei wählen.', false); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    _orbLogoData = e.target.result; /* base64 data URL */
+    _orbApplyLogoPreview(_orbLogoData);
+    orbPreview();
+  };
+  reader.readAsDataURL(file);
+}
+
+function _orbApplyLogoPreview(dataUrl) {
+  const label    = document.getElementById('orb-logo-label');
+  const removeBtn = document.getElementById('orb-logo-remove');
+  const zone     = document.getElementById('orb-logo-zone');
+  if (dataUrl) {
+    if (label) label.textContent = 'Logo geladen ✓';
+    if (removeBtn) removeBtn.style.display = '';
+    if (zone) { zone.style.borderColor = '#6EE7B7'; zone.style.background = '#F0FDF4'; }
+  } else {
+    if (label) label.textContent = 'Bild hochladen oder hierher ziehen';
+    if (removeBtn) removeBtn.style.display = 'none';
+    if (zone) { zone.style.borderColor = 'var(--border)'; zone.style.background = 'var(--c-50)'; }
+  }
+}
+
+function orbLogoRemove() {
+  _orbLogoData = null;
+  const fileInput = document.getElementById('orb-logo-file');
+  if (fileInput) fileInput.value = '';
+  _orbApplyLogoPreview(null);
+  orbPreview();
+}
+
+function orbPreview() {
+  /* Gradient preview orb */
+  const c = ['orb-c1','orb-c2','orb-c3','orb-c4'].map(id => document.getElementById(id)?.value || '#8B5CF6');
+  const grad = `linear-gradient(135deg,${c.join(',')})`;
+  const prev = document.getElementById('orb-live-preview');
+  if (prev) { prev.style.background = grad; prev.style.backgroundSize = '300% 300%'; }
+
+  /* Logo preview in the orb circle */
+  const logoPrev = document.getElementById('orb-logo-preview');
+  if (logoPrev) {
+    logoPrev.style.background = grad;
+    logoPrev.style.backgroundSize = '300% 300%';
+    if (_orbLogoData) {
+      logoPrev.innerHTML = `<img src="${_orbLogoData}" style="width:22px;height:22px;object-fit:contain;border-radius:2px;pointer-events:none;">`;
+    } else {
+      logoPrev.innerHTML = '<span style="font-size:.55rem;font-weight:900;color:#fff;letter-spacing:-.5px;">AI</span>';
+    }
+  }
+}
+
+function orbSave() {
+  const c = ['orb-c1','orb-c2','orb-c3','orb-c4'].map(id => document.getElementById(id)?.value || '#8B5CF6');
+  _orbSet({ colors: c, logo_url: _orbLogoData || '' });
+  const msg = document.getElementById('orb-save-msg');
+  if (msg) { msg.style.display = 'inline'; setTimeout(() => msg.style.display = 'none', 2000); }
+  showToast('Orb-Erscheinung gespeichert!', true);
+}
+
+function orbReset() {
+  localStorage.removeItem('ai_orb_config');
+  _orbLogoData = null;
+  ['orb-c1','orb-c2','orb-c3','orb-c4'].forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (el) el.value = ['#8B5CF6','#4F46E5','#06B6D4','#8B5CF6'][i];
+  });
+  const fileInput = document.getElementById('orb-logo-file');
+  if (fileInput) fileInput.value = '';
+  _orbApplyLogoPreview(null);
+  orbPreview();
+  showToast('Orb auf Standard zurückgesetzt.', true);
+}
+
+/* Drag-and-drop onto zone */
+document.addEventListener('DOMContentLoaded', () => {
+  const zone = document.getElementById('orb-logo-zone');
+  if (!zone) return;
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor = 'var(--btn)'; zone.style.background = '#EEF2FF'; });
+  zone.addEventListener('dragleave', () => { if (!_orbLogoData) { zone.style.borderColor = 'var(--border)'; zone.style.background = 'var(--c-50)'; } });
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (!file || !file.type.startsWith('image/')) { showToast('Bitte eine Bilddatei ziehen.', false); return; }
+    const reader = new FileReader();
+    reader.onload = ev => { _orbLogoData = ev.target.result; _orbApplyLogoPreview(_orbLogoData); orbPreview(); };
+    reader.readAsDataURL(file);
+  });
+});
+</script>
+<script>
+/* ── API Connection Tester ── */
+async function testApi(service, btn, payload) {
+  const resultId = 'test-result-' + service;
+  const resultEl = document.getElementById(resultId);
+  btn.disabled = true;
+  const origText = btn.innerHTML;
+  btn.innerHTML = `<div class="api-test-dot spin"></div> Teste…`;
+  if (resultEl) resultEl.innerHTML = '';
+
+  try {
+    const res  = await fetch('/api/test/' + service, {
+      method:  'POST',
+      headers: {'Content-Type': 'application/json'},
+      body:    JSON.stringify(payload || {})
+    });
+    const data = await res.json();
+    if (resultEl) {
+      if (data.ok) {
+        resultEl.className = 'api-test-result ok';
+        resultEl.innerHTML = `<div class="api-test-dot"></div>${data.message || 'Verbindung erfolgreich'}`;
+      } else {
+        resultEl.className = 'api-test-result err';
+        resultEl.innerHTML = `<div class="api-test-dot"></div>${data.error || 'Verbindung fehlgeschlagen'}`;
+      }
+    }
+  } catch(e) {
+    if (resultEl) {
+      resultEl.className = 'api-test-result err';
+      resultEl.innerHTML = `<div class="api-test-dot"></div>Netzwerkfehler: ${e.message}`;
+    }
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = origText;
+  }
+}
+</script>
+
 {% include 'includes/footer.html' %}
 </body>
 </html>

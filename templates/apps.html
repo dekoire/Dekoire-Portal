@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Apps – {{ header_title }}</title>
+<link rel="stylesheet" href="/static/style.css" />
+<style>
+/* ── Page wrapper ── full width, no max-width constraint ── */
+.apps-page {
+  display: flex;
+  align-items: stretch;
+  min-height: calc(100vh - 64px);
+  padding: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Sidebar ── fixed width, sticky ── */
+.apps-sidebar {
+  width: 188px;
+  flex-shrink: 0;
+  padding: 32px 0 32px 28px;
+  position: sticky;
+  top: 64px;
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  border-right: 1px solid var(--border);
+}
+.apps-sidebar-title {
+  font-size: .6rem;
+  font-weight: 700;
+  letter-spacing: .7px;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0 12px 10px;
+}
+.apps-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+/* Fixed-width nav items — no font-weight change to prevent layout shift */
+.apps-nav-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 3px;
+  font-size: .83rem;
+  font-weight: 600;   /* always 600 — no reflow on active */
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+  transition: color .12s, background .12s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.apps-nav-item:hover  { color: var(--text); background: var(--c-100); }
+.apps-nav-item.active { color: var(--btn);  background: #EEF2FF; }
+
+/* ── Main area ── fixed min-height so layout never collapses ── */
+.apps-body {
+  flex: 1;
+  min-width: 0;
+  padding: 32px 36px 60px 32px;
+  /* always tall enough that hiding sections doesn't shrink the container */
+  min-height: calc(100vh - 64px);
+  box-sizing: border-box;
+}
+.apps-title-row {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.apps-title-row > div { flex: 1; min-width: 0; }
+.apps-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 3px;
+  color: var(--text);
+}
+.apps-settings-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 3px;
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--muted); text-decoration: none; flex-shrink: 0;
+  transition: color .15s, background .15s, border-color .15s;
+  margin-top: 2px;
+}
+.apps-settings-btn:hover { color: var(--btn); background: #EEF2FF; border-color: #C7D2FE; }
+.apps-subtitle {
+  font-size: .82rem;
+  color: var(--muted);
+  margin: 0 0 28px;
+}
+.apps-section-label {
+  font-size: .64rem;
+  font-weight: 700;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+  margin-top: 28px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.apps-section-label:first-of-type { margin-top: 0; }
+.apps-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+/* ── App tile ── */
+.app-tile {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 120px;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow .18s, border-color .18s, transform .18s;
+  text-align: center;
+  position: relative;
+  cursor: pointer;
+}
+.app-tile:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,.09);
+  border-color: var(--c-200);
+  transform: translateY(-2px);
+}
+.app-tile:active { transform: translateY(0); }
+
+/* Edit button (appears on tile hover) */
+.app-tile-edit {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity .15s, background .12s;
+  color: var(--muted);
+  z-index: 2;
+}
+.app-tile:hover .app-tile-edit { opacity: 1; }
+.app-tile-edit:hover {
+  background: #EEF2FF;
+  border-color: var(--btn);
+  color: var(--btn);
+}
+
+/* Fav star */
+.app-tile-fav {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  font-size: 9px;
+  color: #EAB308;
+  opacity: .8;
+  line-height: 1;
+}
+
+.app-tile-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.app-tile-icon img { width: 32px; height: 32px; object-fit: contain; }
+.app-tile-icon svg { width: 26px; height: 26px; }
+.app-tile-name {
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+/* Add tile */
+.app-tile-add { border-style: dashed; }
+.app-tile-add .app-tile-name { color: var(--muted); }
+.app-tile-add .app-tile-icon { background: var(--c-100) !important; color: var(--muted); }
+</style>
+</head>
+<body>
+
+{% include 'includes/header.html' %}
+
+{# ── Build category data for sidebar ── #}
+{% set cat_ids = app_categories | map(attribute='id') | list %}
+{% set ns = namespace(other=[]) %}
+{% for eapp in external_apps %}
+  {% if (eapp.category is not defined) or (not eapp.category) or (eapp.category not in cat_ids) %}
+    {% set ns.other = ns.other + [eapp] %}
+  {% endif %}
+{% endfor %}
+{% set fav_apps = external_apps | selectattr('favorite') | list %}
+
+<div class="apps-page">
+
+  <!-- ── Sidebar ── -->
+  <aside class="apps-sidebar">
+    <div class="apps-sidebar-title">Kategorien</div>
+    <nav class="apps-nav">
+      <div class="apps-nav-item active" data-filter="all" onclick="filterApps('all',this)">Alle</div>
+      {% if fav_apps %}
+      <div class="apps-nav-item" data-filter="__fav__" onclick="filterApps('__fav__',this)">Favoriten</div>
+      {% endif %}
+      {% for cat in app_categories %}
+        {% set cat_apps = external_apps | selectattr('category', 'equalto', cat.id) | list %}
+        {% if cat_apps %}
+        <div class="apps-nav-item" data-filter="{{ cat.id }}" onclick="filterApps('{{ cat.id }}',this)">{{ cat.name }}</div>
+        {% endif %}
+      {% endfor %}
+      {% if ns.other %}
+      <div class="apps-nav-item" data-filter="__other__" onclick="filterApps('__other__',this)">Weitere</div>
+      {% endif %}
+    </nav>
+  </aside>
+
+  <!-- ── Main content ── -->
+  <div class="apps-body">
+
+    <div class="apps-title-row">
+      <div>
+        <h2 class="apps-title">Apps</h2>
+        <p class="apps-subtitle">Alle verknüpften externen Apps</p>
+      </div>
+      <a href="/settings?pane=extapps" class="apps-settings-btn" title="Apps konfigurieren">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24">
+          <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.6"/>
+        </svg>
+      </a>
+    </div>
+
+    {# ── Jinja macro ── #}
+    {% macro render_app(eapp, section_id) %}
+    <div class="app-tile"
+         data-appid="{{ eapp.id }}"
+         data-section="{{ section_id }}"
+         data-fav="{{ 'true' if eapp.favorite else 'false' }}"
+         title="{{ eapp.name }}"
+         onclick="openApp('{{ eapp.url }}')">
+      {# Edit button – stops propagation, opens config for this app #}
+      <a href="/settings?edit_app={{ eapp.id }}#external-apps"
+         class="app-tile-edit"
+         title="Icon bearbeiten"
+         onclick="event.stopPropagation()">
+        <svg width="11" height="11" fill="none" viewBox="0 0 24 24">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+      {% if eapp.favorite %}
+      <span class="app-tile-fav" title="Favorit">★</span>
+      {% endif %}
+      <div class="app-tile-icon" style="background:{{ eapp.bg_color or '#ffffff' }};">
+        {% if eapp.icon_type == 'preset' and eapp.icon_preset in icon_svgs %}
+          <span style="color:{{ eapp.icon_color or '#4F46E5' }};display:flex;align-items:center;">{{ icon_svgs[eapp.icon_preset] | safe }}</span>
+        {% elif eapp.icon_type == 'upload' and eapp.icon_url %}
+          <img src="{{ eapp.icon_url }}" alt="{{ eapp.name }}" />
+        {% else %}
+          <img src="https://www.google.com/s2/favicons?domain={{ eapp.domain }}&sz=64"
+               alt="{{ eapp.name }}" onerror="this.style.display='none'" />
+        {% endif %}
+      </div>
+      <div class="app-tile-name">{{ eapp.name }}</div>
+    </div>
+    {% endmacro %}
+
+    {# ── Favoriten ── #}
+    {% if fav_apps %}
+    <div class="apps-section-label" data-section="__fav__">Favoriten</div>
+    <div class="apps-grid" data-section="__fav__">
+      {% for eapp in fav_apps %}{{ render_app(eapp, '__fav__') }}{% endfor %}
+    </div>
+    {% endif %}
+
+    {# ── Kategorien ── #}
+    {% if app_categories %}
+      {% for cat in app_categories %}
+        {% set cat_apps = external_apps | selectattr('category', 'equalto', cat.id) | list %}
+        {% if cat_apps %}
+        <div class="apps-section-label" data-section="{{ cat.id }}">{{ cat.name }}</div>
+        <div class="apps-grid" data-section="{{ cat.id }}">
+          {% for eapp in cat_apps %}{{ render_app(eapp, cat.id) }}{% endfor %}
+        </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+
+    {# ── Nicht kategorisiert / alle ── #}
+    {% if ns.other %}
+    <div class="apps-section-label" data-section="__other__">
+      {% if app_categories %}Weitere{% else %}Alle Apps{% endif %}
+    </div>
+    <div class="apps-grid" data-section="__other__">
+      {% for eapp in ns.other %}{{ render_app(eapp, '__other__') }}{% endfor %}
+      <a href="/settings#external-apps" class="app-tile app-tile-add"
+         title="App hinzufügen" data-section="__other__" data-appid="__add__" data-fav="false">
+        <div class="app-tile-icon">
+          <svg fill="none" viewBox="0 0 24 24">
+            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="app-tile-name">Hinzufügen</div>
+      </a>
+    </div>
+    {% elif not external_apps %}
+    <div style="padding:50px 0;text-align:center;color:var(--muted);">
+      <svg width="40" height="40" fill="none" viewBox="0 0 24 24" style="display:block;margin:0 auto 14px;opacity:.3;">
+        <rect x="3" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="14" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="3" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.5"/>
+        <rect x="14" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+      Noch keine Apps konfiguriert.
+      <a href="/settings#external-apps"
+         style="color:var(--btn);font-weight:600;text-decoration:none;display:block;margin-top:8px;">
+        Jetzt hinzufügen →
+      </a>
+    </div>
+    {% endif %}
+
+  </div><!-- /apps-body -->
+
+</div><!-- /apps-page -->
+
+<script>
+/* ── Open app URL ── */
+function openApp(url) {
+  if (url) window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+/* ── Category sidebar filter ── */
+function filterApps(filter, navEl) {
+  document.querySelectorAll('.apps-nav-item').forEach(el => el.classList.remove('active'));
+  if (navEl) navEl.classList.add('active');
+
+  const labels = document.querySelectorAll('.apps-section-label');
+  const grids  = document.querySelectorAll('.apps-grid');
+
+  if (filter === 'all') {
+    labels.forEach(l => l.style.display = '');
+    grids.forEach(g  => g.style.display = '');
+    return;
+  }
+
+  if (filter === '__fav__') {
+    // Show only fav section
+    labels.forEach(l => l.style.display = l.dataset.section === '__fav__' ? '' : 'none');
+    grids.forEach(g  => g.style.display = g.dataset.section === '__fav__' ? '' : 'none');
+    return;
+  }
+
+  // Show only matching category section
+  labels.forEach(l => l.style.display = l.dataset.section === filter ? '' : 'none');
+  grids.forEach(g  => g.style.display = g.dataset.section === filter ? '' : 'none');
+}
+
+/* ── Auth / user menu ── */
+async function doLogout() {
+  await fetch('/auth/logout', {method:'POST'});
+  window.location.href = '/login';
+}
+function toggleUserMenu() {
+  document.getElementById('userDropdown').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('userMenu')?.contains(e.target))
+    document.getElementById('userDropdown')?.classList.remove('open');
+});
+</script>
+
+{% include 'includes/footer.html' %}
+</body>
+</html>

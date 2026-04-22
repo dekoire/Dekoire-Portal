@@ -1,9 +1,10 @@
 /* Image Analyzer – Frontend Logic */
 
-let currentFile   = null;
-const prevValues  = {};
-let currentData   = {};
-let currentMjInfo = { mjId: null, uuid: null, variant: null };
+let currentFile     = null;
+let currentImageUrl = null;   // set when user enters a URL instead of uploading
+const prevValues    = {};
+let currentData     = {};
+let currentMjInfo   = { mjId: null, uuid: null, variant: null };
 let currentFileMeta = { name:'', date:'', dpiX:96, dpiY:96, sizeBytes:0 };
 
 // ── File input ────────────────────────────────────────────────────────────────
@@ -72,6 +73,33 @@ async function setFile(file) {
   // Pre-fill Pinterest media URL from filename
   const slug = slugify(file.name.replace(/\.[^.]+$/, ''));
   setById('sm-pin-media-url', `https://dekoire.com/images/${slug}.jpg`);
+
+  document.getElementById('analyzeBtn').disabled = false;
+}
+
+// ── URL image mode ────────────────────────────────────────────────────────────
+
+function setImageUrl(url) {
+  url = (url || '').trim();
+  if (!url) {
+    currentImageUrl = null;
+    document.getElementById('analyzeBtn').disabled = !currentFile;
+    return;
+  }
+  currentImageUrl = url;
+  currentFile = null;   // URL takes precedence over any uploaded file
+
+  // Show the URL as a preview in the img picker
+  const prev = document.getElementById('preview');
+  if (prev) { prev.src = url; prev.style.display = 'block'; }
+  const previewEmpty = document.getElementById('previewEmpty');
+  if (previewEmpty) previewEmpty.style.display = 'none';
+  const pickerZone = document.getElementById('uploadZone');
+  if (pickerZone) pickerZone.classList.add('has-image');
+
+  // Pre-fill Pinterest media URL from the supplied URL
+  const slug = slugify(url.split('/').pop().split('?')[0].replace(/\.[^.]+$/, ''));
+  setById('sm-pin-media-url', url);
 
   document.getElementById('analyzeBtn').disabled = false;
 }
@@ -221,21 +249,57 @@ function updateCharCount() {
 // ── Analyze ───────────────────────────────────────────────────────────────────
 
 async function analyzeImage() {
-  if (!currentFile) return;
+  if (!currentFile && !currentImageUrl) return;
   showLoading('Analysiere Bild …');
-  const fd = new FormData(); fd.append('image', currentFile);
+  let fetchOpts;
+  if (currentImageUrl) {
+    // Try to extract base64 from the already-loaded preview image via canvas.
+    // This works even for CDN/auth-protected URLs because the browser already
+    // fetched and rendered it. Falls back to null on cross-origin taint errors.
+    let b64 = null, mime = 'image/jpeg';
+    try {
+      const imgEl = document.getElementById('preview');
+      if (imgEl && imgEl.complete && imgEl.naturalWidth > 0) {
+        const canvas = document.createElement('canvas');
+        canvas.width  = imgEl.naturalWidth;
+        canvas.height = imgEl.naturalHeight;
+        canvas.getContext('2d').drawImage(imgEl, 0, 0);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        b64  = dataUrl.split(',')[1];
+        mime = 'image/jpeg';
+      }
+    } catch (_corsErr) { b64 = null; }
+    fetchOpts = { method:'POST', headers:{'Content-Type':'application/json'},
+                  body: JSON.stringify({ image_url: currentImageUrl,
+                                         image_b64: b64,
+                                         image_mime: mime }) };
+  } else {
+    const fd = new FormData(); fd.append('image', currentFile);
+    fetchOpts = { method:'POST', body: fd };
+  }
   try {
-    const res  = await fetch('/api/analyze', {method:'POST', body:fd});
+    const res  = await fetch('/api/analyze', fetchOpts);
     const data = await res.json();
-    if (data.error) { hideLoading(); showToast(data.error, 'error'); return; }
+    if (data.error) {
+      hideLoading();
+      document.getElementById('analyzeBtn').disabled = false;
+      showToast(data.error, 'error');
+      return;
+    }
     currentData = data;
     populateAll(data);
     const _ph = document.getElementById('placeholder');
     if (_ph) _ph.style.display = 'none';
-    document.getElementById('pane-produktinfo').style.display = 'flex';
     document.getElementById('actionSaveBtn').disabled = false;
-    document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
-    document.getElementById('nav-produktinfo').classList.add('active');
+    // Use showPane to properly switch to produktinfo (avoids inline-style conflicts)
+    if (typeof showPane === 'function') {
+      showPane('produktinfo', document.getElementById('nav-produktinfo'));
+    } else {
+      document.querySelectorAll('.settings-pane').forEach(p => { p.classList.remove('active'); p.style.display = ''; });
+      document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+      document.getElementById('pane-produktinfo')?.classList.add('active');
+      document.getElementById('nav-produktinfo')?.classList.add('active');
+    }
     hideLoading();
     showToast('Analyse abgeschlossen', 'success');
     // Fire the post-analysis hook FIRST (before generateSocialMedia re-shows
@@ -243,7 +307,11 @@ async function analyzeImage() {
     if (typeof window._afterAnalyze === 'function') window._afterAnalyze(data, currentFile);
     generateSocialMedia();
     prefillShopsFromProduct(data);
-  } catch (err) { hideLoading(); showToast('Fehler: '+err.message, 'error'); }
+  } catch (err) {
+    hideLoading();
+    document.getElementById('analyzeBtn').disabled = false;
+    showToast('Fehler: '+err.message, 'error');
+  }
 }
 
 function populateAll(d) {
@@ -270,14 +338,21 @@ function populateAll(d) {
 // ── Regenerate ────────────────────────────────────────────────────────────────
 
 async function regenField(name) {
-  if (!currentFile) return;
+  if (!currentFile && !currentImageUrl) return;
   prevValues[name] = getFieldValue(name);
   document.getElementById('undo-'+name).disabled = false;
   const btn = document.getElementById('regen-'+name);
   btn.classList.add('spinning'); btn.disabled = true;
-  const fd = new FormData(); fd.append('image', currentFile); fd.append('field', name);
+  let fetchOpts;
+  if (currentImageUrl) {
+    fetchOpts = { method:'POST', headers:{'Content-Type':'application/json'},
+                  body: JSON.stringify({ image_url: currentImageUrl, field: name }) };
+  } else {
+    const fd = new FormData(); fd.append('image', currentFile); fd.append('field', name);
+    fetchOpts = { method:'POST', body: fd };
+  }
   try {
-    const res  = await fetch('/api/regenerate', {method:'POST', body:fd});
+    const res  = await fetch('/api/regenerate', fetchOpts);
     const data = await res.json();
     if (data.error) showToast(data.error, 'error');
     else {
@@ -306,7 +381,10 @@ async function generateSocialMedia() {
     ist_fotografie:   document.getElementById('f-ist_fotografie')?.value === 'true',
   };
 
-  showLoading('Social Media wird generiert …');
+  // Show subtle nav-badge instead of full-page overlay
+  const navSocial = document.getElementById('nav-social');
+  if (navSocial) navSocial.style.opacity = '0.5';
+  showToast('Social Media wird generiert …', 'info');
 
   try {
     const res  = await fetch('/api/generate-social', {
@@ -324,7 +402,6 @@ async function generateSocialMedia() {
     setById('sm-pin-beschreibung', pin.beschreibung || '');
     setById('sm-pin-ziel-url',     pin.ziel_url     || (typeof PINTEREST_TARGET_URL !== 'undefined' ? PINTEREST_TARGET_URL : ''));
     setById('sm-pin-alt-text',     pin.alt_text     || '');
-    // Set board select to the suggested board (closest match)
     if (pin.board) selectClosestOption('sm-pin-board', pin.board);
 
     setById('sm-ig-title',       ig.title       || '');
@@ -336,9 +413,11 @@ async function generateSocialMedia() {
     if (ig.content_type) setById('sm-ig-content-type', ig.content_type);
     setById('sm-pin-board-section', pin.board_section || '');
 
-    showToast('Social Media Inhalte generiert', 'success');
-  } catch (err) { showToast('Fehler: '+err.message, 'error'); }
-  finally { hideLoading(); }
+    showToast('Social Media Inhalte generiert ✓', 'success');
+  } catch (err) { showToast('Social Media: ' + err.message, 'error'); }
+  finally {
+    if (navSocial) navSocial.style.opacity = '';
+  }
 }
 
 /* Pre-fill only basic shop fields from product data (no AI call) */
@@ -355,7 +434,7 @@ function prefillShopsFromProduct(d) {
 }
 
 /* Generate texts for one shop section (only fills EMPTY fields) */
-async function generateShopSection(shop) {
+async function generateShopSection(shop, btnEl) {
   const v = id => document.getElementById(id)?.value || '';
   const toArr = id => v(id).split(',').map(s=>s.trim()).filter(Boolean);
   const context = {
@@ -368,8 +447,13 @@ async function generateShopSection(shop) {
     ist_fotografie:   v('f-ist_fotografie') === 'true',
   };
 
-  const btn = document.getElementById('btn-gen-shop-' + shop);
-  if (btn) { btn.disabled = true; btn.textContent = 'Generiert …'; }
+  /* Support both an explicit element and the legacy per-shop id */
+  const btn = btnEl || document.getElementById('btn-gen-shop-' + shop);
+  const origHtml = btn?.innerHTML || '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<svg width="13" height="13" fill="none" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Generiert …';
+  }
 
   try {
     const res  = await fetch('/api/generate-shops', {
@@ -380,40 +464,38 @@ async function generateShopSection(shop) {
     if (data.error) { showToast('Shops: ' + data.error, 'error'); return; }
 
     const shopData = data[shop] || {};
-    const setIfEmpty = (id, val) => {
-      const el = document.getElementById(id);
-      if (el && !el.value?.trim() && val) el.value = val;
-    };
+    /* Always overwrite — this is a manual "generate" action */
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
 
     if (shop === 'etsy') {
-      setIfEmpty('sm-etsy-title',       shopData.title       || '');
-      setIfEmpty('sm-etsy-description', shopData.description || '');
-      setIfEmpty('sm-etsy-tags',        shopData.tags        || '');
-      setIfEmpty('sm-etsy-materials',   shopData.materials   || '');
-      if (shopData.who_made)  { const el = document.getElementById('sm-etsy-who-made');  if (el && !el.value) el.value = shopData.who_made; }
-      if (shopData.when_made) { const el = document.getElementById('sm-etsy-when-made'); if (el && !el.value) el.value = shopData.when_made; }
+      setVal('sm-etsy-title',       shopData.title       || '');
+      setVal('sm-etsy-description', shopData.description || '');
+      setVal('sm-etsy-tags',        shopData.tags        || '');
+      setVal('sm-etsy-materials',   shopData.materials   || '');
+      if (shopData.who_made)  { const el = document.getElementById('sm-etsy-who-made');  if (el) el.value = shopData.who_made; }
+      if (shopData.when_made) { const el = document.getElementById('sm-etsy-when-made'); if (el) el.value = shopData.when_made; }
     } else if (shop === 'shopify') {
-      setIfEmpty('sm-shopify-title',      shopData.title      || '');
-      setIfEmpty('sm-shopify-body-html',  shopData.body_html  || '');
-      setIfEmpty('sm-shopify-vendor',     shopData.vendor     || '');
-      setIfEmpty('sm-shopify-tags',       shopData.tags       || '');
-      setIfEmpty('sm-shopify-sku',        shopData.sku        || '');
+      setVal('sm-shopify-title',      shopData.title      || '');
+      setVal('sm-shopify-body-html',  shopData.body_html  || '');
+      setVal('sm-shopify-vendor',     shopData.vendor     || '');
+      setVal('sm-shopify-tags',       shopData.tags       || '');
+      setVal('sm-shopify-sku',        shopData.sku        || '');
     } else if (shop === 'amazon') {
-      setIfEmpty('sm-amazon-title',        shopData.title        || '');
-      setIfEmpty('sm-amazon-description',  shopData.description  || '');
-      setIfEmpty('sm-amazon-bullet-1',     shopData.bullet_1     || '');
-      setIfEmpty('sm-amazon-bullet-2',     shopData.bullet_2     || '');
-      setIfEmpty('sm-amazon-bullet-3',     shopData.bullet_3     || '');
-      setIfEmpty('sm-amazon-bullet-4',     shopData.bullet_4     || '');
-      setIfEmpty('sm-amazon-bullet-5',     shopData.bullet_5     || '');
-      setIfEmpty('sm-amazon-search-terms', shopData.search_terms || '');
-      setIfEmpty('sm-amazon-brand',        shopData.brand        || '');
+      setVal('sm-amazon-title',        shopData.title        || '');
+      setVal('sm-amazon-description',  shopData.description  || '');
+      setVal('sm-amazon-bullet-1',     shopData.bullet_1     || '');
+      setVal('sm-amazon-bullet-2',     shopData.bullet_2     || '');
+      setVal('sm-amazon-bullet-3',     shopData.bullet_3     || '');
+      setVal('sm-amazon-bullet-4',     shopData.bullet_4     || '');
+      setVal('sm-amazon-bullet-5',     shopData.bullet_5     || '');
+      setVal('sm-amazon-search-terms', shopData.search_terms || '');
+      setVal('sm-amazon-brand',        shopData.brand        || '');
     }
     showToast(shop.charAt(0).toUpperCase() + shop.slice(1) + ' Texte generiert', 'success');
   } catch (err) {
     showToast('Fehler (' + shop + '): ' + err.message, 'error');
   } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Generieren'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
   }
 }
 
@@ -705,6 +787,16 @@ async function saveProduct() {
       const disc = await sendDiscordNotification('create', payload, data, []);
       if (disc.ok)      steps.push({ type: 'info', label: 'Discord: Benachrichtigung gesendet' });
       else if (!disc.skipped) steps.push({ type: 'warn', label: 'Discord: ' + disc.error });
+
+      // Silently upload thumbnail to Supabase Storage for Google Lens / Pinterest Bildsuche
+      const glId = payload.dekoire_id || data.dekoire_id;
+      if (glId) {
+        fetch('/api/googlelens-upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dekoire_id: glId }),
+        }).catch(() => {});
+      }
     }
   } catch (err) {
     steps.push({ type: 'err', label: 'Netzwerkfehler: ' + err.message });
@@ -739,7 +831,7 @@ function showLoading(text) {
 }
 function hideLoading() {
   document.getElementById('loadingOverlay').classList.remove('active');
-  document.getElementById('analyzeBtn').disabled = !currentFile;
+  document.getElementById('analyzeBtn').disabled = !currentFile && !currentImageUrl;
 }
 
 let toastTimer;

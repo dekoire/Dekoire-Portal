@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Legal Risk Analyse – {{ header_title }}</title>
+<link rel="stylesheet" href="/static/style.css"/>
+<style>
+html { scrollbar-gutter: stable; }
+
+/* ── Main layout (sidebar + content) ── */
+.la-layout {
+  display: flex; gap: 24px; align-items: flex-start;
+  max-width: 1060px; width: 100%; margin: 0 auto;
+  padding: 28px 24px 60px; box-sizing: border-box;
+}
+
+/* ── Left sidebar ── */
+.la-sidebar {
+  width: 220px; flex-shrink: 0;
+  position: sticky; top: 24px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.la-sidebar-title {
+  font-size: .68rem; font-weight: 700; letter-spacing: .6px;
+  text-transform: uppercase; color: var(--muted); padding: 0 2px 6px;
+}
+
+/* Image picker */
+.la-img-picker {
+  position: relative; width: 100%; aspect-ratio: 1/1;
+  border-radius: 6px; border: 1px solid var(--border);
+  overflow: hidden; cursor: pointer; background: var(--c-50);
+  transition: border-color .15s, background .15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.la-img-picker:hover { border-color: var(--btn); background: #EEF2FF30; }
+.la-img-picker.has-image { border-style: solid; border-color: var(--border); }
+.la-img-picker.has-image:hover { border-color: var(--btn); }
+.la-img-placeholder {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 7px; color: var(--muted); font-size: .73rem; font-weight: 600;
+  text-align: center; padding: 16px; pointer-events: none;
+}
+.la-img-placeholder svg { opacity: .5; }
+.la-img-placeholder .hint { font-size: .65rem; font-weight: 400; opacity: .7; }
+.la-img-overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,.42);
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 5px; color: #fff;
+  font-size: .73rem; font-weight: 700;
+  opacity: 0; transition: opacity .18s; pointer-events: none;
+}
+.la-img-picker.has-image:hover .la-img-overlay { opacity: 1; }
+.la-img-picker img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.la-img-picker input[type=file] { display: none; }
+
+/* URL toggle & input */
+.la-url-row {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .76rem; font-weight: 600; color: var(--muted);
+  cursor: pointer; background: none; border: none; padding: 0;
+}
+.la-url-row:hover { color: var(--text); }
+.la-url-row svg { flex-shrink: 0; }
+.la-url-wrap { display: none; }
+.la-url-wrap.open { display: block; }
+.la-sb-input {
+  width: 100%; padding: 7px 10px; border: 1px solid var(--border);
+  border-radius: 3px; font-size: .8rem; background: var(--card);
+  color: var(--text); font-family: inherit; box-sizing: border-box;
+  transition: border-color .15s;
+}
+.la-sb-input:focus { outline: none; border-color: var(--btn); }
+.la-sb-hint { font-size: .67rem; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+
+/* Sidebar divider */
+.la-sb-sep { border: none; border-top: 1px solid var(--border); margin: 2px 0; }
+
+.la-sb-textarea { resize: vertical; min-height: 60px; }
+
+/* Run button */
+.la-run-btn {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; padding: 10px; border: none; border-radius: 3px;
+  background: var(--btn); color: #fff; font-size: .86rem; font-weight: 700;
+  cursor: pointer; transition: background .15s;
+}
+.la-run-btn:hover { background: #4338CA; }
+.la-run-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.la-disclaimer {
+  font-size: .67rem; color: var(--muted); text-align: center;
+  line-height: 1.4; padding: 0 2px;
+}
+
+/* ── Platform search buttons ── */
+.la-plat-sep { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+.la-run-btn + .la-run-btn { margin-top: 6px; }
+.la-plat-btn-pin  { background: #E60023 !important; color: #fff !important; }
+.la-plat-btn-pin:hover  { background: #C0001D !important; }
+.la-plat-btn-lens { background: var(--c-50) !important; color: var(--text) !important; border: 1px solid var(--border) !important; }
+.la-plat-btn-lens:hover { background: var(--c-100) !important; }
+
+/* ── Right content ── */
+.la-content { flex: 1; min-width: 0; }
+
+/* Empty / loading states */
+.la-idle {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 12px; padding: 72px 24px;
+  text-align: center; color: var(--muted);
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.la-idle svg { opacity: .18; }
+.la-idle h3 { font-size: .95rem; font-weight: 600; color: var(--text); margin: 0; }
+.la-idle p  { font-size: .82rem; margin: 0; max-width: 300px; line-height: 1.5; }
+
+.la-loading {
+  display: none; flex-direction: column; align-items: center;
+  justify-content: center; gap: 14px; padding: 72px 24px;
+  text-align: center; background: var(--card);
+  border: 1px solid var(--border); border-radius: 8px;
+}
+.la-spinner {
+  width: 38px; height: 38px; border: 3px solid var(--border);
+  border-top-color: var(--btn); border-radius: 50%;
+  animation: laSpin .75s linear infinite;
+}
+@keyframes laSpin { to { transform: rotate(360deg); } }
+.la-loading-text { font-size: .88rem; color: var(--muted); font-weight: 600; }
+.la-loading-sub  { font-size: .76rem; color: var(--muted); }
+
+.la-error-banner {
+  display: none; background: #FEF2F2; border: 1px solid #FCA5A5;
+  border-radius: 10px; padding: 12px 16px; font-size: .84rem;
+  color: #B91C1C; margin-bottom: 16px;
+}
+
+/* Results */
+.la-results { display: none; flex-direction: column; gap: 16px; }
+
+/* Rerun row */
+.la-rerun-row { display: flex; justify-content: flex-end; }
+.la-rerun-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border: 1px solid var(--border); border-radius: 3px;
+  background: var(--card); color: var(--text); font-size: .78rem; font-weight: 600;
+  cursor: pointer; transition: background .13s;
+}
+.la-rerun-btn:hover { background: var(--c-100); }
+
+/* Status card */
+.la-status-card {
+  border-radius: 8px; padding: 18px 22px;
+  display: flex; align-items: flex-start; gap: 16px;
+}
+.la-status-card.green  { background: #F0FDF4; }
+.la-status-card.yellow { background: #FFFBEB; }
+.la-status-card.red    { background: #FEF2F2; }
+.la-status-light { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
+.la-status-card.green  .la-status-light { background: #DCFCE7; color: #16A34A; }
+.la-status-card.yellow .la-status-light { background: #FEF9C3; color: #D97706; }
+.la-status-card.red    .la-status-light { background: #FEE2E2; color: #DC2626; }
+.la-status-info { flex: 1; min-width: 0; }
+.la-status-row  { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+.la-status-lbl  { font-size: 1rem; font-weight: 800; }
+.la-status-card.green  .la-status-lbl { color: #16A34A; }
+.la-status-card.yellow .la-status-lbl { color: #D97706; }
+.la-status-card.red    .la-status-lbl { color: #DC2626; }
+.la-score-pill { font-size: .76rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+.la-status-card.green  .la-score-pill { background: #DCFCE7; color: #15803D; }
+.la-status-card.yellow .la-score-pill { background: #FEF9C3; color: #B45309; }
+.la-status-card.red    .la-score-pill { background: #FEE2E2; color: #B91C1C; }
+.la-status-summary { font-size: .83rem; color: var(--text); line-height: 1.6; }
+
+/* Category section */
+.la-section {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden;
+}
+.la-sec-header {
+  display: flex; align-items: center; gap: 9px;
+  padding: 10px 16px; background: var(--c-50);
+  border-bottom: 1px solid var(--border);
+  font-size: .8rem; font-weight: 700; color: var(--text);
+}
+.la-sec-badge {
+  margin-left: auto; font-size: .68rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 8px;
+  background: var(--c-100); color: var(--muted);
+}
+.la-sec-body { padding: 14px 16px; }
+.la-empty { font-size: .8rem; color: var(--muted); font-style: italic; }
+
+/* Artist row */
+.la-artist {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 9px 0; border-bottom: 1px solid var(--c-100);
+}
+.la-artist:last-child { border-bottom: none; padding-bottom: 0; }
+.la-avatar {
+  width: 32px; height: 32px; border-radius: 50%; background: var(--c-100);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: var(--muted); font-size: .78rem; font-weight: 700;
+}
+.la-artist-info { flex: 1; min-width: 0; }
+.la-artist-name { font-size: .86rem; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.la-artist-meta { font-size: .72rem; color: var(--muted); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.la-artist-assess { font-size: .77rem; color: var(--text); line-height: 1.5; }
+
+/* Finding row (Stil, Marke, Persönlichkeiten, Sonstiges) */
+.la-finding {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 9px 0; border-bottom: 1px solid var(--c-100);
+}
+.la-finding:last-child { border-bottom: none; padding-bottom: 0; }
+.la-finding-icon {
+  width: 28px; height: 28px; border-radius: 7px; background: var(--c-100);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: var(--muted); font-size: .78rem; font-weight: 700;
+}
+.la-finding-body { flex: 1; min-width: 0; }
+.la-finding-ref { font-size: .86rem; font-weight: 700; color: var(--text); margin-bottom: 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.la-finding-assess { font-size: .77rem; color: var(--muted); line-height: 1.5; }
+
+/* Badges */
+.la-badge { font-size: .63rem; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; flex-shrink: 0; white-space: nowrap; }
+.la-badge-high         { background: #FEE2E2; color: #B91C1C; }
+.la-badge-medium       { background: #FEF3C7; color: #B45309; }
+.la-badge-low          { background: #F1F5F9; color: #475569; }
+.la-badge-protected    { background: #FEE2E2; color: #B91C1C; }
+.la-badge-likely_protected { background: #FEF3C7; color: #B45309; }
+.la-badge-public_domain { background: #F0FDF4; color: #15803D; }
+.la-badge-unclear      { background: #F1F5F9; color: #64748B; }
+
+/* Search links */
+.la-link {
+  font-size: .69rem; font-weight: 600; color: var(--btn);
+  text-decoration: none; border: 1px solid #C7D2FE;
+  border-radius: 4px; padding: 1px 5px; white-space: nowrap;
+}
+.la-link:hover { background: #EEF2FF; }
+
+/* Vision section */
+.la-vision-state {
+  padding: 20px; text-align: center;
+  font-size: .82rem; color: var(--muted); font-style: italic;
+}
+.la-vision-not-cfg {
+  background: #FFFBEB; border-radius: 8px; padding: 12px 14px;
+  font-size: .8rem; color: #92400E; line-height: 1.55;
+}
+.la-vision-not-cfg code { background: #FEF3C7; border-radius: 3px; padding: 1px 4px; font-family: monospace; }
+.la-vision-entities { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+.la-vision-entity {
+  background: var(--c-50); border: 1px solid var(--border);
+  border-radius: 999px; padding: 3px 9px;
+  font-size: .76rem; color: var(--text);
+}
+.la-vision-entity.match { background: #EEF2FF; border-color: #C7D2FE; color: var(--btn); font-weight: 600; }
+.la-vision-sub { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); margin: 10px 0 6px; }
+.la-vision-img-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px; }
+.la-vision-img-link { display: block; aspect-ratio: 1; border-radius: 7px; overflow: hidden; border: 1px solid var(--border); background: var(--c-50); }
+.la-vision-img-link img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.la-vision-img-link:hover { border-color: var(--btn); }
+.la-vision-match-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #FEE2E2; color: #B91C1C; border-radius: 6px;
+  padding: 3px 8px; font-size: .73rem; font-weight: 700; margin-bottom: 8px;
+}
+.la-vision-pages { display: flex; flex-direction: column; gap: 4px; }
+.la-vision-page-link { font-size: .78rem; color: var(--btn); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.la-vision-page-link:hover { text-decoration: underline; }
+
+/* Recommendations */
+.la-rec {
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: 8px 0; border-bottom: 1px solid var(--c-100);
+  font-size: .82rem; color: var(--text); line-height: 1.55;
+}
+.la-rec:last-child { border-bottom: none; padding-bottom: 0; }
+.la-rec-num {
+  width: 20px; height: 20px; border-radius: 50%; background: var(--c-100);
+  color: var(--muted); display: flex; align-items: center; justify-content: center;
+  font-size: .7rem; font-weight: 700; flex-shrink: 0; margin-top: 1px;
+}
+</style>
+</head>
+<body>
+{% set header_back_href = '/' %}
+{% set header_back_label = 'Dashboard' %}
+{% set header_dropdown_home = true %}
+{% include 'includes/header.html' %}
+
+<div class="la-layout">
+
+  <!-- ══ Left sidebar ══ -->
+  <div class="la-sidebar">
+    <div class="la-sidebar-title">Legal Risk Analyse</div>
+
+    <!-- Image picker -->
+    <div class="la-img-picker" id="la-img-picker"
+         onclick="document.getElementById('la-file-input').click()"
+         ondragover="event.preventDefault();this.classList.add('drag-over')"
+         ondragleave="this.classList.remove('drag-over')"
+         ondrop="handleDrop(event)">
+      <input type="file" id="la-file-input" accept=".jpg,.jpeg,.png,.webp,.gif"
+             onchange="handleFileSelect(this.files[0])"/>
+      <div class="la-img-placeholder" id="la-img-placeholder">
+        <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M3 15l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span>Bild hochladen</span>
+        <span class="hint">Klicken oder ablegen</span>
+      </div>
+      <img id="la-preview-img" src="" alt="" style="display:none;"/>
+      <div class="la-img-overlay">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Bild ersetzen
+      </div>
+    </div>
+
+    <!-- URL toggle -->
+    <hr class="la-sb-sep"/>
+    <button class="la-url-row" onclick="toggleUrl()" id="la-url-toggle-btn">
+      <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      URL statt Datei
+    </button>
+    <div class="la-url-wrap" id="la-url-wrap">
+      <input type="url" id="la-url-input" class="la-sb-input"
+             placeholder="https://cdn.midjourney.com/…" autocomplete="off"/>
+      <div class="la-sb-hint">Direktlink zu einem Bild — z.B. Midjourney, DALL·E, Canva</div>
+    </div>
+
+    <hr class="la-sb-sep"/>
+
+    <!-- Run button -->
+    <button class="la-run-btn" id="la-run-btn" onclick="runAnalysis()">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      Prüfung starten
+    </button>
+
+    <!-- Platform search -->
+    <hr class="la-plat-sep"/>
+    <button class="la-run-btn la-plat-btn-pin" id="la-pin-btn" onclick="searchPinterestLegal()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+      Pinterest Bildsuche
+    </button>
+    <button class="la-run-btn la-plat-btn-lens" id="la-lens-btn" onclick="searchGoogleLensLegal()">
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7.5" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M11 8v6M8 11h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Google Lens
+    </button>
+
+  </div><!-- /sidebar -->
+
+  <!-- ══ Right content ══ -->
+  <div class="la-content">
+
+    <!-- Error -->
+    <div class="la-error-banner" id="la-error"></div>
+
+    <!-- Idle state -->
+    <div class="la-idle" id="la-idle">
+      <svg width="48" height="48" fill="none" viewBox="0 0 24 24">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+      <h3>Legal Risk Analyse</h3>
+      <p>Bild hochladen oder URL eingeben, dann Prüfung starten. Ergebnisse erscheinen hier.</p>
+    </div>
+
+    <!-- Loading -->
+    <div class="la-loading" id="la-loading">
+      <div class="la-spinner"></div>
+      <div class="la-loading-text">Analyse läuft …</div>
+      <div class="la-loading-sub">15–30 Sekunden — KI analysiert Bild und Metadaten</div>
+    </div>
+
+    <!-- Results -->
+    <div class="la-results" id="la-results">
+
+      <div class="la-rerun-row">
+        <button class="la-rerun-btn" onclick="runAnalysis()">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Neu prüfen
+        </button>
+      </div>
+
+      <!-- Status -->
+      <div id="la-status-card" class="la-status-card green">
+        <div class="la-status-light" id="la-status-icon">
+          <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="la-status-info">
+          <div class="la-status-row">
+            <span class="la-status-lbl" id="la-status-lbl">Geringes Risiko</span>
+            <span class="la-score-pill" id="la-score-pill">Score: –</span>
+          </div>
+          <div class="la-status-summary" id="la-summary"></div>
+        </div>
+      </div>
+
+      <!-- Künstler -->
+      <div class="la-section">
+        <div class="la-sec-header">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Künstler
+          <span class="la-sec-badge" id="cnt-artist">0</span>
+        </div>
+        <div class="la-sec-body" id="sec-artist">
+          <div class="la-empty">Keine Künstlerreferenzen erkannt.</div>
+        </div>
+      </div>
+
+      <!-- Stil -->
+      <div class="la-section">
+        <div class="la-sec-header">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Stil / Künstlerischer Einfluss
+          <span class="la-sec-badge" id="cnt-stil">0</span>
+        </div>
+        <div class="la-sec-body" id="sec-stil">
+          <div class="la-empty">Keine Stilähnlichkeiten erkannt.</div>
+        </div>
+      </div>
+
+      <!-- Marke -->
+      <div class="la-section">
+        <div class="la-sec-header">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><line x1="7" y1="7" x2="7.01" y2="7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+          Marken & Logos
+          <span class="la-sec-badge" id="cnt-marke">0</span>
+        </div>
+        <div class="la-sec-body" id="sec-marke">
+          <div class="la-empty">Keine Marken- oder Logorisiken erkannt.</div>
+        </div>
+      </div>
+
+      <!-- Persönlichkeiten -->
+      <div class="la-section">
+        <div class="la-sec-header">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Persönlichkeiten & Prominente
+          <span class="la-sec-badge" id="cnt-person">0</span>
+        </div>
+        <div class="la-sec-body" id="sec-person">
+          <div class="la-empty">Keine Persönlichkeiten erkannt.</div>
+        </div>
+      </div>
+
+      <!-- Google Cloud Vision -->
+      <div class="la-section">
+        <div class="la-sec-header">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.6"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Google Cloud Vision — Exakte Treffer
+          <span class="la-sec-badge" id="cnt-vision">–</span>
+        </div>
+        <div class="la-sec-body" id="sec-vision">
+          <div class="la-vision-state">Wird nach der KI-Analyse geprüft …</div>
+        </div>
+      </div>
+
+      <!-- Sonstiges -->
+      <div class="la-section">
+        <div class="la-sec-header">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Sonstiges
+          <span class="la-sec-badge" id="cnt-sonst">0</span>
+        </div>
+        <div class="la-sec-body" id="sec-sonst">
+          <div class="la-empty">Keine weiteren Auffälligkeiten.</div>
+        </div>
+      </div>
+
+      <!-- Handlungsempfehlungen -->
+      <div class="la-section">
+        <div class="la-sec-header">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Handlungsempfehlungen
+          <span class="la-sec-badge" id="cnt-rec">0</span>
+        </div>
+        <div class="la-sec-body" id="sec-rec">
+          <div class="la-empty">Keine spezifischen Empfehlungen.</div>
+        </div>
+      </div>
+
+    </div><!-- /la-results -->
+  </div><!-- /la-content -->
+
+</div><!-- /la-layout -->
+
+<script>
+/* ─── State ─── */
+let _file    = null;
+let _urlMode = false;
+
+/* ─── Image picker ─── */
+function handleFileSelect(file) {
+  if (!file) return;
+  _file = file;
+  _urlMode = false;
+  // hide URL fields
+  document.getElementById('la-url-wrap').classList.remove('open');
+  document.getElementById('la-url-input').value = '';
+  // show preview
+  const img = document.getElementById('la-preview-img');
+  img.src = URL.createObjectURL(file);
+  img.style.display = 'block';
+  document.getElementById('la-img-placeholder').style.display = 'none';
+  document.getElementById('la-img-picker').classList.add('has-image');
+  document.getElementById('la-clear-btn').style.display = '';
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('la-img-picker').classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) handleFileSelect(f);
+}
+function clearImage() {
+  _file = null;
+  document.getElementById('la-preview-img').src = '';
+  document.getElementById('la-preview-img').style.display = 'none';
+  document.getElementById('la-file-input').value = '';
+  document.getElementById('la-img-placeholder').style.display = '';
+  document.getElementById('la-img-picker').classList.remove('has-image');
+  document.getElementById('la-clear-btn').style.display = 'none';
+}
+
+/* ─── URL toggle ─── */
+function toggleUrl() {
+  _urlMode = !_urlMode;
+  document.getElementById('la-url-wrap').classList.toggle('open', _urlMode);
+  if (_urlMode) clearImage();
+}
+
+/* ─── Run analysis ─── */
+async function runAnalysis() {
+  const errEl   = document.getElementById('la-error');
+  const idle    = document.getElementById('la-idle');
+  const loading = document.getElementById('la-loading');
+  const results = document.getElementById('la-results');
+
+  errEl.style.display   = 'none';
+  idle.style.display    = 'none';
+  loading.style.display = 'flex';
+  results.style.display = 'none';
+  document.getElementById('la-run-btn').disabled = true;
+
+  const imgUrl = (document.getElementById('la-url-input')?.value || '').trim();
+
+  try {
+    // ── Legal check ──
+    let legalFetch;
+    if (_file) {
+      const fd = new FormData();
+      fd.append('data', JSON.stringify({}));
+      fd.append('image', _file);
+      legalFetch = fetch('/api/product/new/legal-check', { method: 'POST', body: fd });
+    } else {
+      legalFetch = fetch('/api/product/new/legal-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(imgUrl ? { image_url: imgUrl } : {}),
+      });
+    }
+
+    // ── Vision check (parallel, may fail if not configured) ──
+    let visionFetch;
+    if (_file) {
+      const vfd = new FormData();
+      vfd.append('image', _file);
+      visionFetch = fetch('/api/vision-check', { method: 'POST', body: vfd });
+    } else if (imgUrl) {
+      visionFetch = fetch('/api/vision-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_url: imgUrl }),
+      });
+    } else {
+      visionFetch = Promise.resolve(null);
+    }
+
+    const [legalRes, visionSettled] = await Promise.all([
+      legalFetch,
+      visionFetch ? Promise.resolve(visionFetch).then(r => r ? r.json() : null).catch(() => null) : Promise.resolve(null),
+    ]);
+
+    const legal = await legalRes.json();
+    if (legal.error) throw new Error(legal.error);
+
+    loading.style.display = 'none';
+    results.style.display = 'flex';
+    renderResults(legal, visionSettled);
+    results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch (e) {
+    loading.style.display = 'none';
+    idle.style.display    = 'flex';
+    errEl.textContent     = '⚠ Fehler: ' + e.message;
+    errEl.style.display   = 'block';
+  } finally {
+    document.getElementById('la-run-btn').disabled = false;
+  }
+}
+
+/* ─── Render all sections ─── */
+function renderResults(d, vision) {
+  /* Status card */
+  const status = (d.status || 'yellow').toLowerCase();
+  const score  = d.score ?? 50;
+  const labels = { green: 'Geringes Risiko', yellow: 'Erhöhtes Risiko', red: 'Hohes Risiko' };
+  document.getElementById('la-status-card').className = 'la-status-card ' + status;
+  document.getElementById('la-status-lbl').textContent  = labels[status] || 'Risiko unklar';
+  document.getElementById('la-score-pill').textContent  = `Score: ${score} / 100`;
+  document.getElementById('la-summary').textContent     = d.summary || '';
+
+  const tf = d.textFindings   || [];
+  const af = d.artistFindings || [];
+  const iF = d.imageFindings  || [];
+
+  /* ── Künstler ── */
+  // artistFindings + imageFindings type=specific_artwork + textFindings type=artist
+  const artistTF = tf.filter(f => f.type === 'artist');
+  const artworkIF = iF.filter(f => f.type === 'specific_artwork');
+  const artistItems = [...af];  // main source
+
+  // Add text-found artist names not already in artistFindings
+  artistTF.forEach(f => {
+    if (!af.find(a => a.name && a.name.toLowerCase().includes((f.term||'').toLowerCase()))) {
+      artistItems.push({ name: f.term, copyrightStatus: 'unclear', assessment: f.reason, _fromText: true });
+    }
+  });
+
+  const cntArtist = artistItems.length + artworkIF.length;
+  document.getElementById('cnt-artist').textContent = cntArtist;
+  document.getElementById('sec-artist').innerHTML = cntArtist === 0
+    ? '<div class="la-empty">Keine Künstlerreferenzen erkannt.</div>'
+    : [
+        ...artistItems.map(a => {
+          const initials = (a.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+          const deathInfo = a.deathYear ? `† ${a.deathYear}` : '';
+          const gUrl = `https://www.google.com/search?q=${encodeURIComponent(a.name||'')}`;
+          const wUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent((a.name||'').replace(/\s+/g,'_'))}`;
+          return `<div class="la-artist">
+            <div class="la-avatar">${initials}</div>
+            <div class="la-artist-info">
+              <div class="la-artist-name">${_e(a.name)}
+                <span class="la-badge la-badge-${a.copyrightStatus||'unclear'}">${_csLbl(a.copyrightStatus)}</span>
+              </div>
+              <div class="la-artist-meta">
+                ${deathInfo ? `<span>${deathInfo}</span>` : ''}
+                <a href="${gUrl}" target="_blank" class="la-link">Google ↗</a>
+                <a href="${wUrl}" target="_blank" class="la-link">Wikipedia ↗</a>
+              </div>
+              ${a.assessment ? `<div class="la-artist-assess">${_e(a.assessment)}</div>` : ''}
+            </div>
+          </div>`;
+        }),
+        ...artworkIF.map(f => {
+          const gQ = encodeURIComponent((f.reference||'') + ' Gemälde Kunstwerk');
+          const wSlug = encodeURIComponent((f.reference||'').replace(/\s+/g,'_'));
+          return `<div class="la-finding">
+            <div class="la-finding-icon">🖼</div>
+            <div class="la-finding-body">
+              <div class="la-finding-ref">${_e(f.reference)}
+                <span class="la-badge la-badge-${f.confidence||'low'}">${_confLbl(f.confidence)}</span>
+                <a href="https://www.google.com/search?q=${gQ}" target="_blank" class="la-link">Google ↗</a>
+                <a href="https://en.wikipedia.org/wiki/${wSlug}" target="_blank" class="la-link">Wikipedia ↗</a>
+              </div>
+              <div class="la-finding-assess">${_e(f.assessment)}</div>
+            </div>
+          </div>`;
+        }),
+      ].join('');
+
+  /* ── Stil ── */
+  const stilIF = iF.filter(f => f.type === 'artist_style');
+  document.getElementById('cnt-stil').textContent = stilIF.length;
+  document.getElementById('sec-stil').innerHTML = stilIF.length === 0
+    ? '<div class="la-empty">Keine Stilähnlichkeiten erkannt.</div>'
+    : stilIF.map(f => {
+        const gQ = encodeURIComponent(f.reference||'');
+        const wSlug = encodeURIComponent((f.reference||'').replace(/\s+/g,'_'));
+        return `<div class="la-finding">
+          <div class="la-finding-icon">🎨</div>
+          <div class="la-finding-body">
+            <div class="la-finding-ref">${_e(f.reference)}
+              <span class="la-badge la-badge-${f.confidence||'low'}">${_confLbl(f.confidence)}</span>
+              <a href="https://www.google.com/search?q=${gQ}" target="_blank" class="la-link">Google ↗</a>
+              <a href="https://en.wikipedia.org/wiki/${wSlug}" target="_blank" class="la-link">Wikipedia ↗</a>
+            </div>
+            <div class="la-finding-assess">${_e(f.assessment)}</div>
+          </div>
+        </div>`;
+      }).join('');
+
+  /* ── Marke ── */
+  const brandTF = tf.filter(f => f.type === 'brand');
+  const brandIF = iF.filter(f => f.type === 'brand_visual');
+  const cntMarke = brandTF.length + brandIF.length;
+  document.getElementById('cnt-marke').textContent = cntMarke;
+  document.getElementById('sec-marke').innerHTML = cntMarke === 0
+    ? '<div class="la-empty">Keine Marken- oder Logorisiken erkannt.</div>'
+    : [
+        ...brandTF.map(f => `<div class="la-finding">
+          <div class="la-finding-icon">™</div>
+          <div class="la-finding-body">
+            <div class="la-finding-ref">"${_e(f.term)}"
+              <span class="la-badge la-badge-${f.severity||'low'}">${_sevLbl(f.severity)}</span>
+            </div>
+            <div class="la-finding-assess">${_e(f.reason)}</div>
+          </div>
+        </div>`),
+        ...brandIF.map(f => {
+          const gQ = encodeURIComponent((f.reference||'') + ' Marke Trademark');
+          return `<div class="la-finding">
+            <div class="la-finding-icon">™</div>
+            <div class="la-finding-body">
+              <div class="la-finding-ref">${_e(f.reference)}
+                <span class="la-badge la-badge-${f.confidence||'low'}">${_confLbl(f.confidence)}</span>
+                <a href="https://www.google.com/search?q=${gQ}" target="_blank" class="la-link">Google ↗</a>
+              </div>
+              <div class="la-finding-assess">${_e(f.assessment)}</div>
+            </div>
+          </div>`;
+        }),
+      ].join('');
+
+  /* ── Persönlichkeiten ── */
+  const personTF = tf.filter(f => f.type === 'celebrity');
+  document.getElementById('cnt-person').textContent = personTF.length;
+  document.getElementById('sec-person').innerHTML = personTF.length === 0
+    ? '<div class="la-empty">Keine Persönlichkeiten erkannt.</div>'
+    : personTF.map(f => `<div class="la-finding">
+        <div class="la-finding-icon">👤</div>
+        <div class="la-finding-body">
+          <div class="la-finding-ref">"${_e(f.term)}"
+            <span class="la-badge la-badge-${f.severity||'low'}">${_sevLbl(f.severity)}</span>
+          </div>
+          <div class="la-finding-assess">${_e(f.reason)}</div>
+        </div>
+      </div>`).join('');
+
+  /* ── Google Cloud Vision ── */
+  renderVision(vision, d._imageAnalysed);
+
+  /* ── Sonstiges ── */
+  const sonstTF = tf.filter(f => f.type === 'claim' || f.type === 'phrase');
+  const sonstIF = iF.filter(f => f.type === 'product_similarity' || f.type === 'text_in_image');
+  const cntSonst = sonstTF.length + sonstIF.length;
+  document.getElementById('cnt-sonst').textContent = cntSonst;
+  const sonstIcons = { product_similarity: '📦', text_in_image: '🔤' };
+  document.getElementById('sec-sonst').innerHTML = cntSonst === 0
+    ? '<div class="la-empty">Keine weiteren Auffälligkeiten.</div>'
+    : [
+        ...sonstTF.map(f => `<div class="la-finding">
+          <div class="la-finding-icon">⚠</div>
+          <div class="la-finding-body">
+            <div class="la-finding-ref">"${_e(f.term)}"
+              <span class="la-badge la-badge-${f.type||'phrase'}">${f.type === 'claim' ? 'Behauptung' : 'Formulierung'}</span>
+              <span class="la-badge la-badge-${f.severity||'low'}">${_sevLbl(f.severity)}</span>
+            </div>
+            <div class="la-finding-assess">${_e(f.reason)}</div>
+          </div>
+        </div>`),
+        ...sonstIF.map(f => `<div class="la-finding">
+          <div class="la-finding-icon">${sonstIcons[f.type]||'•'}</div>
+          <div class="la-finding-body">
+            <div class="la-finding-ref">${_e(f.reference)}
+              <span class="la-badge la-badge-${f.confidence||'low'}">${_confLbl(f.confidence)}</span>
+            </div>
+            <div class="la-finding-assess">${_e(f.assessment)}</div>
+          </div>
+        </div>`),
+      ].join('');
+
+  /* ── Handlungsempfehlungen ── */
+  const rc = d.recommendations || [];
+  document.getElementById('cnt-rec').textContent = rc.length;
+  document.getElementById('sec-rec').innerHTML = rc.length === 0
+    ? '<div class="la-empty">Keine spezifischen Empfehlungen.</div>'
+    : rc.map((r, i) => `<div class="la-rec"><div class="la-rec-num">${i+1}</div><div>${_e(r)}</div></div>`).join('');
+}
+
+/* ─── Vision section renderer ─── */
+function renderVision(v, imageAnalysed) {
+  const sec = document.getElementById('sec-vision');
+  const cnt = document.getElementById('cnt-vision');
+
+  // No image was provided at all
+  if (!imageAnalysed && imageAnalysed !== undefined) {
+    cnt.textContent = '–';
+    sec.innerHTML = '<div class="la-vision-state">Kein Bild — Vision-Suche nicht möglich.</div>';
+    return;
+  }
+
+  // Not configured
+  if (!v || v.error === 'not_configured') {
+    cnt.textContent = '–';
+    sec.innerHTML = `<div class="la-vision-not-cfg">
+      Google Cloud Vision nicht konfiguriert. API-Key in den
+      <a href="/settings" style="color:var(--btn);font-weight:600;">Einstellungen</a>
+      hinterlegen (<code>Google Cloud Vision API Key</code>).
+    </div>`;
+    return;
+  }
+
+  // Error
+  if (v.error) {
+    cnt.textContent = '–';
+    sec.innerHTML = `<div class="la-vision-state" style="color:#DC2626;">⚠ ${_e(v.error)}</div>`;
+    return;
+  }
+
+  const fullMatches  = v.fullMatches   || [];
+  const simImages    = v.similarImages || [];
+  const entities     = v.entities      || [];
+  const pages        = v.pages         || [];
+
+  const total = fullMatches.length + entities.length;
+  cnt.textContent = fullMatches.length > 0 ? `${fullMatches.length} exakt` : (entities.length ? entities.length + ' Entit.' : '0');
+
+  let html = '';
+
+  // Full matches (exact) — most important
+  if (fullMatches.length > 0) {
+    html += `<div class="la-vision-match-badge">
+      <svg width="11" height="11" fill="none" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" stroke-width="1.8"/><line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+      ${fullMatches.length} exakter Treffer im Web
+    </div>`;
+    html += `<div class="la-vision-img-grid">` +
+      fullMatches.map(u => `<a href="${_e(u)}" target="_blank" class="la-vision-img-link"><img src="${_e(u)}" alt="" onerror="this.parentNode.style.display='none'"/></a>`).join('') +
+      `</div>`;
+  }
+
+  // Entities
+  if (entities.length > 0) {
+    html += `<div class="la-vision-sub">Erkannte Web-Entitäten</div>`;
+    html += `<div class="la-vision-entities">` +
+      entities.slice(0, 16).map(e =>
+        `<span class="la-vision-entity${e.score >= 0.7 ? ' match' : ''}">${_e(e.description)} ${e.score ? `<span style="opacity:.6;font-size:.65rem;">${e.score}</span>` : ''}</span>`
+      ).join('') + `</div>`;
+  }
+
+  // Similar images
+  if (simImages.length > 0) {
+    html += `<div class="la-vision-sub">Ähnliche Bilder im Web</div>`;
+    html += `<div class="la-vision-img-grid">` +
+      simImages.slice(0, 8).map(u => `<a href="${_e(u)}" target="_blank" class="la-vision-img-link"><img src="${_e(u)}" alt="" onerror="this.parentNode.style.display='none'"/></a>`).join('') +
+      `</div>`;
+  }
+
+  // Pages
+  if (pages.length > 0) {
+    html += `<div class="la-vision-sub">Seiten mit diesem Bild</div>`;
+    html += `<div class="la-vision-pages">` +
+      pages.map(p => `<a href="${_e(p.url)}" target="_blank" class="la-vision-page-link" title="${_e(p.url)}">${_e(p.title || p.url)}</a>`).join('') +
+      `</div>`;
+  }
+
+  if (!html) html = '<div class="la-vision-state">Keine Treffer im Web gefunden.</div>';
+  sec.innerHTML = html;
+}
+
+/* ─── Helpers ─── */
+function _e(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _sevLbl(s)  { return { low:'Niedrig', medium:'Mittel', high:'Hoch' }[s] || s || '–'; }
+function _csLbl(c)   { return { protected:'Urheberrecht', likely_protected:'Wahrsch. geschützt', public_domain:'Gemeinfrei', unclear:'Unklar' }[c] || c || '–'; }
+function _confLbl(c) { return { low:'Gering', medium:'Mittel', high:'Hoch' }[c] || c || '–'; }
+
+/* ─── Platform image search (Pinterest / Google Lens) ─── */
+async function _uploadForSearch(btnId) {
+  const btn = document.getElementById(btnId);
+  if (btn) { btn.disabled = true; }
+  try {
+    const imgUrl = (document.getElementById('la-url-input')?.value || '').trim();
+
+    let fetchOpts;
+    if (_file) {
+      const fd = new FormData();
+      fd.append('image', _file);
+      fetchOpts = { method: 'POST', body: fd };
+    } else if (imgUrl) {
+      fetchOpts = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_url: imgUrl }),
+      };
+    } else {
+      alert('Bitte zuerst ein Bild auswählen oder eine URL eingeben.');
+      return null;
+    }
+
+    const res  = await fetch('/api/googlelens-upload-raw', fetchOpts);
+    const data = await res.json();
+    if (data.error) { alert('Fehler: ' + data.error); return null; }
+    return data.url;
+  } catch (e) {
+    alert('Fehler beim Hochladen: ' + e.message);
+    return null;
+  } finally {
+    if (btn) { btn.disabled = false; }
+  }
+}
+
+async function searchPinterestLegal() {
+  // If URL mode and URL is already public, use directly without upload
+  const imgUrl = (document.getElementById('la-url-input')?.value || '').trim();
+  let publicUrl = (!_file && imgUrl) ? imgUrl : null;
+  if (!publicUrl) publicUrl = await _uploadForSearch('la-pin-btn');
+  if (!publicUrl) return;
+  window.open('https://www.pinterest.com/search/lens/?imageurl=' + encodeURIComponent(publicUrl), '_blank');
+}
+
+async function searchGoogleLensLegal() {
+  const publicUrl = await _uploadForSearch('la-lens-btn');
+  if (!publicUrl) return;
+  window.open('https://lens.google.com/uploadbyurl?url=' + encodeURIComponent(publicUrl), '_blank');
+}
+
+/* ─── User menu ─── */
+function toggleUserMenu() { document.getElementById('userDropdown').classList.toggle('open'); }
+document.addEventListener('click', e => {
+  if (!document.getElementById('userMenu')?.contains(e.target))
+    document.getElementById('userDropdown')?.classList.remove('open');
+});
+async function doLogout() {
+  await fetch('/auth/logout', { method: 'POST' });
+  window.location.href = '/login';
+}
+</script>
+{% include 'includes/footer.html' %}
+</body>
+</html>

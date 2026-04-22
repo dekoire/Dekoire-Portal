@@ -1,5 +1,7 @@
 <header>
-  <img src="/assets/{{ header_logo }}" alt="Logo" class="header-logo" onerror="this.style.display='none'" />
+  <a href="/" style="display:flex;align-items:center;flex-shrink:0;">
+    <img src="/assets/{{ header_logo }}" alt="Logo" class="header-logo" onerror="this.style.display='none'" />
+  </a>
   <div style="flex:1"></div>
   <div class="header-right">
     {% if header_back_href is defined %}
@@ -10,6 +12,7 @@
       {{ header_back_label | default('Dashboard') }}
     </a>
     {% endif %}
+
     <div class="user-menu" id="userMenu">
       <button class="user-btn" onclick="toggleUserMenu()" type="button">
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
@@ -40,5 +43,96 @@
         </button>
       </div>
     </div>
+
+    <!-- ── AI Launcher orb (rightmost) ── -->
+    <div class="ai-launcher" id="aiLauncher">
+      <button class="ai-orb-btn" id="aiOrbBtn" onclick="toggleAILauncher(event)" title="KI Tools" type="button" aria-label="KI Schnellzugriff">
+        <span class="ai-orb-inner" id="aiOrbInner">AI</span>
+      </button>
+      <div class="ai-dropdown" id="aiDropdown">
+        <div class="ai-dropdown-header">
+          <span class="ai-dropdown-title">KI Schnellzugriff</span>
+          <a href="/settings" onclick="closeAILauncher()" class="ai-dropdown-config" title="Verwalten">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.6"/></svg>
+          </a>
+        </div>
+        <div class="ai-tiles" id="aiTiles"><!-- rendered by JS --></div>
+      </div>
+    </div>
   </div>
 </header>
+
+<script>
+/* ── AI Launcher ── */
+function _aiTools() {
+  try { return JSON.parse(localStorage.getItem('ai_tools') || '[]'); } catch { return []; }
+}
+function aiRenderTiles() {
+  const tiles = document.getElementById('aiTiles');
+  if (!tiles) return;
+  const tools = _aiTools();
+  if (!tools.length) {
+    tiles.innerHTML = '<div class="ai-tiles-empty">Keine Tools konfiguriert.<br><a href="/settings">Jetzt hinzufügen →</a></div>';
+    tiles.classList.remove('many');
+    return;
+  }
+  /* 5+ tools → 3-column grid; ≤4 → 2-column grid (gives 2+2 for exactly 4) */
+  tiles.classList.toggle('many', tools.length >= 5);
+  tiles.innerHTML = tools.map(t => `
+    <a href="${t.url}" target="_blank" rel="noopener noreferrer" class="ai-tile" onclick="closeAILauncher()">
+      ${t.favicon
+        ? `<img src="${t.favicon}" alt="" onerror="this.outerHTML='<div class=\\'ai-tile-letter\\'>${(t.name||'?')[0].toUpperCase()}</div>'">`
+        : `<div class="ai-tile-letter">${(t.name||'?')[0].toUpperCase()}</div>`}
+      <span>${t.name}</span>
+    </a>
+  `).join('');
+}
+function toggleAILauncher(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('aiDropdown');
+  const opening = !dd.classList.contains('open');
+  /* close user dropdown if open */
+  document.getElementById('userDropdown')?.classList.remove('show');
+  if (opening) { aiRenderTiles(); dd.classList.add('open'); }
+  else          { dd.classList.remove('open'); }
+}
+function closeAILauncher() {
+  document.getElementById('aiDropdown')?.classList.remove('open');
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('aiLauncher')?.contains(e.target)) {
+    closeAILauncher();
+  }
+});
+
+/* ── Apply saved orb appearance on load ── */
+(function applyAiOrbConfig() {
+  try {
+    const cfg = JSON.parse(localStorage.getItem('ai_orb_config') || '{}');
+    const btn = document.getElementById('aiOrbBtn');
+    const inner = document.getElementById('aiOrbInner');
+    if (!btn) return;
+    /* Custom gradient colors */
+    const c = cfg.colors;
+    if (c && c.length === 4) {
+      btn.style.background = `linear-gradient(135deg, ${c[0]}, ${c[1]}, ${c[2]}, ${c[3]})`;
+      btn.style.backgroundSize = '300% 300%';
+      /* rebuild pulse color from first stop */
+      const hex = c[0].replace('#','');
+      const r = parseInt(hex.substring(0,2),16), g = parseInt(hex.substring(2,4),16), b = parseInt(hex.substring(4,6),16);
+      const style = document.createElement('style');
+      style.textContent = `@keyframes aiOrbPulse{0%,100%{box-shadow:0 0 0 0 rgba(${r},${g},${b},.5);}50%{box-shadow:0 0 0 7px rgba(${r},${g},${b},0);}}`;
+      document.head.appendChild(style);
+    }
+    /* Custom logo */
+    if (cfg.logo_url && inner) {
+      inner.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = cfg.logo_url;
+      img.style.cssText = 'width:18px;height:18px;object-fit:contain;border-radius:2px;pointer-events:none;';
+      img.onerror = () => { inner.textContent = 'AI'; };
+      inner.appendChild(img);
+    }
+  } catch(e) {}
+})();
+</script>

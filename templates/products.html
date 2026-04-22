@@ -86,7 +86,7 @@
 .pl-search {
   flex: 1 1 220px;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: 3px;
   border: 1px solid var(--border);
   font-size: .85rem;
   background: var(--card);
@@ -120,7 +120,7 @@
 .pl-filter-group select,
 .pl-filter-group input[type="date"] {
   padding: 7px 10px;
-  border-radius: 8px;
+  border-radius: 3px;
   border: 1px solid var(--border);
   font-size: .83rem;
   background: var(--card);
@@ -225,21 +225,22 @@
 .pl-date { font-size: .82rem; font-weight: 500; }
 .pl-time { font-size: .72rem; color: var(--muted); margin-top: 2px; }
 
-/* ── Campaign pills ── */
-.camp-pills { display: flex; gap: 5px; flex-wrap: wrap; }
-.camp-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 7px;
-  border-radius: 20px;
-  font-size: .68rem;
-  font-weight: 700;
-  letter-spacing: .2px;
+/* ── Feature icons ── */
+.feat-icons { display: flex; gap: 4px; align-items: center; }
+.feat-icon {
+  width: 26px; height: 26px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 3px; cursor: pointer; flex-shrink: 0;
+  transition: background .12s, transform .1s;
+  color: #D1D5DB;
 }
-.camp-pill.ig { background: #FCE7F3; color: #9D174D; }
-.camp-pill.pin { background: #FEE2E2; color: #991B1B; }
-.camp-pill.none { background: #F3F4F6; color: #9CA3AF; font-weight: 500; font-size: .68rem; }
+.feat-icon:hover { background: var(--c-100); transform: scale(1.1); }
+.feat-icon.fi-legal-green  { color: #22C55E; }
+.feat-icon.fi-legal-yellow { color: #F59E0B; }
+.feat-icon.fi-legal-red    { color: #EF4444; }
+.feat-icon.fi-seo          { color: #6366F1; }
+.feat-icon.fi-pin          { color: #E60023; }
+.feat-icon.fi-ig           { color: #833AB4; }
 
 /* ── Action icons ── */
 .pl-actions { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
@@ -303,7 +304,7 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
       Filter
     </button>
-    <button class="pl-btn pl-btn-primary" onclick="window.location.href='/new'">
+    <button class="pl-btn pl-btn-primary" onclick="window.location.href='/app'">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Neues Produkt
     </button>
@@ -382,7 +383,7 @@
           <th class="sortable" data-col="titel" onclick="sortBy('titel',this)">Titel <span class="sort-arrow"></span></th>
           <th class="sortable" data-col="orient" onclick="sortBy('orient',this)">Ausrichtung <span class="sort-arrow"></span></th>
           <th class="sortable" data-col="date" onclick="sortBy('date',this)">Angelegt <span class="sort-arrow"></span></th>
-          <th>Kampagnen</th>
+          <th>Features</th>
           <th style="width:80px">Aktionen</th>
         </tr>
       </thead>
@@ -425,29 +426,41 @@
           </td>
           <td>
             {% if date_part %}
-            <div class="pl-date">{{ date_part }}</div>
+            {% set dp = date_part.split('-') %}
+            <div class="pl-date">{{ dp[2] }}/{{ dp[1] }}/{{ dp[0] }}</div>
             <div class="pl-time">{{ time_part }}</div>
             {% else %}
             <span style="color:var(--muted)">–</span>
             {% endif %}
           </td>
-          <td>
-            <div class="camp-pills">
-              {% if sp.ig > 0 %}
-              <span class="camp-pill ig">
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="currentColor" stroke-width="2.5"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="17.5" cy="6.5" r="1.2"/></svg>
-                IG ×{{ sp.ig }}
+          <td onclick="event.stopPropagation()">
+            {% set ls = row.get('_legal_status','') %}
+            {% set se = row.get('_seo_exists', false) %}
+            <div class="feat-icons">
+              <!-- Legal shield -->
+              <span class="feat-icon{% if ls == 'green' %} fi-legal-green{% elif ls == 'yellow' %} fi-legal-yellow{% elif ls == 'red' %} fi-legal-red{% endif %}"
+                    onclick="goTo('{{ row.get('id','') }}','legal')"
+                    title="{% if ls == 'green' %}Geringes Risiko{% elif ls == 'yellow' %}Erhöhtes Risiko{% elif ls == 'red' %}Hohes Risiko{% else %}Legal Check{% endif %}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               </span>
-              {% endif %}
-              {% if sp.pin > 0 %}
-              <span class="camp-pill pin">
-                <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 3.27 2.09 6.07 5 7.19V22h2v-3.93c.33.06.66.09 1 .09s.67-.03 1-.09V22h2v-5.81c2.91-1.12 5-3.92 5-7.19 0-3.87-3.13-7-7-7zm0 12c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
-                Pin ×{{ sp.pin }}
+              <!-- SEO icon -->
+              <span class="feat-icon{% if se %} fi-seo{% endif %}"
+                    onclick="goTo('{{ row.get('id','') }}','seo')"
+                    title="{% if se %}SEO-Keywords vorhanden{% else %}Keine SEO-Daten{% endif %}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               </span>
-              {% endif %}
-              {% if sp.ig == 0 and sp.pin == 0 %}
-              <span class="camp-pill none">Keine</span>
-              {% endif %}
+              <!-- Pinterest -->
+              <span class="feat-icon{% if sp.pin > 0 %} fi-pin{% endif %}"
+                    onclick="goTo('{{ row.get('id','') }}','social')"
+                    title="Pinterest">
+                <svg width="14" height="14" viewBox="0 0 496 512" fill="currentColor"><path d="M496 256c0 137-111 248-248 248-25.6 0-50.2-3.9-73.4-11.1 10.1-16.5 25.2-43.5 30.8-65 3-11.6 15.4-59 15.4-59 8.1 15.4 31.7 28.5 56.8 28.5 74.8 0 128.7-68.8 128.7-154.3 0-81.9-66.9-143.2-152.9-143.2-107 0-163.9 71.8-163.9 150.1 0 36.4 19.4 81.7 50.3 96.1 4.7 2.2 7.2 1.2 8.3-3.3.8-3.4 5-20.3 6.9-28.1.6-2.5.3-4.7-1.7-7.1-10.1-12.5-18.3-35.3-18.3-56.6 0-54.7 41.4-107.6 112-107.6 60.9 0 103.6 41.5 103.6 100.9 0 67.1-33.9 113.6-78 113.6-24.3 0-42.6-20.1-36.7-44.8 7-29.5 20.5-61.3 20.5-82.6 0-19-10.2-34.9-31.4-34.9-24.9 0-44.9 25.7-44.9 60.2 0 22 7.4 36.8 7.4 36.8s-24.5 103.8-29 123.2c-5 21.4-3 51.6-.9 71.2C65.4 450.9 0 361.1 0 256 0 119 111 8 248 8s248 111 248 248z"/></svg>
+              </span>
+              <!-- Instagram -->
+              <span class="feat-icon{% if sp.ig > 0 %} fi-ig{% endif %}"
+                    onclick="goTo('{{ row.get('id','') }}','social')"
+                    title="Instagram">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+              </span>
             </div>
           </td>
           <td onclick="event.stopPropagation()">
@@ -563,8 +576,13 @@ function sortBy(col, th) {
 
 /* ── Row click ── */
 function rowClick(e, id) {
-  if (e.target.closest('.pl-cb-cell') || e.target.closest('.pl-actions')) return;
+  if (e.target.closest('.pl-cb-cell') || e.target.closest('.pl-actions') || e.target.closest('.feat-icons')) return;
   window.location.href = '/product/' + id;
+}
+
+/* ── Navigate to product with auto-pane ── */
+function goTo(id, pane) {
+  window.location.href = '/product/' + id + '?pane=' + pane;
 }
 
 /* ── Checkbox logic ── */

@@ -321,7 +321,7 @@ header p  { font-size: .78rem; opacity: .55; margin-top: 1px; }
   width: 30px; height: 30px;
   border-radius: 3px;
   border: 1px solid var(--border);
-  background: var(--c-50);
+  background: #fff;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -822,6 +822,105 @@ hr.section-sep { border: none; border-top: 0px solid var(--border); margin: 20px
 }
 .footer-tagline { color: rgba(0,0,0,.4); }
 
+/* ── AI Launcher (header orb + dropdown) ─────────────────────────────────── */
+.ai-launcher {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.ai-orb-btn {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, #8B5CF6, #4F46E5, #06B6D4, #8B5CF6);
+  background-size: 300% 300%;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  animation: aiOrbGrad 4s ease infinite, aiOrbPulse 2.8s ease-in-out infinite;
+  transition: transform .18s, opacity .18s;
+  padding: 0;
+}
+.ai-orb-btn:hover { transform: scale(1.12); }
+.ai-orb-inner {
+  font-size: .58rem; font-weight: 900; letter-spacing: -.5px; line-height: 1;
+  pointer-events: none; user-select: none;
+  display: flex; align-items: center; justify-content: center;
+}
+@keyframes aiOrbGrad {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes aiOrbPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,.5); }
+  50%       { box-shadow: 0 0 0 7px rgba(139,92,246,0); }
+}
+.ai-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 300px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  box-shadow: 0 10px 32px rgba(0,0,0,.15);
+  z-index: 400;
+  overflow: hidden;
+}
+.ai-dropdown.open { display: block; }
+.ai-dropdown-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 25px 8px;
+}
+.ai-dropdown-title {
+  font-size: .63rem; font-weight: 700; letter-spacing: .5px;
+  text-transform: uppercase; color: var(--muted);
+}
+.ai-dropdown-config {
+  color: var(--muted); display: flex; align-items: center;
+  text-decoration: none; padding: 3px; border-radius: 3px;
+  transition: color .15s, background .15s;
+}
+.ai-dropdown-config:hover { color: var(--btn); background: #EEF2FF; }
+.ai-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 60px);
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 15px 35px;
+}
+.ai-tile {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 5px; width: 60px; padding: 9px 5px 7px;
+  border-radius: 4px; text-decoration: none; color: var(--text);
+  font-size: .65rem; font-weight: 600; text-align: center;
+  line-height: 1.2; cursor: pointer;
+  transition: background .15s, border-color .15s, transform .12s;
+  overflow: hidden;
+}
+.ai-tile:hover {
+  background: #EEF2FF; border-color: #C7D2FE;
+  transform: translateY(-2px); color: var(--btn);
+}
+.ai-tile img {
+  width: 26px; height: 26px; object-fit: contain; border-radius: 4px;
+  display: block; flex-shrink: 0;
+}
+.ai-tile-letter {
+  width: 26px; height: 26px; border-radius: 4px;
+  background: linear-gradient(135deg, #8B5CF6, #4F46E5);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem; font-weight: 800; color: #fff; flex-shrink: 0;
+}
+.ai-tiles-empty {
+  font-size: .78rem; color: var(--muted); text-align: center;
+  padding: 16px 0; width: 100%; line-height: 1.6;
+}
+.ai-tiles-empty a { color: var(--btn); text-decoration: none; font-weight: 600; }
+
 /* ── Action Panel (right sidebar with Speichern + future buttons) ─────────── */
 .action-panel {
   width: 250px;
@@ -830,11 +929,6 @@ hr.section-sep { border: none; border-top: 0px solid var(--border); margin: 20px
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-/* full-height variant for analyze page */
-.analyze-layout .action-panel {
-  height: 100%;         /* fills the flex row */
-  overflow-y: auto;
 }
 /* sticky variant for settings/edit pages */
 .settings-layout .action-panel {
@@ -867,16 +961,6 @@ hr.section-sep { border: none; border-top: 0px solid var(--border); margin: 20px
   flex-direction: column;
   gap: 8px;
   background: var(--card);
-}
-/* title on analyze page stays minimal */
-.analyze-layout .action-panel-title {
-  font-size: .67rem;
-  font-weight: 700;
-  letter-spacing: .5px;
-  text-transform: uppercase;
-  color: var(--muted);
-  padding-bottom: 10px;
-  margin-bottom: 2px;
 }
 .action-btn {
   width: 100%;
@@ -1150,7 +1234,7 @@ hr.section-sep { border: none; border-top: 0px solid var(--border); margin: 20px
   align-items: center;
   gap: 9px;
   padding: 9px 12px;
-  border-radius: 8px;
+  border-radius: 3px;
   font-size: .85rem;
   font-weight: 500;
   color: var(--muted);
@@ -1183,14 +1267,16 @@ hr.section-sep { border: none; border-top: 0px solid var(--border); margin: 20px
   align-items: center;
   justify-content: space-between;
 }
+/* Field action buttons: only show undo when it has something to undo (not disabled) */
 .field-actions-inline { display: flex; gap: 3px; }
+.field-actions-inline .btn-icon-sm:disabled { display: none; }
 .field-with-regen input,
 .field-with-regen textarea,
 .field-with-regen select {
   width: 100%;
   padding: 9px 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 3px;
   font-size: .875rem;
   background: var(--card);
   color: var(--text);
@@ -1206,7 +1292,7 @@ hr.section-sep { border: none; border-top: 0px solid var(--border); margin: 20px
 /* Small icon button (regen, undo, copy on individual fields) */
 .btn-icon-sm {
   width: 28px; height: 28px;
-  border-radius: 6px;
+  border-radius: 3px;
   border: 1px solid var(--border);
   background: var(--card);
   color: var(--muted);

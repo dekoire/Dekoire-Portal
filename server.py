@@ -13,7 +13,7 @@ import webbrowser
 from pathlib import Path
 from threading import Timer
 from typing import Optional
-from datetime import datetime as _dt
+from datetime import datetime as _dt, timezone as _tz
 
 import anthropic
 from flask import (Flask, jsonify, redirect, render_template,
@@ -44,6 +44,14 @@ try:
 except ImportError:
     _SUPABASE_OK = False
 
+try:
+    from googleapiclient.discovery import build as _gdrive_build
+    from googleapiclient.http import MediaIoBaseUpload as _GMediaUpload
+    from google.oauth2 import service_account as _gsa
+    _GDRIVE_OK = True
+except ImportError:
+    _GDRIVE_OK = False
+
 SCRIPT_DIR          = Path(__file__).parent
 CACHE_DIR           = SCRIPT_DIR / "cache"
 PRODUCT_PHOTOS_DIR  = SCRIPT_DIR / "static" / "product-photos"
@@ -56,7 +64,7 @@ def _save_legal_check(product_id: str, result: dict) -> None:
     """Persist a legal-check result to disk as JSON."""
     try:
         to_save = dict(result)
-        to_save.setdefault("_runDate", _dt.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"))
+        to_save.setdefault("_runDate", _dt.now(_tz.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
         path = LEGAL_CHECKS_DIR / f"{product_id}.json"
         path.write_text(json.dumps(to_save, ensure_ascii=False, indent=2), encoding="utf-8")
     except Exception:
@@ -281,21 +289,113 @@ def slugify_py(text: str) -> str:
     t = re.sub(r'\s+', '_', t.strip())
     return re.sub(r'[^a-zA-Z0-9_]', '', t)
 
+# ── Google Drive helpers ──────────────────────────────────────────────────────
+
+def _gdrive_service(creds_json: str):
+    """Build authenticated Drive v3 service from service-account JSON string."""
+    if not _GDRIVE_OK:
+        raise RuntimeError(
+            "Google Drive library not installed. "
+            "Run: pip install google-api-python-client google-auth"
+        )
+    creds_dict  = json.loads(creds_json)
+    scopes      = ["https://www.googleapis.com/auth/drive.file"]
+    credentials = _gsa.Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    return _gdrive_build("drive", "v3", credentials=credentials, cache_discovery=False)
+
+
+def _gdrive_get_or_create_folder(service, name: str, parent_id: str) -> str:
+    """Return existing folder ID or create a new one inside parent_id."""
+    safe_name = name.replace("'", "\\'")
+    q = (
+        f"name='{safe_name}' and mimeType='application/vnd.google-apps.folder'"
+        f" and '{parent_id}' in parents and trashed=false"
+    )
+    res   = service.files().list(q=q, spaces="drive", fields="files(id)").execute()
+    files = res.get("files", [])
+    if files:
+        return files[0]["id"]
+    meta   = {"name": name, "mimeType": "application/vnd.google-apps.folder",
+               "parents": [parent_id]}
+    folder = service.files().create(body=meta, fields="id").execute()
+    return folder["id"]
+
+
+_MIME_MAP = {
+    ".jpg":  "image/jpeg", ".jpeg": "image/jpeg",
+    ".png":  "image/png",  ".webp": "image/webp",
+    ".gif":  "image/gif",  ".bmp":  "image/bmp",
+    ".tiff": "image/tiff", ".tif":  "image/tiff",
+}
+
+
+def _gdrive_upload_image(service, image_bytes: bytes, filename: str,
+                          parent_id: str) -> str:
+    """Upload image bytes to Drive folder. Returns webViewLink."""
+    ext  = Path(filename).suffix.lower()
+    mime = _MIME_MAP.get(ext, "image/jpeg")
+    meta  = {"name": filename, "parents": [parent_id]}
+    media = _GMediaUpload(io.BytesIO(image_bytes), mimetype=mime, resumable=False)
+    f     = service.files().create(
+        body=meta, media_body=media, fields="id,webViewLink"
+    ).execute()
+    return f.get("webViewLink", "")
+
+
 # ── Final Files folder ────────────────────────────────────────────────────────
 
 def create_final_folder(dekoire_id: str, titel: str, image_bytes: bytes,
-                         orig_filename: str, cfg: dict) -> Optional[Path]:
-    export_cfg = cfg.get("export", {})
+                         orig_filename: str, cfg: dict):
+    """Save product image either locally or to Google Drive.
+
+    Returns:
+        Path  – local folder path (local mode)
+        str   – Google Drive webViewLink (gdrive mode)
+        None  – disabled or error
+    """
+    export_cfg  = cfg.get("export", {})
     if not export_cfg.get("create_folder", True):
         return None
-    base_str = str(export_cfg.get("final_files_folder", "Final Files"))
-    base     = Path(base_str) if Path(base_str).is_absolute() else SCRIPT_DIR / base_str
-    slug     = slugify_py(titel) if titel else "untitled"
-    folder   = base / f"{dekoire_id}_{slug}"
-    folder.mkdir(parents=True, exist_ok=True)
-    ext      = Path(orig_filename).suffix.lower() or ".jpg"
-    (folder / f"{dekoire_id}_{slug}{ext}").write_bytes(image_bytes)
-    return folder
+
+    destination = export_cfg.get("destination", "local")
+    slug        = slugify_py(titel) if titel else "untitled"
+    ext         = Path(orig_filename).suffix.lower() or ".jpg"
+    fname       = f"{dekoire_id}_{slug}{ext}"
+
+    if destination == "google_drive":
+        gdrive_cfg  = export_cfg.get("gdrive", {})
+        folder_id   = (gdrive_cfg.get("folder_id") or "").strip()
+        creds_json  = (gdrive_cfg.get("credentials_json") or "").strip()
+        if not folder_id or not creds_json:
+            print("[GDrive] folder_id or credentials_json missing – skipping upload")
+            return None
+        try:
+            service = _gdrive_service(creds_json)
+            if gdrive_cfg.get("create_subfolder", True):
+                target = _gdrive_get_or_create_folder(
+                    service, f"{dekoire_id} - {slug}", folder_id)
+            else:
+                target = folder_id
+            link = _gdrive_upload_image(service, image_bytes, fname, target)
+            print(f"[GDrive] Uploaded '{fname}' → {link}")
+            return link
+        except Exception as exc:
+            print(f"[GDrive] Upload failed: {exc}")
+            return None
+    else:
+        # ── local / mounted drive ──────────────────────────────────────────
+        base_str = str(export_cfg.get("final_files_folder", "Final Files"))
+        base     = Path(base_str) if Path(base_str).is_absolute() else SCRIPT_DIR / base_str
+        # New folder structure: "{id} - {title}"
+        root_folder = base / f"{dekoire_id} - {slug}"
+        # Thumbnail subfolder
+        thumb_folder = root_folder / "thumbnail"
+        thumb_folder.mkdir(parents=True, exist_ok=True)
+        (thumb_folder / fname).write_bytes(image_bytes)
+        # Also create social_media subfolder for future use
+        social_folder = root_folder / "social_media"
+        social_folder.mkdir(parents=True, exist_ok=True)
+        return root_folder
 
 # ── Supabase save ─────────────────────────────────────────────────────────────
 
@@ -343,6 +443,29 @@ def save_thumbnail(image_bytes: bytes, dekoire_id: str) -> str:
     (THUMBNAILS_DIR / f"{dekoire_id}.jpg").write_bytes(thumb)
     return f"/static/thumbnails/{dekoire_id}.jpg"
 
+def upload_thumbnail_to_storage(cfg: dict, dekoire_id: str) -> str:
+    """Upload the local thumbnail to Supabase Storage at a fixed path so it
+    can be overwritten on every update. Returns the public URL.
+    Raises on any configuration / network error."""
+    sb_cfg  = cfg.get("supabase", {})
+    bucket  = sb_cfg.get("storage_bucket", "images")
+    svc_key = sb_cfg.get("service_role_key", "") or cfg.get("service_role_key", "")
+    if not _SUPABASE_OK or not sb_cfg.get("url") or not svc_key:
+        raise ValueError("Supabase Storage not configured (service_role_key missing)")
+    thumb_path = THUMBNAILS_DIR / f"{dekoire_id}.jpg"
+    if not thumb_path.exists():
+        raise FileNotFoundError(f"Thumbnail not found: {thumb_path}")
+    thumb_bytes = thumb_path.read_bytes()
+    sb   = _sb_create(sb_cfg["url"], svc_key)
+    path = f"thumbnails/{dekoire_id}.jpg"
+    # Remove first so the upload always succeeds even if the file already exists
+    try:
+        sb.storage.from_(bucket).remove([path])
+    except Exception:
+        pass  # File didn't exist yet — that's fine
+    sb.storage.from_(bucket).upload(path, thumb_bytes, {"content-type": "image/jpeg"})
+    return sb.storage.from_(bucket).get_public_url(path)
+
 def get_sb_admin():
     """Supabase client with service_role_key (bypasses RLS)."""
     cfg    = load_config()
@@ -381,7 +504,7 @@ def supabase_save(cfg: dict, data: dict, image_bytes: bytes,
         table      = sb_cfg.get("table_name", "image_analyses")
         dekoire_id = data.get("dekoire_id", uuid.uuid4().hex[:7])
 
-        # Save thumbnail locally (always reliable)
+        # Save thumbnail locally
         image_url = save_thumbnail(image_bytes, dekoire_id)
 
         record = {
@@ -452,6 +575,7 @@ def supabase_save(cfg: dict, data: dict, image_bytes: bytes,
             "amazon_category":       data.get("amazon_category", ""),
             "amazon_condition":      data.get("amazon_condition", "new"),
             "image_url":        image_url,
+            "export_path":      data.get("export_path", ""),
             "aufnahmedatum":    data.get("aufnahmedatum", ""),
             "dpi_x":            data.get("dpi_x") or None,
             "dpi_y":            data.get("dpi_y") or None,
@@ -464,7 +588,7 @@ def supabase_save(cfg: dict, data: dict, image_bytes: bytes,
         print(f"[Supabase DB] {e}")
         # Retry without new columns (pre-migration DBs)
         try:
-            for k in ("aufnahmedatum","dpi_x","dpi_y","datei_groesse_kb",
+            for k in ("export_path","aufnahmedatum","dpi_x","dpi_y","datei_groesse_kb",
                       "ig_alt_text","ig_content_type","pin_board_section","pin_board_id",
                       "etsy_title","etsy_description","etsy_tags","etsy_materials",
                       "etsy_who_made","etsy_when_made","etsy_occasion","etsy_recipient",
@@ -507,7 +631,8 @@ def _migrate_db():
         cur   = conn.cursor()
         table = sb_cfg.get("table_name", "image_analyses")
         for col, typ in (("aufnahmedatum","TEXT"),("dpi_x","FLOAT"),
-                          ("dpi_y","FLOAT"),("datei_groesse_kb","INTEGER")):
+                          ("dpi_y","FLOAT"),("datei_groesse_kb","INTEGER"),
+                          ("export_path","TEXT"),("seo_keywords","TEXT")):
             cur.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col} {typ};")
         cur.execute("""
             CREATE TABLE IF NOT EXISTS user_profiles (
@@ -548,6 +673,10 @@ PRIVACY = (
     "do not identify protected symbols."
 )
 
+LUXURY_TONE = """You write for dekoire — a refined luxury brand selling premium art prints and high-quality wall art.
+Tone: sophisticated, understated, authoritative. No emojis. No exclamation marks. No hype language.
+Write as if for a discerning collector or interior designer, not a mass-market audience."""
+
 def full_prompt(language: str, max_colors: int) -> str:
     return f"""{PRIVACY}
 
@@ -555,9 +684,11 @@ Analyze the image and respond EXCLUSIVELY with a valid JSON object.
 No explanatory text, no markdown code blocks – pure JSON only.
 Output language: {language}
 
+You write for dekoire — a luxury art print brand. Use precise, refined language. No emojis.
+
 {{
-  "titel": "Short image title (max 8 words)",
-  "beschreibung": "Factual image description, 2–4 sentences, max 500 characters",
+  "titel": "Precise, elegant title (max 8 words, no hype words)",
+  "beschreibung": "Refined, factual description with evocative but understated language, 2–4 sentences, max 500 characters",
   "dominante_farben": ["Color1", "Color2"],
   "ist_fotografie": true,
   "kunstart": "e.g. Landscape Photography | Oil Painting | Digital Illustration",
@@ -565,25 +696,25 @@ Output language: {language}
   "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
 }}
 
-dominante_farben: exactly {max_colors} color names | tags: 5–10 keywords, no brand names"""
+dominante_farben: exactly {max_colors} color names | tags: 5–10 precise keywords, no brand names"""
 
 REGEN_PROMPTS = {
-    "titel":            "Generate a new short image title (max 8 words). Title only.",
-    "beschreibung":     "Write a new factual image description (2–4 sentences, max 500 chars). Text only.",
-    "dominante_farben": "Name the 2–3 dominant colors as a comma-separated list. Color names only.",
+    "titel":            f"{LUXURY_TONE}\nGenerate a refined, precise product title (max 8 words). No hype words. Title only.",
+    "beschreibung":     f"{LUXURY_TONE}\nWrite a sophisticated product description (2–4 sentences, max 500 chars). Evocative yet understated. Text only.",
+    "dominante_farben": "Name the 2–3 dominant colors as a comma-separated list. Use precise color names (e.g. 'Ivory', 'Charcoal', 'Sage'). Color names only.",
     "ist_fotografie":   'Is this image a photograph? Answer only with "true" or "false".',
-    "kunstart":         "What art style/genre does this image show? Answer in 2–5 words.",
+    "kunstart":         "What art style/genre does this image show? Answer in 2–5 precise words.",
     "epoche":           "What epoch/period does this image belong to? Answer in 1–4 words.",
-    "tags":             "Generate 5–8 relevant tags as a comma-separated list. No brand names.",
+    "tags":             "Generate 5–8 precise, relevant search tags as a comma-separated list. No brand names.",
 }
 
 SHOP_PROMPTS = {
-    "titel":            "You optimize texts for an online poster shop.\nCreate a sales-promoting poster title. No brand names, no personal names. Max 10 words. Title only.\n\nBase: {value}",
-    "beschreibung":     "You optimize texts for an online poster shop.\nWrite an emotional, sales-promoting product description (2–3 sentences). No brand names, no personal names. Inspire desire to buy.\n\nBase: {value}",
-    "tags":             "You optimize texts for an online poster shop.\nCreate 8–12 SEO-optimized, comma-separated search terms. Suitable for buyer searches, no brand names. Only the comma-separated list.\n\nBase: {value}",
-    "kunstart":         "You optimize texts for an online poster shop.\nFormulate an appealing category/style designation. Max 5 words. Text only.\n\nBase: {value}",
-    "epoche":           "You optimize texts for an online poster shop.\nFormulate style/epoch attractively for shop filters. Max 4 words. Text only.\n\nBase: {value}",
-    "dominante_farben": "You optimize texts for an online poster shop.\nDescribe the color palette poetically for a product description. Comma-separated list. Color names only.\n\nBase: {value}",
+    "titel":            f"{LUXURY_TONE}\nYou optimize product titles for a premium art print shop.\nWrite an elegant, precise product title. No brand names, no personal names. Max 10 words. Title only.\n\nBase: {{value}}",
+    "beschreibung":     f"{LUXURY_TONE}\nYou optimize product descriptions for a premium art print shop.\nWrite a sophisticated, concise product description (2–3 sentences). No brand names, no personal names. No emojis. Convey quality and exclusivity.\n\nBase: {{value}}",
+    "tags":             "You optimize search tags for a premium art print shop.\nCreate 8–12 precise, SEO-relevant, comma-separated search terms. Suitable for discerning buyer searches, no brand names. Only the comma-separated list.\n\nBase: {value}",
+    "kunstart":         "You optimize texts for a premium art print shop.\nFormulate a precise, elegant category/style designation. Max 5 words. Text only.\n\nBase: {value}",
+    "epoche":           "You optimize texts for a premium art print shop.\nFormulate the style/epoch precisely for shop filters. Max 4 words. Text only.\n\nBase: {value}",
+    "dominante_farben": "You optimize texts for a premium art print shop.\nDescribe the color palette with precise, refined color names. Comma-separated list. Color names only.\n\nBase: {value}",
 }
 
 TRANSLATABLE = ["titel", "beschreibung", "dominante_farben", "kunstart", "epoche", "tags"]
@@ -596,9 +727,18 @@ def social_media_prompt(context: dict, boards: list, locations: list, target_url
     colors_raw = context.get("dominante_farben", [])
     colors_str = ", ".join(colors_raw) if isinstance(colors_raw, list) else str(colors_raw)
 
-    return f"""You are creating social media content for 'dekoire.com', an art print and poster shop.
+    return f"""You are creating social media content for 'dekoire.com', a luxury art print brand selling premium wall art to discerning collectors and interior designers.
 
-Analyzed image data:
+Tone rules (strictly follow):
+- No emojis anywhere
+- No exclamation marks
+- No hype phrases ("stunning", "amazing", "don't miss", "limited time")
+- Language: sophisticated, precise, understated elegance
+- Write as a curator or gallery, not a retailer
+- Focus on the artistic intent, style, symbolism, and what the work represents — not a visual description of the image
+- Every caption and description must end with a genuine, open-ended question that invites reflection or conversation (not a sales question)
+
+Product data:
 - Title: {context.get("titel", "")}
 - Description: {context.get("beschreibung", "")}
 - Art style: {context.get("kunstart", "")}
@@ -611,19 +751,19 @@ Return ONLY a valid JSON object — no markdown, no commentary:
 
 {{
   "pinterest": {{
-    "titel": "SEO-optimized Pinterest title, max 100 characters",
-    "beschreibung": "Engaging Pinterest description, 100–200 words, keyword-rich for discovery",
+    "titel": "Elegant, SEO-relevant Pinterest title — precise and descriptive, max 100 characters, no emojis",
+    "beschreibung": "Refined Pinterest description, 80–150 words. Write about the artistic style, technique, symbolism, and what the work stands for — not a visual description. Weave in relevant search keywords naturally. Close with a thoughtful, open-ended question that invites the reader to reflect.",
     "ziel_url": "{target_url}",
-    "alt_text": "Detailed, accessibility-friendly alt text that works best for search, max 500 characters",
+    "alt_text": "Precise, factual alt text describing subject, medium, and composition. Max 500 characters.",
     "board": "Most fitting board from this list:\\n{boards_str}",
     "board_section": "Most fitting board section if available, or empty string"
   }},
   "instagram": {{
-    "title": "Short, catchy product name for Instagram",
-    "description": "Engaging Instagram caption with relevant emojis, 100–150 words, storytelling style",
+    "title": "Understated, elegant product name for Instagram",
+    "description": "Sophisticated Instagram caption, 60–100 words. Write about the artistic movement, painting technique, and deeper meaning of the work — avoid describing what you see literally. No emojis. End with a genuine, open-ended question that sparks conversation or invites personal reflection.",
     "tags": ["#hashtag1", "#hashtag2", "#hashtag3", "#hashtag4", "#hashtag5", "#hashtag6", "#hashtag7", "#hashtag8"],
     "location": "Most fitting location from: {loc_str}",
-    "alt_text": "Detailed accessibility alt text for the image, max 500 chars",
+    "alt_text": "Factual alt text describing the artwork. Max 500 chars.",
     "content_type": "post"
   }}
 }}"""
@@ -643,7 +783,9 @@ def shops_prompt(context: dict, shop_cfg: dict) -> str:
 
     return f"""{PRIVACY}
 
-You are an expert e-commerce copywriter for an art print and poster shop. Generate platform-optimized product listings.
+{LUXURY_TONE}
+
+You are an expert e-commerce copywriter for dekoire, a luxury art print brand. Generate platform-optimized product listings that reflect premium quality and understated elegance. No emojis. No exclamation marks. No hype language.
 
 Product context:
 - Title: {context.get("titel", "")}
@@ -658,8 +800,8 @@ Return ONLY a valid JSON object — no markdown, no commentary:
 
 {{
   "etsy": {{
-    "title": "SEO-optimized Etsy title max 140 chars, keyword-rich",
-    "description": "Engaging Etsy product description 150-250 words, storytelling, include care instructions",
+    "title": "SEO-optimized Etsy title max 140 chars — precise, elegant, keyword-rich. No hype words.",
+    "description": "Sophisticated Etsy product description 150–250 words. Describe subject, mood, print quality, and ideal placement. Professional and refined. Include brief care/handling note at the end.",
     "tags": "tag1, tag2, tag3, tag4, tag5, tag6, tag7, tag8, tag9, tag10, tag11, tag12, tag13",
     "materials": "e.g. Fine Art Paper, Archival Ink, Canvas",
     "who_made": "i_did",
@@ -668,22 +810,22 @@ Return ONLY a valid JSON object — no markdown, no commentary:
     "recipient": "most fitting from: babies_and_toddlers, children, friends, grandparents, men, mothers, teens, women, or leave empty"
   }},
   "shopify": {{
-    "title": "Clear, concise Shopify product title",
-    "body_html": "<p>HTML product description 100-200 words, emotionally engaging</p>",
+    "title": "Precise, elegant Shopify product title — clear and brand-appropriate",
+    "body_html": "<p>Refined HTML product description 100–200 words. Convey quality, craftsmanship, and aesthetic value. No emojis, no exclamation marks.</p>",
     "vendor": "dekoire",
     "product_type": "most fitting from: {shopify_types}",
-    "tags": "comma-separated SEO tags for Shopify",
+    "tags": "comma-separated precise SEO tags for Shopify",
     "sku": "auto-generated SKU suggestion like DK-ART-001",
     "collection": "most fitting from: {shopify_colls}"
   }},
   "amazon": {{
-    "title": "Amazon title max 200 chars, brand + key features + keywords",
-    "description": "Amazon product description max 2000 chars, keyword-rich",
-    "bullet_1": "Key feature 1 (material/quality) max 200 chars",
-    "bullet_2": "Key feature 2 (dimensions/format) max 200 chars",
-    "bullet_3": "Key feature 3 (use case/room) max 200 chars",
-    "bullet_4": "Key feature 4 (gifting/occasion) max 200 chars",
-    "bullet_5": "Key feature 5 (brand/artist) max 200 chars",
+    "title": "Amazon title max 200 chars — brand + key subject + medium + keywords. Professional.",
+    "description": "Amazon product description max 2000 chars — detailed, keyword-rich, professional tone",
+    "bullet_1": "Material and print quality highlight, max 200 chars",
+    "bullet_2": "Format, dimensions, and framing options, max 200 chars",
+    "bullet_3": "Ideal room setting and interior style, max 200 chars",
+    "bullet_4": "Gift suitability and occasion, max 200 chars",
+    "bullet_5": "Brand and production quality statement, max 200 chars",
     "search_terms": "backend keywords space-separated max 250 bytes",
     "brand": "dekoire"
   }}
@@ -696,6 +838,16 @@ def call_with_image(client, model, img_data, mime, prompt, max_tokens=1024):
         model=model, max_tokens=max_tokens,
         messages=[{"role": "user", "content": [
             {"type": "image", "source": {"type": "base64", "media_type": mime, "data": img_data}},
+            {"type": "text",  "text": prompt},
+        ]}],
+    ).content[0].text.strip()
+
+def call_with_image_url(client, model, image_url: str, prompt, max_tokens=1024):
+    """Pass an external image URL directly to Claude (no server-side download)."""
+    return client.messages.create(
+        model=model, max_tokens=max_tokens,
+        messages=[{"role": "user", "content": [
+            {"type": "image", "source": {"type": "url", "url": image_url}},
             {"type": "text",  "text": prompt},
         ]}],
     ).content[0].text.strip()
@@ -826,6 +978,32 @@ def dashboard():
                            external_apps             = ext_apps,
                            icon_svgs                 = ICON_PRESETS)
 
+@app.route("/apps")
+@require_auth
+def apps_page():
+    cfg      = load_config()
+    vorname  = session.get("user_vorname", "")
+    nachname = session.get("user_nachname", "")
+    name     = f"{vorname} {nachname}".strip() or session.get("user_email", "")
+    ext_apps = cfg.get("external_apps", [])
+    for a in ext_apps:
+        url = a.get("url", "")
+        a["domain"] = url.replace("https://", "").replace("http://", "").split("/")[0]
+    return render_template("apps.html",
+                           header_logo               = cfg.get("header_logo", "logo-white.png"),
+                           header_title              = cfg.get("header_title", "Image Analyzer"),
+                           header_back_href          = "/",
+                           header_back_label         = "Dashboard",
+                           header_dropdown_home      = True,
+                           footer_logo               = cfg.get("footer_logo", "logo-light.png"),
+                           footer_company            = cfg.get("footer_company", ""),
+                           current_user_email        = session.get("user_email", ""),
+                           current_user_name         = name,
+                           current_user_profile_image= session.get("user_profile_image", ""),
+                           external_apps             = ext_apps,
+                           app_categories            = cfg.get("app_categories", []),
+                           icon_svgs                 = ICON_PRESETS)
+
 # ── Social Media Dashboards ──────────────────────────────────────────────────
 
 def _all_social_posts(platform: str | None = None) -> list:
@@ -889,12 +1067,8 @@ def _delete_social_post(post_id: str):
 @app.route("/social/instagram")
 @require_auth
 def social_instagram():
-    cfg = load_config()
-    return render_template("social_posts.html",
-                           platform     = "instagram",
-                           header_logo  = cfg.get("header_logo",  "logo-white.png"),
-                           header_title = cfg.get("header_title", "Image Analyzer"),
-                           current_user_email = session.get("user_email", ""))
+    from flask import redirect
+    return redirect("/social/posts")
 
 # ── Pinterest OAuth ──────────────────────────────────────────────────────────
 
@@ -1105,11 +1279,485 @@ def api_pinterest_boards():
 @app.route("/social/pinterest")
 @require_auth
 def social_pinterest():
+    from flask import redirect
+    return redirect("/social/posts")
+
+@app.route("/social/posts")
+@require_auth
+def social_posts_all():
     cfg = load_config()
     return render_template("social_posts.html",
-                           platform     = "pinterest",
+                           platform     = "all",
                            header_logo  = cfg.get("header_logo",  "logo-white.png"),
                            header_title = cfg.get("header_title", "Image Analyzer"),
+                           current_user_email = session.get("user_email", ""))
+
+@app.route("/seo/keywords")
+@require_auth
+def seo_keywords_page():
+    cfg = load_config()
+    return render_template("seo_keywords.html",
+                           cfg                  = cfg,
+                           header_logo          = cfg.get("header_logo", "logo-white.png"),
+                           header_back_href     = "/",
+                           header_back_label    = "Dashboard",
+                           header_dropdown_home = True,
+                           current_user_email   = session.get("user_email", ""))
+
+_SEO_CACHE_DIR = Path(__file__).parent / "seo_cache"
+
+def _seo_opportunity_score(kw: dict) -> int:
+    """
+    Opportunity Score = gewichtete Kombination aus Volumen, Relevanz und Wettbewerb.
+    Formel: (vol_score * 0.35 + rel_score * 0.40 + comp_score * 0.25) * 100
+    So hat Relevanz das höchste Gewicht — ein sehr passendes Low-Competition-KW
+    bekommt trotzdem einen guten Score auch bei niedrigerem Volumen.
+    """
+    volume_map = {"very_low": 0.15, "low": 0.35, "medium": 0.60, "high": 0.82, "very_high": 1.0}
+    vol  = volume_map.get(kw.get("volume_tier", "low"), 0.35)
+    rel  = min(max(float(kw.get("relevance", 0.5)), 0.0), 1.0)
+    comp = min(max(float(kw.get("competition", 50)), 0.0), 100.0) / 100.0
+
+    vol_score  = vol                  # 0–1
+    rel_score  = rel                  # 0–1
+    comp_score = 1.0 - comp           # 0–1 (niedrige Konkurrenz = hoher Score)
+
+    raw = (vol_score * 0.35 + rel_score * 0.40 + comp_score * 0.25) * 100
+    return round(min(raw, 100))
+
+def _seo_save(cfg: dict, dekoire_id: str | None, user_id: str, result: dict,
+              product_id: str | None = None):
+    """Persist SEO result to local file cache + Supabase seo_keywords column."""
+    # ── Local cache (always) ──
+    cache_dir = _SEO_CACHE_DIR / user_id
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    key   = dekoire_id or product_id or ""
+    fname = f"{key}.json" if key else f"session_{_dt.now(_tz.utc).strftime('%Y%m%d_%H%M%S')}.json"
+    (cache_dir / fname).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    # ── Supabase (best-effort) ──
+    sb_cfg = cfg.get("supabase", {})
+    if not (_SUPABASE_OK and sb_cfg.get("url") and sb_cfg.get("anon_key")):
+        return
+    try:
+        sb    = _sb_create(sb_cfg["url"], sb_cfg["anon_key"])
+        table = sb_cfg.get("table_name", "image_analyses")
+        payload = {"seo_keywords": json.dumps(result, ensure_ascii=False)}
+        if dekoire_id:
+            sb.table(table).update(payload).eq("dekoire_id", dekoire_id).execute()
+        elif product_id:
+            sb.table(table).update(payload).eq("id", product_id).execute()
+        print(f"[SEO] Saved to Supabase for key={key!r}")
+    except Exception as _e:
+        print(f"[SEO] Supabase save failed (column missing? run _migrate_db): {_e}")
+
+@app.route("/api/seo/analyse", methods=["POST"])
+@require_auth
+def api_seo_analyse():
+    """Generate 20 SEO keywords from image/text via Claude, save result."""
+    cfg     = load_config()
+    client, _ = get_client()
+    model   = cfg.get("model", "claude-opus-4-5")
+    user_id = session.get("user_id", "default")
+    if not client:
+        return jsonify({"error": "Kein KI-Client konfiguriert"}), 400
+
+    # ── Helper: compress image to stay under Claude's 5 MB base64 limit ──
+    def _compress_for_claude(raw: bytes, mime: str) -> tuple[bytes, str]:
+        """Resize + compress image so base64 stays under 4.8 MB (Claude max 5 MB)."""
+        MAX_B64 = 4_800_000          # safe margin below 5 242 880
+        MAX_RAW = MAX_B64 * 3 // 4  # base64 is ~4/3 of raw
+        if len(raw) <= MAX_RAW:
+            return raw, mime
+        try:
+            from PIL import Image as _PIL
+            import io as _io
+            img = _PIL.open(_io.BytesIO(raw)).convert("RGB")
+            quality = 85
+            scale   = 1.0
+            while True:
+                if scale < 1.0:
+                    w, h = img.size
+                    img = img.resize((int(w * scale), int(h * scale)), _PIL.LANCZOS)
+                buf = _io.BytesIO()
+                img.save(buf, format="JPEG", quality=quality, optimize=True)
+                if buf.tell() <= MAX_RAW or (quality <= 40 and scale <= 0.3):
+                    return buf.getvalue(), "image/jpeg"
+                if quality > 40:
+                    quality -= 15
+                else:
+                    scale = max(scale * 0.7, 0.2)
+        except Exception:
+            # If PIL not available, just truncate (last resort – image will be corrupt but won't crash)
+            return raw[:MAX_RAW], mime
+
+    # ── Collect inputs ──
+    image_b64, image_mime = None, "image/jpeg"
+    if "image" in request.files:
+        f = request.files["image"]
+        raw = f.read()
+        ext = (f.filename or "").rsplit(".", 1)[-1].lower()
+        image_mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg",
+                      "png": "image/png", "webp": "image/webp"}.get(ext, "image/jpeg")
+        raw, image_mime = _compress_for_claude(raw, image_mime)
+        image_b64 = base64.b64encode(raw).decode()
+        data = {k: request.form.get(k, "") for k in request.form}
+    else:
+        data = request.json or {}
+
+    image_url   = data.get("image_url",   "").strip()
+    title       = data.get("title",       "").strip()
+    description = data.get("description", "").strip()
+    tags        = data.get("tags",        "").strip()
+    dekoire_id  = data.get("dekoire_id",  "").strip() or None
+    product_id  = data.get("product_id",  "").strip() or None
+    language    = data.get("language",    "en")
+    try:
+        count = max(5, min(50, int(data.get("count", 20) or 20)))
+    except (ValueError, TypeError):
+        count = 20
+
+    # If no local image but image_url provided, try to fetch + compress
+    if not image_b64 and image_url:
+        try:
+            import urllib.request as _ur
+            req = _ur.Request(image_url, headers={"User-Agent": "Mozilla/5.0"})
+            with _ur.urlopen(req, timeout=8) as resp:
+                raw = resp.read()
+            raw, image_mime = _compress_for_claude(raw, "image/jpeg")
+            image_b64 = base64.b64encode(raw).decode()
+        except Exception:
+            pass
+
+    ctx_parts = []
+    if title:       ctx_parts.append(f"Titel: {title}")
+    if description: ctx_parts.append(f"Beschreibung: {description}")
+    if tags:        ctx_parts.append(f"Tags: {tags}")
+    text_ctx = "\n".join(ctx_parts) if ctx_parts else "Luxury art print"
+
+    lang_name = "Deutsch" if language == "de" else "English"
+    lang_hint = f"{lang_name} — alle Keywords ausschließlich in dieser Sprache, keine Mischung"
+    system_prompt = (
+        "Du bist ein SEO-Experte für dekoire, eine Luxus-Kunstdruck-Marke. "
+        "Zielgruppe: Innenarchitekten, Kunstsammler, Interior-Design-Enthusiasten. "
+        f"Plattformen: Etsy, Pinterest, Google Shopping, eigener Webshop. Sprache: {lang_hint}. "
+        "WICHTIG: Deine Aufgabe ist es, echte Chancen zu finden — nicht generische Begriffe. "
+        "Sei präzise bei Wettbewerb-Einschätzungen: spezifische Nischen-Keywords im Kunstdruck-Segment "
+        "haben typischerweise competition 10-40. Generische Begriffe wie 'Wandbild' haben 70-90. "
+        "Schätze competition realistisch auf Basis der Keyword-Spezifität."
+    )
+    short_tail = max(2, round(count * 0.25))
+    long_tail  = count - short_tail
+    min_low_comp = max(2, round(count * 0.30))
+    min_high_rel = max(2, round(count * 0.25))
+
+    user_prompt = f"""Analysiere dieses Produkt und finde {count} SEO-Keywords mit echtem Rankingpotenzial:
+
+{text_ctx}
+
+STRATEGIE: Suche Keywords die spezifisch genug sind um rankbar zu sein, aber noch ausreichend Suchvolumen haben.
+Für einen Luxus-Kunstdruck-Shop sind das z.B.:
+- Stil + Raumtyp: "figurative painting living room", "expressionist art print modern"
+- Motiv + Format: "figure scene art print large", "interior painting canvas"
+- Anlass + Qualität: "luxury art print gift", "gallery print figurative art"
+- Spezifische Nischen: "figurative art print luxury", "interior scene wall art"
+
+COMPETITION-REALISMUS: Lange, spezifische Keyword-Kombinationen (3-5 Wörter) haben im Kunstdruck-Markt
+oft nur competition 10-35. Kurze generische Begriffe (1-2 Wörter) liegen bei 60-90. Sei präzise.
+
+Gib ein JSON-Array mit exakt {count} Objekten zurück:
+- "keyword": string (natürlicher Suchbegriff, nah am Produkt)
+- "relevance": float 0.0-1.0 (Wie gut passt es zum konkreten Produkt?)
+- "competition": integer 0-100 (realistisch: spezifisch=10-35, mittel=35-60, generisch=60-90)
+- "volume_tier": einer von ["very_low","low","medium","high","very_high"]
+- "volume_estimate": string z.B. "200-500", "500-2k", "2k-10k", "10k-50k"
+- "intention": einer von ["informational","transaktional","navigational"]
+- "is_long_tail": boolean (true wenn 3+ Wörter)
+- "cluster": Themen-Gruppe z.B. "Figurative Art", "Wall Decor", "Gift Ideas"
+- "cpc_estimate": float (CPC in EUR, typisch 0.30-2.50 für Kunstdruck-Nischen)
+- "why": ein präziser Satz warum dieses KW für dieses spezifische Produkt rankbar ist
+
+PFLICHT-MIX:
+- Mindestens {min_low_comp} Keywords mit competition ≤ 30 (spezifische Nischen)
+- Mindestens {min_high_rel} Keywords mit relevance ≥ 0.85 (direkt zum Motiv)
+- {short_tail} Short-Tail (1-2 Wörter) + {long_tail} Long-Tail (3-5 Wörter)
+- Alle Keywords NUR auf {lang_name} — keine einzige Ausnahme
+
+Gib NUR valides JSON-Array zurück. Kein Markdown, keine Erklärung."""
+
+    msg_content = []
+    if image_b64:
+        msg_content.append({"type": "image", "source": {"type": "base64", "media_type": image_mime, "data": image_b64}})
+    msg_content.append({"type": "text", "text": user_prompt})
+
+    try:
+        resp = client.messages.create(model=model, max_tokens=4000,
+            system=system_prompt, messages=[{"role": "user", "content": msg_content}])
+        raw_text = resp.content[0].text.strip()
+        if raw_text.startswith("```"):
+            raw_text = "\n".join(raw_text.split("\n")[1:])
+            if raw_text.endswith("```"):
+                raw_text = raw_text[:-3].strip()
+        keywords = json.loads(raw_text)
+        for kw in keywords:
+            kw["opportunity_score"] = _seo_opportunity_score(kw)
+        keywords.sort(key=lambda x: x.get("opportunity_score", 0), reverse=True)
+        result = {
+            "keywords":   keywords,
+            "input":      {"title": title, "description": description, "tags": tags, "image_url": image_url},
+            "language":   language,
+            "created_at": _dt.now(_tz.utc).isoformat(),
+            "dekoire_id": dekoire_id,
+        }
+        _seo_save(cfg, dekoire_id, user_id, result, product_id=product_id)
+        return jsonify(result)
+    except json.JSONDecodeError as e:
+        return jsonify({"error": f"JSON-Parse-Fehler: {e}"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/seo/history")
+@require_auth
+def api_seo_history():
+    """Return stored SEO result for dekoire_id (cache → Supabase)."""
+    dekoire_id = request.args.get("dekoire_id", "").strip()
+    user_id    = session.get("user_id", "default")
+    if dekoire_id:
+        cache_file = _SEO_CACHE_DIR / user_id / f"{dekoire_id}.json"
+        if cache_file.exists():
+            try:
+                return jsonify(json.loads(cache_file.read_text(encoding="utf-8")))
+            except Exception:
+                pass
+        cfg    = load_config()
+        sb_cfg = cfg.get("supabase", {})
+        if _SUPABASE_OK and sb_cfg.get("url") and sb_cfg.get("anon_key"):
+            try:
+                sb  = _sb_create(sb_cfg["url"], sb_cfg["anon_key"])
+                res = sb.table(sb_cfg.get("table_name", "image_analyses")).select(
+                    "seo_keywords").eq("dekoire_id", dekoire_id).limit(1).execute()
+                if res.data and res.data[0].get("seo_keywords"):
+                    raw = res.data[0]["seo_keywords"]
+                    return jsonify(json.loads(raw) if isinstance(raw, str) else raw)
+            except Exception:
+                pass
+    return jsonify({"keywords": [], "created_at": None})
+
+@app.route("/api/test/<service>", methods=["POST"])
+@require_auth
+def api_test_connection(service):
+    """Test API credentials without saving. Returns {ok, message} or {ok, error}."""
+    import requests as _req
+    data = request.get_json(silent=True) or {}
+    cfg  = load_config()
+
+    try:
+        # ── Anthropic ──────────────────────────────────────────────────────────
+        if service == "anthropic":
+            key = (data.get("key") or "").strip() or cfg.get("anthropic_api_key", "") or os.environ.get("ANTHROPIC_API_KEY", "")
+            if not key:
+                return jsonify({"ok": False, "error": "Kein API Key hinterlegt – bitte unter 'API Keys & Tokens' eintragen und speichern."})
+            import anthropic as _ant
+            client = _ant.Anthropic(api_key=key)
+            client.messages.create(model="claude-haiku-4-5",
+                                   max_tokens=5,
+                                   messages=[{"role":"user","content":"Hi"}])
+            return jsonify({"ok": True, "message": "Anthropic API erreichbar ✓"})
+
+        # ── OpenAI ─────────────────────────────────────────────────────────────
+        elif service == "openai":
+            key = (data.get("key") or "").strip() or cfg.get("openai_api_key", "") or os.environ.get("OPENAI_API_KEY", "")
+            if not key:
+                return jsonify({"ok": False, "error": "Kein OpenAI API Key hinterlegt"}), 200
+            try:
+                import openai as _openai
+                client = _openai.OpenAI(api_key=key)
+                client.models.list()
+                return jsonify({"ok": True, "info": "OpenAI-Verbindung erfolgreich"})
+            except ImportError:
+                # Fallback: HTTP test without SDK
+                import urllib.request as _ur
+                req = _ur.Request("https://api.openai.com/v1/models",
+                    headers={"Authorization": f"Bearer {key}"})
+                try:
+                    _ur.urlopen(req, timeout=8)
+                    return jsonify({"ok": True, "info": "OpenAI-Verbindung erfolgreich"})
+                except Exception as e:
+                    return jsonify({"ok": False, "error": str(e)})
+            except Exception as e:
+                return jsonify({"ok": False, "error": str(e)})
+
+        # ── Supabase ───────────────────────────────────────────────────────────
+        elif service == "supabase":
+            url = data.get("url") or cfg.get("supabase", {}).get("url", "")
+            key = data.get("anon_key") or cfg.get("supabase", {}).get("anon_key", "")
+            if not url or not key:
+                return jsonify({"ok": False, "error": "URL oder Key fehlt"})
+            r = _req.get(f"{url.rstrip('/')}/rest/v1/",
+                         headers={"apikey": key, "Authorization": f"Bearer {key}"},
+                         timeout=8)
+            if r.status_code < 400:
+                return jsonify({"ok": True, "message": "Supabase erreichbar ✓"})
+            return jsonify({"ok": False, "error": f"HTTP {r.status_code}"})
+
+        # ── Google Cloud Vision ────────────────────────────────────────────────
+        elif service == "vision":
+            api_key = data.get("key") or cfg.get("google_cloud_vision_key", "")
+            if not api_key:
+                return jsonify({"ok": False, "error": "Kein API Key hinterlegt"})
+            import base64 as _b64
+            # 1x1 white pixel PNG
+            pixel = _b64.b64encode(bytes([
+                137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,
+                8,2,0,0,0,144,119,83,222,0,0,0,12,73,68,65,84,8,215,99,248,255,
+                255,63,0,5,254,2,254,220,204,89,231,0,0,0,0,73,69,78,68,174,66,96,130
+            ])).decode()
+            r = _req.post(
+                f"https://vision.googleapis.com/v1/images:annotate?key={api_key}",
+                json={"requests":[{"image":{"content":pixel},"features":[{"type":"LABEL_DETECTION","maxResults":1}]}]},
+                timeout=10)
+            if r.status_code == 200:
+                return jsonify({"ok": True, "message": "Google Vision API erreichbar ✓"})
+            err = r.json().get("error", {}).get("message", f"HTTP {r.status_code}")
+            return jsonify({"ok": False, "error": err})
+
+        # ── Google Ads ─────────────────────────────────────────────────────────
+        elif service == "google-ads":
+            dev_token     = data.get("developer_token") or cfg.get("google_ads_api",{}).get("developer_token","")
+            client_id     = data.get("client_id")       or cfg.get("google_ads_api",{}).get("client_id","")
+            client_secret = data.get("client_secret")   or cfg.get("google_ads_api",{}).get("client_secret","")
+            refresh_token = data.get("refresh_token")   or cfg.get("google_ads_api",{}).get("refresh_token","")
+            if not all([dev_token, client_id, client_secret, refresh_token]):
+                return jsonify({"ok": False, "error": "Developer Token, Client ID, Client Secret und Refresh Token benötigt"})
+            # Refresh access token first
+            tok_r = _req.post("https://oauth2.googleapis.com/token", data={
+                "client_id": client_id, "client_secret": client_secret,
+                "refresh_token": refresh_token, "grant_type": "refresh_token"
+            }, timeout=10)
+            if tok_r.status_code != 200:
+                return jsonify({"ok": False, "error": "OAuth Token-Refresh fehlgeschlagen: " + tok_r.json().get("error_description","")})
+            access_token = tok_r.json().get("access_token","")
+            customer_id  = (data.get("customer_id") or cfg.get("google_ads_api",{}).get("customer_id","")).replace("-","")
+            if not customer_id:
+                return jsonify({"ok": True, "message": "OAuth OK ✓ (kein Customer ID zum testen)"})
+            # Ping customer list
+            api_r = _req.get(
+                f"https://googleads.googleapis.com/v17/customers/{customer_id}",
+                headers={"Authorization": f"Bearer {access_token}",
+                         "developer-token": dev_token,
+                         "login-customer-id": customer_id},
+                timeout=10)
+            if api_r.status_code == 200:
+                return jsonify({"ok": True, "message": "Google Ads API erreichbar ✓"})
+            err = api_r.json().get("error", {}).get("message", f"HTTP {api_r.status_code}")
+            return jsonify({"ok": False, "error": err})
+
+        # ── Instagram ──────────────────────────────────────────────────────────
+        elif service == "instagram":
+            token   = data.get("token")   or cfg.get("instagram_posting",{}).get("access_token","")
+            user_id = data.get("user_id") or cfg.get("instagram_posting",{}).get("user_id","")
+            if not token:
+                return jsonify({"ok": False, "error": "Kein Access Token hinterlegt"})
+            uid = user_id or "me"
+            r = _req.get(f"https://graph.facebook.com/v19.0/{uid}",
+                         params={"fields":"id,name","access_token": token}, timeout=8)
+            if r.status_code == 200:
+                name = r.json().get("name","")
+                return jsonify({"ok": True, "message": f"Instagram verbunden{': ' + name if name else ''} ✓"})
+            err = r.json().get("error",{}).get("message", f"HTTP {r.status_code}")
+            return jsonify({"ok": False, "error": err})
+
+        # ── Pinterest ──────────────────────────────────────────────────────────
+        elif service == "pinterest":
+            token = data.get("token") or cfg.get("pinterest_posting",{}).get("access_token_prod","") \
+                                      or cfg.get("pinterest_posting",{}).get("access_token_sandbox","")
+            if not token:
+                return jsonify({"ok": False, "error": "Kein Access Token hinterlegt"})
+            env = cfg.get("pinterest_posting",{}).get("environment","sandbox")
+            base = "https://api.pinterest.com" if env == "production" else "https://api-sandbox.pinterest.com"
+            r = _req.get(f"{base}/v5/user_account",
+                         headers={"Authorization": f"Bearer {token}"}, timeout=8)
+            if r.status_code == 200:
+                username = r.json().get("username","")
+                return jsonify({"ok": True, "message": f"Pinterest verbunden{': @' + username if username else ''} ✓"})
+            err = r.json().get("message", f"HTTP {r.status_code}")
+            return jsonify({"ok": False, "error": err})
+
+        # ── Discord ────────────────────────────────────────────────────────────
+        elif service == "discord":
+            url = data.get("url") or cfg.get("notifications",{}).get("discord_webhook","") \
+                                  or cfg.get("social_posting",{}).get("discord_webhook_campaigns","")
+            if not url:
+                return jsonify({"ok": False, "error": "Keine Webhook URL hinterlegt"})
+            r = _req.post(url, json={"content":"✅ Verbindungstest von **Dekoire App** — alles OK!"}, timeout=8)
+            if r.status_code in (200, 204):
+                return jsonify({"ok": True, "message": "Discord Nachricht gesendet ✓"})
+            return jsonify({"ok": False, "error": f"HTTP {r.status_code}"})
+
+        # ── Shopify ────────────────────────────────────────────────────────────
+        elif service == "shopify":
+            store_url = data.get("url")      or cfg.get("shopify",{}).get("store_url","")
+            api_key   = data.get("api_key")  or cfg.get("shopify",{}).get("api_key","")
+            password  = data.get("password") or cfg.get("shopify",{}).get("api_password","")
+            if not store_url or not password:
+                return jsonify({"ok": False, "error": "Store URL und API Password benötigt"})
+            shop = store_url.rstrip("/")
+            if not shop.startswith("http"):
+                shop = "https://" + shop
+            r = _req.get(f"{shop}/admin/api/2024-01/shop.json",
+                         auth=(api_key, password), timeout=8)
+            if r.status_code == 200:
+                name = r.json().get("shop",{}).get("name","")
+                return jsonify({"ok": True, "message": f"Shopify verbunden{': ' + name if name else ''} ✓"})
+            return jsonify({"ok": False, "error": f"HTTP {r.status_code}"})
+
+        # ── Etsy ───────────────────────────────────────────────────────────────
+        elif service == "etsy":
+            api_key = data.get("api_key") or cfg.get("etsy",{}).get("api_key","")
+            shop_id = data.get("shop_id") or cfg.get("etsy",{}).get("shop_id","")
+            if not api_key:
+                return jsonify({"ok": False, "error": "Kein API Key hinterlegt"})
+            endpoint = f"https://openapi.etsy.com/v3/application/shops/{shop_id}" if shop_id \
+                       else "https://openapi.etsy.com/v3/application/openapi-ping"
+            r = _req.get(endpoint, headers={"x-api-key": api_key}, timeout=8)
+            if r.status_code == 200:
+                name = r.json().get("shop_name","")
+                return jsonify({"ok": True, "message": f"Etsy API erreichbar{': ' + name if name else ''} ✓"})
+            err = r.json().get("error","") or f"HTTP {r.status_code}"
+            return jsonify({"ok": False, "error": err})
+
+        else:
+            return jsonify({"ok": False, "error": f"Unbekannter Service: {service}"}), 400
+
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/api/test-discord", methods=["POST"])
+@require_auth
+def api_test_discord():
+    """Send a test message to a Discord webhook URL."""
+    import requests as _req
+    data = request.get_json(silent=True) or {}
+    url  = (data.get("webhook_url") or "").strip()
+    if not url:
+        return jsonify({"ok": False, "error": "Keine Webhook URL angegeben"})
+    try:
+        r = _req.post(url, json={"content": "✅ Verbindungstest von **Dekoire App** — alles OK!"}, timeout=8)
+        if r.status_code in (200, 204):
+            return jsonify({"ok": True})
+        return jsonify({"ok": False, "error": f"HTTP {r.status_code}"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)})
+
+
+@app.route("/legal/analyse")
+@require_auth
+def legal_analyse_page():
+    cfg = load_config()
+    return render_template("legal_analyse.html",
+                           header_logo        = cfg.get("header_logo",  "logo-white.png"),
+                           header_title       = cfg.get("header_title", "Image Analyzer"),
                            current_user_email = session.get("user_email", ""))
 
 @app.route("/api/social/posts")
@@ -1193,12 +1841,13 @@ def social_post_create_page():
     pin_cfg = cfg.get("pinterest_posting", {})
     sm_cfg  = cfg.get("social_media", {})
     return render_template("social_post_create.html",
-        cfg                = cfg,
-        header_logo        = cfg.get("header_logo", "logo-white.png"),
-        current_user_email = session.get("user_email", ""),
-        pin_environment    = pin_cfg.get("environment", "sandbox"),
-        image_gen_url      = sm_cfg.get("image_gen_url", "").strip(),
-        image_gen_name     = sm_cfg.get("image_gen_name", "").strip() or "Bilder generieren",
+        cfg                  = cfg,
+        header_logo          = cfg.get("header_logo", "logo-white.png"),
+        current_user_email   = session.get("user_email", ""),
+        pin_environment      = pin_cfg.get("environment", "sandbox"),
+        image_gen_url        = sm_cfg.get("image_gen_url", "").strip(),
+        image_gen_name       = sm_cfg.get("image_gen_name", "").strip() or "Bilder generieren",
+        pinterest_target_url = cfg.get("pinterest_target_url", "https://dekoire.com"),
     )
 
 @app.route("/api/products/list")
@@ -1212,12 +1861,21 @@ def api_products_list():
     try:
         sb    = _sb_create(sb_cfg["url"], sb_cfg["anon_key"])
         table = sb_cfg.get("table_name", "image_analyses")
-        res   = sb.table(table).select(
-            "id,dekoire_id,titel,image_url,created_at,"
-            "pin_board,pin_board_id,pin_titel,pin_beschreibung,pin_ziel_url,pin_alt_text,pin_media_url,"
-            "ig_title,ig_description,ig_tags,ig_location"
-        ).order("created_at", desc=True).limit(200).execute()
-        return jsonify(res.data or [])
+        # Try full field list first; fall back to minimal safe set if any column
+        # doesn't exist in the table (Supabase PostgREST returns an error in that case).
+        try:
+            res = sb.table(table).select(
+                "id,dekoire_id,titel,image_url,created_at,"
+                "pin_board,pin_board_id,pin_titel,pin_beschreibung,pin_ziel_url,pin_alt_text,pin_media_url,"
+                "ig_title,ig_description,ig_tags,ig_location"
+            ).order("created_at", desc=True).limit(200).execute()
+            data = res.data if res.data is not None else []
+        except Exception:
+            res  = sb.table(table).select(
+                "id,dekoire_id,titel,image_url,created_at"
+            ).order("created_at", desc=True).limit(200).execute()
+            data = res.data if res.data is not None else []
+        return jsonify(data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -1232,9 +1890,18 @@ def products_page():
         try:
             sb    = _sb_create(sb_cfg["url"], sb_cfg["anon_key"])
             table = sb_cfg.get("table_name", "image_analyses")
-            res   = sb.table(table).select(
-                "id,dekoire_id,titel,ausrichtung,created_at,image_url,kunstart,tags"
-            ).order("created_at", desc=True).execute()
+
+            # Try fetching with seo_keywords column; fall back without it if column missing
+            _seo_col_available = False
+            try:
+                res = sb.table(table).select(
+                    "id,dekoire_id,titel,ausrichtung,created_at,image_url,kunstart,tags,seo_keywords"
+                ).order("created_at", desc=True).execute()
+                _seo_col_available = True
+            except Exception:
+                res = sb.table(table).select(
+                    "id,dekoire_id,titel,ausrichtung,created_at,image_url,kunstart,tags"
+                ).order("created_at", desc=True).execute()
             rows = res.data or []
 
             # Social post presence map  {product_id: {ig: n, pin: n}}
@@ -1243,7 +1910,7 @@ def products_page():
             if svc_key and rows:
                 try:
                     sb2    = _sb_create(sb_cfg["url"], svc_key)
-                    sp_res = sb2.table("social_posts")                                 .select("product_id,platform,status").execute()
+                    sp_res = sb2.table("social_posts").select("product_id,platform,status").execute()
                     for sp in (sp_res.data or []):
                         pid  = sp.get("product_id","")
                         plat = sp.get("platform","")
@@ -1260,6 +1927,25 @@ def products_page():
 
         except Exception as e:
             error = str(e)
+            _seo_col_available = False
+
+    # Load legal check status + SEO status per product
+    user_id = session.get("user_id", "default")
+    _seo_dir = _SEO_CACHE_DIR / user_id
+    for r in rows:
+        pid = r.get("id", "")
+        if pid:
+            lc = _load_legal_check(pid)
+            r["_legal_status"] = lc.get("status", "").lower() if lc else ""
+        else:
+            r["_legal_status"] = ""
+        # SEO: check DB column (if available) + local file cache
+        did = r.get("dekoire_id", "") or pid
+        r["_seo_exists"] = (
+            bool(r.get("seo_keywords"))
+            or bool(did and (_seo_dir / f"{did}.json").exists())
+        )
+
     pt = cfg.get("page_texts", {}).get("products", {})
     return render_template("products.html",
                            rows               = rows,
@@ -1347,11 +2033,30 @@ def product_edit(product_id):
     etsy_cfg    = shops_cfg.get("etsy", {})
     amazon_cfg  = shops_cfg.get("amazon", {})
     legal_check_result = _load_legal_check(product_id)
+    export_cfg = cfg.get("export", {})
+
+    # ── Resolve local export folder path for this product ────────────────────
+    # Use saved export_path from DB if available, otherwise reconstruct from
+    # dekoire_id + titel (same formula as create_final_folder).
+    resolved_export_path = (row.get("export_path") or "").strip()
+    if not resolved_export_path and export_cfg.get("destination", "local") != "google_drive":
+        dekoire_id = row.get("dekoire_id", "")
+        titel      = row.get("titel", "")
+        if dekoire_id and titel:
+            slug      = slugify_py(titel)
+            base_str  = str(export_cfg.get("final_files_folder", "Final Files"))
+            base      = Path(base_str) if Path(base_str).is_absolute() else SCRIPT_DIR / base_str
+            candidate = base / f"{dekoire_id}_{slug}"
+            if candidate.exists():
+                resolved_export_path = str(candidate)
+
     return render_template("product_edit.html",
                            row                    = row,
                            error                  = error,
                            product_id             = product_id,
                            legal_check_result     = legal_check_result,
+                           export_cfg             = export_cfg,
+                           resolved_export_path   = resolved_export_path,
                            header_logo            = cfg.get("header_logo",  "logo-white.png"),
                            header_title           = cfg.get("header_title", "Image Analyzer"),
                            page_title             = pt.get("title",    "Produkt bearbeiten"),
@@ -1585,7 +2290,7 @@ def photos_upload(product_id):
             entry = {
                 "id": pid, "filename": fname, "url": url,
                 "alt_text": alt_text, "tags": tags,
-                "created_at": __import__("datetime").datetime.utcnow().isoformat(),
+                "created_at": _dt.now(_tz.utc).isoformat(),
             }
             photos.append(entry)
             results.append(entry)
@@ -1622,7 +2327,6 @@ def photos_delete(product_id, photo_id):
 
 # ── Social Media Posting ───────────────────────────────────────────────────────
 
-import datetime as _dt
 import threading as _threading
 import time as _time
 
@@ -1817,7 +2521,7 @@ def _execute_social_post(post: dict, cfg: dict):
     except Exception as e:
         status = "failed"; error_msg = str(e)
         print(f"[SocialPost exec] {e}")
-    updates = {"status":status,"response_data":response,"error_message":error_msg,"updated_at":_dt.datetime.utcnow().isoformat()}
+    updates = {"status":status,"response_data":response,"error_message":error_msg,"updated_at":_dt.now(_tz.utc).isoformat()}
     _update_social_post_status(post_id, product_id, updates)
     _send_campaign_discord(cfg, platform, status, {"product_id":product_id,"caption":post.get("caption",""),"image_count":len(post.get("image_data",[])),"error":error_msg})
     return status, error_msg
@@ -1838,7 +2542,7 @@ def _start_post_scheduler():
                 if not _SUPABASE_OK or not sb_cfg.get("url") or not svc_key:
                     continue
                 sb  = _sb_create(sb_cfg["url"], svc_key)
-                now = _dt.datetime.utcnow().isoformat()
+                now = _dt.now(_tz.utc).isoformat()
                 res = sb.table("social_posts").select("*").eq("status","scheduled").lte("scheduled_at",now).execute()
                 for post in (res.data or []):
                     _execute_social_post(post, cfg)
@@ -1898,8 +2602,8 @@ def social_post_create(product_id):
         "image_count":      len(image_data),
         "response_data":    {},
         "error_message":    "",
-        "updated_at":       _dt.datetime.utcnow().isoformat(),
-        "created_at":       _dt.datetime.utcnow().isoformat(),
+        "updated_at":       _dt.now(_tz.utc).isoformat(),
+        "created_at":       _dt.now(_tz.utc).isoformat(),
     }
     _save_social_post_record(post)
     if is_immediate:
@@ -1931,17 +2635,22 @@ def social_generate_field():
     field     = data.get("field", "")
     title_ctx = data.get("title", "").strip()
     cfg       = load_config()
-    client, _ = get_client()
-    model     = cfg.get("model", "claude-opus-4-5")
+    try:
+        client, _ = get_client()
+    except Exception as e:
+        print(f"[AI] get_client failed: {e}")
+        return jsonify({"error": f"KI-Client nicht verfügbar: {e}"}), 400
+    model = cfg.get("model", "claude-opus-4-5")
     if not client:
         return jsonify({"error": "Kein KI-Client konfiguriert"}), 400
 
+    _lux = "You write for dekoire, a luxury art print brand. Tone: sophisticated, understated, no emojis, no exclamation marks, no hype language. Speak to discerning collectors and interior designers. Focus on artistic intent, style, symbolism, and what the work represents — not a literal visual description."
     prompts = {
-        "pin_titel":        f"Write a short, catchy Pinterest pin title (max 100 chars). Context: {title_ctx or 'art print'}. Return only the title.",
-        "pin_beschreibung": f"Write an engaging Pinterest pin description (2–3 sentences, max 500 chars). Context: {title_ctx or 'art print'}. Return only the description.",
-        "pin_alt_text":     f"Write a concise alt text for an image (max 500 chars). Context: {title_ctx or 'art print'}. Return only the alt text.",
-        "ig_description":   f"Write an Instagram caption (1–3 sentences, engaging, no hashtags). Context: {title_ctx or 'art print'}. Return only the caption.",
-        "ig_tags":          f"Generate 10–15 relevant Instagram hashtags for: {title_ctx or 'art print'}. Format: #tag1 #tag2 … Return only hashtags.",
+        "pin_titel":        f"{_lux}\nWrite an elegant, SEO-relevant Pinterest pin title (max 100 chars). Context: {title_ctx or 'premium art print'}. Return only the title.",
+        "pin_beschreibung": f"{_lux}\nWrite a refined Pinterest pin description (2–3 sentences, max 500 chars). Write about the artistic style, technique, and what the work stands for — not what it looks like. End with a thoughtful, open-ended question inviting reflection. Context: {title_ctx or 'premium art print'}. Return only the description.",
+        "pin_alt_text":     f"Write a precise, factual alt text describing the subject and medium (max 500 chars). Context: {title_ctx or 'premium art print'}. Return only the alt text.",
+        "ig_description":   f"{_lux}\nWrite a sophisticated Instagram caption (2–4 sentences, no hashtags, no emojis). Write about the artistic movement, painting technique, and deeper meaning of the work — avoid describing what you see literally. End with a genuine, open-ended question that sparks conversation or personal reflection. Context: {title_ctx or 'premium art print'}. Return only the caption.",
+        "ig_tags":          f"Generate 10–15 precise, relevant Instagram hashtags for a luxury art print brand. Context: {title_ctx or 'premium art print'}. Format: #tag1 #tag2 … Return only hashtags.",
     }
     # Handle _all variants for bulk generation
     if field in ("pin_all", "ig_all"):
@@ -2141,7 +2850,7 @@ OUTPUT — Return ONLY valid JSON, no markdown fences, no extra text:
   ],
   "imageFindings": [
     {{
-      "reference": "What was identified (brand name, artwork name, style description, readable text)",
+      "reference": "SHORT name only — artist full name OR brand name OR artwork title OR exact text found. Max 4 words. NO descriptions, NO sentences.",
       "type": "brand_visual",
       "confidence": "high",
       "assessment": "What was found and why it is a risk"
@@ -2160,6 +2869,7 @@ Allowed enum values:
 • artistFindings[].copyrightStatus: "protected" | "likely_protected" | "public_domain" | "unclear"
 • imageFindings[].type: "artist_style" | "specific_artwork" | "product_similarity" | "brand_visual" | "text_in_image"
 • imageFindings[].confidence: "low" | "medium" | "high"
+• imageFindings[].reference rules: artist_style → artist's full name (e.g. "David Hockney"); specific_artwork → artwork title (e.g. "A Bigger Splash"); brand_visual → brand name (e.g. "Nike"); text_in_image → exact text found; product_similarity → product/brand name
 
 Final rules:
 • Empty arrays [] are fine when nothing is found
@@ -2225,7 +2935,7 @@ def product_legal_check(product_id):
         tags = str(raw_tags).strip()
     image_url = (row.get("image_url") or "").strip()
 
-    if not any([title, desc, tags, image_url]):
+    if not any([title, desc, tags, image_url, inline_img_bytes]):
         return jsonify({"error": "Keine Produktdaten verfügbar für die Prüfung."}), 400
 
     # ── Build prompt ─────────────────────────────────────────────────────────
@@ -2284,35 +2994,32 @@ def product_legal_check(product_id):
             img_mime = _detect_mime(inline_img_bytes)  # detect AFTER normalisation
 
         elif has_image:
-            # ── Fetch from stored URL / local path ───────────────────────────
-            try:
-                if image_url.startswith("/static/"):
+            if image_url.startswith("/static/"):
+                # ── Local thumbnail → base64 ──────────────────────────────────
+                try:
                     local_path = SCRIPT_DIR / image_url.lstrip("/")
                     img_bytes  = local_path.read_bytes()
-                else:
-                    import urllib.request as _ur
-                    with _ur.urlopen(image_url, timeout=20) as _resp:
-                        img_bytes = _resp.read()
-                img_mime = _detect_mime(img_bytes)
-                img_data = base64.standard_b64encode(img_bytes).decode()
-            except Exception as img_err:
-                # Image could not be loaded — switch prompt to text-only mode
-                no_img_note = (
-                    f"(Hinweis: Bild konnte nicht geladen werden: {img_err}. "
-                    "Bitte nur Textfelder prüfen.)"
-                )
-                fallback_instruction = (
-                    "No product image was provided or image could not be loaded. "
-                    "Skip steps 2a–2d. Set imageFindings to []."
-                )
-                prompt = _LEGAL_CHECK_TEXT_PROMPT.format(
-                    title             = _esc(title or "(not provided)") + " " + no_img_note,
-                    description       = _esc(desc  or "(not provided)"),
-                    tags              = _esc(tags  or "(not provided)"),
-                    image_instruction = fallback_instruction,
-                )
+                    img_mime   = _detect_mime(img_bytes)
+                    img_data   = base64.standard_b64encode(img_bytes).decode()
+                except Exception:
+                    img_data = img_mime = None  # fall through to URL mode
+            else:
+                # ── External URL → pass directly to Claude (no download) ──────
+                # Claude fetches the URL itself; avoids auth/CDN issues
+                img_data = None   # signals to use URL path below
+                img_mime = None
 
-        if img_data and img_mime:
+        if inline_img_bytes and img_data and img_mime:
+            raw = call_with_image(client, model, img_data, img_mime, prompt, max_tokens=3000)
+        elif has_image and not image_url.startswith("/static/"):
+            # External URL — let Claude fetch it directly
+            try:
+                raw = call_with_image_url(client, model, image_url, prompt, max_tokens=3000)
+            except Exception as url_err:
+                # Claude couldn't load the URL either — fall back to text only
+                print(f"[LegalCheck] Claude URL fetch failed: {url_err}")
+                raw = call_text(client, model, prompt, max_tokens=3000)
+        elif img_data and img_mime:
             raw = call_with_image(client, model, img_data, img_mime, prompt, max_tokens=3000)
         else:
             raw = call_text(client, model, prompt, max_tokens=3000)
@@ -2362,6 +3069,203 @@ def product_legal_check_store(product_id):
     return jsonify({"ok": True})
 
 
+@app.route("/api/gdrive-status", methods=["GET"])
+@require_auth
+def gdrive_status():
+    """Return whether the google-api-python-client library is installed."""
+    return jsonify({"available": _GDRIVE_OK})
+
+
+@app.route("/api/test-gdrive", methods=["POST"])
+@require_auth
+def test_gdrive():
+    """Test Google Drive connectivity with the provided credentials."""
+    if not _GDRIVE_OK:
+        return jsonify({
+            "ok": False,
+            "error": "Google Drive library fehlt. Bitte installieren: "
+                     "pip install google-api-python-client google-auth"
+        })
+    data       = request.json or {}
+    creds_json = (data.get("credentials_json") or "").strip()
+    folder_id  = (data.get("folder_id") or "").strip()
+    if not creds_json:
+        return jsonify({"ok": False, "error": "Keine Service Account Credentials angegeben."})
+    if not folder_id:
+        return jsonify({"ok": False, "error": "Keine Ordner-ID angegeben."})
+    try:
+        service = _gdrive_service(creds_json)
+        f       = service.files().get(
+            fileId=folder_id, fields="id,name,mimeType"
+        ).execute()
+        if f.get("mimeType") != "application/vnd.google-apps.folder":
+            return jsonify({"ok": False,
+                            "error": "Die angegebene ID ist kein Google Drive-Ordner."})
+        # Extract service account email for display
+        try:
+            creds_dict = json.loads(creds_json)
+            sa_email   = creds_dict.get("client_email", "")
+        except Exception:
+            sa_email = ""
+        return jsonify({
+            "ok":          True,
+            "folder_name": f.get("name", folder_id),
+            "sa_email":    sa_email,
+        })
+    except Exception as exc:
+        return jsonify({"ok": False, "error": str(exc)})
+
+
+@app.route("/api/pick-folder", methods=["POST"])
+@require_auth
+def pick_folder_route():
+    """Open a native OS folder-picker dialog and return the chosen path.
+    Only works when Flask is running on the same machine as the browser."""
+    data        = request.json or {}
+    start_path  = (data.get("start") or "").strip() or str(SCRIPT_DIR)
+    try:
+        import tkinter as _tk
+        from tkinter import filedialog as _fd
+        root = _tk.Tk()
+        root.withdraw()           # hide the tiny root window
+        root.wm_attributes('-topmost', True)
+        chosen = _fd.askdirectory(initialdir=start_path, title="Ordner auswählen")
+        root.destroy()
+        if not chosen:
+            return jsonify({"cancelled": True})
+        return jsonify({"path": chosen})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/open-folder", methods=["POST"])
+@require_auth
+def open_folder_route():
+    """Open a local folder in Finder / Explorer (only works on the server machine)."""
+    import subprocess, sys as _sys
+    data = request.json or {}
+    raw  = (data.get("path") or "").strip()
+    if not raw:
+        return jsonify({"error": "Kein Pfad angegeben"}), 400
+    p = Path(raw) if Path(raw).is_absolute() else SCRIPT_DIR / raw
+    try:
+        if _sys.platform == "darwin":
+            subprocess.Popen(["open", str(p)])
+        elif _sys.platform == "win32":
+            subprocess.Popen(["explorer", str(p)])
+        else:
+            subprocess.Popen(["xdg-open", str(p)])
+        return jsonify({"ok": True})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/googlelens-upload", methods=["POST"])
+@require_auth
+def googlelens_upload():
+    """Upload the product thumbnail to Supabase Storage at a fixed per-user path
+    (googlelens/{user_id}/googlelens.jpg) so Google Lens can fetch a public URL.
+    The file is overwritten on every call."""
+    data       = request.json or {}
+    dekoire_id = (data.get("dekoire_id") or "").strip()
+    if not dekoire_id:
+        return jsonify({"error": "dekoire_id fehlt"}), 400
+
+    thumb_path = THUMBNAILS_DIR / f"{dekoire_id}.jpg"
+    if not thumb_path.exists():
+        return jsonify({"error": "Thumbnail nicht gefunden – Produkt zuerst speichern"}), 404
+
+    try:
+        cfg     = load_config()
+        sb_cfg  = cfg.get("supabase", {})
+        bucket  = sb_cfg.get("storage_bucket", "images")
+        svc_key = sb_cfg.get("service_role_key", "") or cfg.get("service_role_key", "")
+        if not _SUPABASE_OK or not sb_cfg.get("url") or not svc_key:
+            return jsonify({"error": "Supabase Storage nicht konfiguriert (service_role_key fehlt)"}), 500
+
+        user_id     = session.get("user_id", "default")
+        storage_path = f"googlelens/{user_id}/googlelens.jpg"
+        thumb_bytes = thumb_path.read_bytes()
+
+        sb = _sb_create(sb_cfg["url"], svc_key)
+        # Try upsert (overwrite) directly via x-upsert header
+        try:
+            sb.storage.from_(bucket).upload(
+                storage_path, thumb_bytes,
+                {"content-type": "image/jpeg", "x-upsert": "true"}
+            )
+        except Exception:
+            # Fallback: remove then upload fresh
+            try:
+                sb.storage.from_(bucket).remove([storage_path])
+            except Exception:
+                pass
+            sb.storage.from_(bucket).upload(
+                storage_path, thumb_bytes,
+                {"content-type": "image/jpeg"}
+            )
+        public_url = sb.storage.from_(bucket).get_public_url(storage_path)
+        return jsonify({"url": public_url})
+
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/googlelens-upload-raw", methods=["POST"])
+@require_auth
+def googlelens_upload_raw():
+    """Upload any image (uploaded file OR public URL) to Supabase Storage at the
+    per-user googlelens.jpg slot, then return the public URL.
+    Used by pages that don't have a dekoire_id (e.g. /legal/analyse)."""
+    try:
+        cfg     = load_config()
+        sb_cfg  = cfg.get("supabase", {})
+        bucket  = sb_cfg.get("storage_bucket", "images")
+        svc_key = sb_cfg.get("service_role_key", "") or cfg.get("service_role_key", "")
+        if not _SUPABASE_OK or not sb_cfg.get("url") or not svc_key:
+            return jsonify({"error": "Supabase Storage nicht konfiguriert (service_role_key fehlt)"}), 500
+
+        user_id      = session.get("user_id", "default")
+        storage_path = f"googlelens/{user_id}/googlelens.jpg"
+
+        # Resolve image bytes: from multipart file upload or from a public URL
+        img_bytes = None
+        if "image" in request.files:
+            img_bytes = request.files["image"].read()
+        else:
+            data      = request.json or {}
+            image_url = (data.get("image_url") or "").strip()
+            if image_url:
+                import urllib.request as _ur
+                req = _ur.Request(image_url, headers={"User-Agent": "Mozilla/5.0"})
+                with _ur.urlopen(req, timeout=10) as resp:
+                    img_bytes = resp.read()
+
+        if not img_bytes:
+            return jsonify({"error": "Kein Bild angegeben – Datei hochladen oder URL eingeben"}), 400
+
+        sb = _sb_create(sb_cfg["url"], svc_key)
+        try:
+            sb.storage.from_(bucket).upload(
+                storage_path, img_bytes,
+                {"content-type": "image/jpeg", "x-upsert": "true"}
+            )
+        except Exception:
+            try:
+                sb.storage.from_(bucket).remove([storage_path])
+            except Exception:
+                pass
+            sb.storage.from_(bucket).upload(
+                storage_path, img_bytes,
+                {"content-type": "image/jpeg"}
+            )
+        public_url = sb.storage.from_(bucket).get_public_url(storage_path)
+        return jsonify({"url": public_url})
+
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
 @app.route("/api/vision-check", methods=["POST"])
 @require_auth
 def vision_check():
@@ -2377,14 +3281,26 @@ def vision_check():
         body = request.json or {}
         image_url = body.get("image_url", "").strip()
         if image_url:
-            import urllib.request as _ur2
-            import ssl as _ssl2
-            try:
-                ctx2 = _ssl2.create_default_context()
-                with _ur2.urlopen(image_url, timeout=15, context=ctx2) as resp2:
-                    raw = resp2.read()
-            except Exception as e:
-                return jsonify({"error": f"Bild-URL konnte nicht geladen werden: {e}"}), 400
+            # Relative path (e.g. /static/thumbnails/…) → read from disk
+            if image_url.startswith("/"):
+                local_path = SCRIPT_DIR / image_url.lstrip("/")
+                if not local_path.exists():
+                    return jsonify({"error": f"Lokale Bilddatei nicht gefunden: {image_url}"}), 400
+                try:
+                    raw = local_path.read_bytes()
+                except Exception as e:
+                    return jsonify({"error": f"Bild konnte nicht gelesen werden: {e}"}), 400
+            else:
+                import urllib.request as _ur2
+                import ssl as _ssl2
+                try:
+                    ctx2 = _ssl2.create_default_context()
+                    ctx2.check_hostname = False
+                    ctx2.verify_mode = _ssl2.CERT_NONE
+                    with _ur2.urlopen(image_url, timeout=15, context=ctx2) as resp2:
+                        raw = resp2.read()
+                except Exception as e:
+                    return jsonify({"error": f"Bild-URL konnte nicht geladen werden: {e}"}), 400
         else:
             return jsonify({"error": "Kein Bild übermittelt"}), 400
     else:
@@ -2415,6 +3331,8 @@ def vision_check():
     try:
         import ssl as _ssl
         ctx = _ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode    = _ssl.CERT_NONE
         with _ur.urlopen(req, timeout=30, context=ctx) as resp:
             result = json.loads(resp.read())
         wd = result.get("responses", [{}])[0].get("webDetection", {})
@@ -2488,6 +3406,16 @@ def api_save_config():
                 cfg[k].update(v)
             elif v != "***" and not (k == "anthropic_api_key" and "…" in str(v)):
                 cfg[k] = v
+        # Special handling: save api keys only when non-empty
+        if updates.get("openai_api_key"):
+            cfg["openai_api_key"] = updates["openai_api_key"]
+        if "ai_routing" in updates:
+            cfg["ai_routing"] = updates["ai_routing"]
+        if "openai" in updates:
+            if isinstance(cfg.get("openai"), dict):
+                cfg["openai"].update(updates["openai"])
+            else:
+                cfg["openai"] = updates["openai"]
         save_config(cfg)
         return jsonify({"success": True})
     except Exception as e:
@@ -2534,19 +3462,84 @@ def config_sync_to_db():
 @app.route("/api/analyze", methods=["POST"])
 @require_auth
 def analyze():
+    try:
+        client, cfg = get_client()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    model  = cfg.get("model", "claude-opus-4-5")
+    prompt = full_prompt(cfg.get("output_language", "English"), int(cfg.get("max_colors", 3)))
+
+    # ── URL mode (JSON body with image_url) ───────────────────────────────────
+    if request.is_json:
+        body      = request.get_json() or {}
+        image_url = (body.get("image_url") or "").strip()
+        if not image_url:
+            return jsonify({"error": "No image_url provided."}), 400
+        fname      = image_url.split("/")[-1].split("?")[0] or "image.jpg"
+        cache_path = None
+
+        # ── Check if client sent pre-fetched base64 (browser already had the image) ──
+        b64_data = (body.get("image_b64") or "").strip()
+        b64_mime = (body.get("image_mime") or "image/jpeg").strip()
+        if b64_data:
+            try:
+                file_bytes = base64.standard_b64decode(b64_data)
+                cache_path = save_and_compress(file_bytes, fname)
+                img_data, mime = encode_from_path(cache_path)
+                raw      = call_with_image(client, model, img_data, mime, prompt, max_tokens=2048)
+                analysis = parse_json(raw)
+                return jsonify({**analysis, "dateiname": fname, "image_url": image_url})
+            except Exception as b64_err:
+                print(f"[analyze] base64 path failed: {b64_err}")
+            finally:
+                if cache_path and Path(cache_path).exists():
+                    Path(cache_path).unlink(missing_ok=True)
+            cache_path = None
+
+        try:
+            # First try: let Claude fetch the URL directly
+            raw      = call_with_image_url(client, model, image_url, prompt, max_tokens=2048)
+            analysis = parse_json(raw)
+            return jsonify({**analysis, "dateiname": fname, "image_url": image_url})
+        except Exception as url_err:
+            print(f"[analyze] Claude URL fetch failed: {url_err}")
+            # Fallback: download on server with browser-like headers
+            try:
+                import urllib.request as _ur; import ssl as _ssl
+                ctx = _ssl.create_default_context()
+                ctx.check_hostname = False; ctx.verify_mode = _ssl.CERT_NONE
+                req = _ur.Request(image_url, headers={
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                                  "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                  "Chrome/124.0.0.0 Safari/537.36",
+                    "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
+                    "Referer": image_url,
+                })
+                with _ur.urlopen(req, timeout=20, context=ctx) as resp:
+                    file_bytes = resp.read()
+                cache_path = save_and_compress(file_bytes, fname)
+                img_data, mime = encode_from_path(cache_path)
+                raw      = call_with_image(client, model, img_data, mime, prompt, max_tokens=2048)
+                analysis = parse_json(raw)
+                return jsonify({**analysis, "dateiname": fname, "image_url": image_url})
+            except Exception as dl_err:
+                return jsonify({"error": f"Bild konnte nicht geladen werden: {dl_err}"}), 500
+            finally:
+                if cache_path and Path(cache_path).exists():
+                    Path(cache_path).unlink(missing_ok=True)
+
+    # ── File upload mode ───────────────────────────────────────────────────────
     if "image" not in request.files:
         return jsonify({"error": "No image submitted."}), 400
     f          = request.files["image"]
     file_bytes = f.read()
     cache_path = None
     try:
-        client, cfg = get_client()
         meta        = image_meta(file_bytes)
         cache_path  = save_and_compress(file_bytes, f.filename)
         img_data, mime = encode_from_path(cache_path)
-        raw      = call_with_image(client, cfg.get("model","claude-opus-4-5"), img_data, mime,
-                                   full_prompt(cfg.get("output_language","English"),
-                                               int(cfg.get("max_colors", 3))))
+        raw      = call_with_image(client, model, img_data, mime, prompt)
         analysis = parse_json(raw)
         return jsonify({**meta, **analysis, "dateiname": f.filename})
     except Exception as e:
@@ -2558,6 +3551,35 @@ def analyze():
 @app.route("/api/regenerate", methods=["POST"])
 @require_auth
 def regenerate():
+    try:
+        client, cfg = get_client()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    model = cfg.get("model", "claude-opus-4-5")
+
+    # ── URL mode (JSON body) ───────────────────────────────────────────────────
+    if request.is_json:
+        body      = request.get_json() or {}
+        image_url = (body.get("image_url") or "").strip()
+        field     = (body.get("field") or "").strip()
+        if not image_url:
+            return jsonify({"error": "No image_url provided."}), 400
+        if field not in REGEN_PROMPTS:
+            return jsonify({"error": f"Unknown field: {field}"}), 400
+        try:
+            raw = call_with_image_url(client, model, image_url,
+                                      f"{PRIVACY}\n\n{REGEN_PROMPTS[field]}", max_tokens=256)
+            if field in ("dominante_farben", "tags"):
+                value = [v.strip() for v in raw.split(",") if v.strip()]
+            elif field == "ist_fotografie":
+                value = raw.lower() == "true"
+            else:
+                value = raw
+            return jsonify({"field": field, "value": value})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    # ── File upload mode ───────────────────────────────────────────────────────
     if "image" not in request.files:
         return jsonify({"error": "No image submitted."}), 400
     field = request.form.get("field", "")
@@ -2567,10 +3589,9 @@ def regenerate():
     file_bytes = f.read()
     cache_path = None
     try:
-        client, cfg = get_client()
         cache_path  = save_and_compress(file_bytes, f.filename)
         img_data, mime = encode_from_path(cache_path)
-        raw  = call_with_image(client, cfg.get("model","claude-opus-4-5"), img_data, mime,
+        raw  = call_with_image(client, model, img_data, mime,
                                f"{PRIVACY}\n\n{REGEN_PROMPTS[field]}", max_tokens=256)
         if field in ("dominante_farben", "tags"):
             value = [v.strip() for v in raw.split(",") if v.strip()]
@@ -2761,6 +3782,8 @@ def save_product():
             folder = create_final_folder(dekoire_id, titel, image_bytes, image_fname, cfg)
             if folder:
                 result["folder"] = str(folder)
+                # Persist the path so product_edit can link directly to it
+                data["export_path"] = str(folder)
 
         # ── 2. Supabase save ──────────────────────────────────────────────────
         if image_bytes:
@@ -2951,7 +3974,7 @@ def update_external_app(app_id):
     apps = cfg.get("external_apps", [])
     for a in apps:
         if a.get("id") == app_id:
-            for field in ("name", "url", "icon_type", "icon_preset", "icon_color", "icon_url", "bg_color"):
+            for field in ("name", "url", "icon_type", "icon_preset", "icon_color", "icon_url", "bg_color", "favorite", "category"):
                 if field in data:
                     a[field] = data[field]
             break
@@ -2974,6 +3997,72 @@ def reorder_external_apps():
         if a["id"] not in seen:
             reordered.append(a)
     cfg["external_apps"] = reordered
+    save_config(cfg)
+    return jsonify({"success": True})
+
+@app.route("/api/app-categories", methods=["GET"])
+@require_auth
+def list_app_categories():
+    cfg = load_config()
+    return jsonify(cfg.get("app_categories", []))
+
+@app.route("/api/app-categories", methods=["POST"])
+@require_auth
+def create_app_category():
+    data = request.json or {}
+    name = data.get("name", "").strip()
+    if not name:
+        return jsonify({"error": "Name erforderlich"}), 400
+    cfg  = load_config()
+    cats = cfg.get("app_categories", [])
+    new_cat = {"id": "cat_" + uuid.uuid4().hex[:8], "name": name}
+    cats.append(new_cat)
+    cfg["app_categories"] = cats
+    save_config(cfg)
+    return jsonify(new_cat)
+
+@app.route("/api/app-categories/<cat_id>", methods=["DELETE"])
+@require_auth
+def delete_app_category(cat_id):
+    cfg  = load_config()
+    cats = cfg.get("app_categories", [])
+    cfg["app_categories"] = [c for c in cats if c.get("id") != cat_id]
+    # Clear category assignment from apps
+    for a in cfg.get("external_apps", []):
+        if a.get("category") == cat_id:
+            a["category"] = ""
+    save_config(cfg)
+    return jsonify({"success": True})
+
+@app.route("/api/app-categories/<cat_id>", methods=["POST"])
+@require_auth
+def rename_app_category(cat_id):
+    data = request.json or {}
+    name = data.get("name", "").strip()
+    if not name:
+        return jsonify({"error": "Name erforderlich"}), 400
+    cfg  = load_config()
+    for c in cfg.get("app_categories", []):
+        if c.get("id") == cat_id:
+            c["name"] = name
+            break
+    save_config(cfg)
+    return jsonify({"success": True})
+
+@app.route("/api/app-categories/reorder", methods=["POST"])
+@require_auth
+def reorder_app_categories():
+    ordered_ids = request.json or []
+    cfg  = load_config()
+    cats = cfg.get("app_categories", [])
+    id_map = {c["id"]: c for c in cats}
+    known = set(ordered_ids)
+    reordered = [id_map[i] for i in ordered_ids if i in id_map]
+    # Append any categories not mentioned (safety net)
+    for c in cats:
+        if c["id"] not in known:
+            reordered.append(c)
+    cfg["app_categories"] = reordered
     save_config(cfg)
     return jsonify({"success": True})
 

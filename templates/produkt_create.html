@@ -37,7 +37,7 @@
 .sidebar-nav { display: flex; flex-direction: column; gap: 2px; }
 .sidebar-item {
   display: flex; align-items: center; gap: 9px;
-  padding: 9px 12px; border-radius: 8px;
+  padding: 9px 12px; border-radius: 3px;
   font-size: .85rem; font-weight: 500; color: var(--muted);
   cursor: pointer; background: none; border: none;
   text-align: left; width: 100%;
@@ -64,7 +64,7 @@
   display: block;
 }
 
-.settings-content { flex: 1; min-width: 0; }
+.settings-content { flex: 1; min-width: 0; position: relative; }
 .settings-pane { display: none; flex-direction: column; gap: 20px; }
 .settings-pane.active { display: flex; }
 
@@ -93,7 +93,7 @@
 .upload-zone svg { display: block; margin: 0 auto 6px; }
 .btn-analyze {
   width: 100%; margin-top: 10px; padding: 10px;
-  border-radius: 8px; border: none;
+  border-radius: 3px; border: none;
   background: var(--btn); color: #fff;
   font-weight: 700; font-size: .85rem; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 7px;
@@ -111,6 +111,36 @@
 .content-placeholder svg { opacity: .2; margin-bottom: 16px; }
 .content-placeholder h3 { font-size: 1rem; font-weight: 600; color: var(--text); margin: 0 0 6px; }
 .content-placeholder p { font-size: .82rem; margin: 0; }
+
+/* ── Social platform tabs ── */
+.sm-tabs {
+  display: flex; align-items: center;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 20px; gap: 0;
+}
+.sm-tab {
+  display: flex; align-items: center; gap: 7px;
+  padding: 10px 22px 12px; font-size: .88rem; font-weight: 600;
+  color: var(--muted); border: none; background: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer; margin-bottom: -2px;
+  transition: color .14s, border-color .14s;
+}
+.sm-tab:hover { color: var(--text); }
+.sm-tab.sm-tab-pin { color: #E60023; border-bottom-color: #E60023; }
+.sm-tab.sm-tab-ig  { color: #C13584; border-bottom-color: #C13584; }
+.sm-tab.sm-tab-etsy    { color: #F1641E; border-bottom-color: #F1641E; }
+.sm-tab.sm-tab-shopify { color: #96BF48; border-bottom-color: #96BF48; }
+.sm-tab.sm-tab-amazon  { color: #FF9900; border-bottom-color: #FF9900; }
+.sm-tab-regen-btn {
+  margin-left: auto; display: flex; align-items: center; gap: 6px;
+  padding: 6px 13px; border-radius: 3px; border: 1px solid var(--border);
+  background: var(--card); color: var(--text); font-size: .78rem; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+  transition: background .14s, border-color .14s, color .14s;
+}
+.sm-tab-regen-btn:hover { background: #EEF2FF; border-color: var(--btn); color: var(--btn); }
+.sm-tab-regen-btn.spinning svg { animation: spin .7s linear infinite; }
 
 /* SM section divider */
 .sm-section-title {
@@ -150,7 +180,7 @@
   width: 100%;
   justify-content: flex-start;
   padding: 9px 12px;
-  border-radius: 8px;
+  border-radius: 3px;
   font-size: .85rem;
   font-weight: 500;
   background: none;
@@ -219,11 +249,104 @@
 .sidebar-img-picker:hover .sidebar-img-overlay { opacity: 1; }
 .sidebar-img-picker input[type=file] { display: none; }
 
+/* ── URL image input ── */
+.pc-url-toggle {
+  display: flex; align-items: center; gap: 6px;
+  font-size: .76rem; font-weight: 600; color: var(--muted);
+  cursor: pointer; background: none; border: none; padding: 0;
+  margin-bottom: 4px;
+}
+.pc-url-toggle:hover { color: var(--btn); }
+.pc-url-toggle svg { flex-shrink: 0; }
+.pc-url-wrap { display: none; margin-bottom: 6px; }
+.pc-url-wrap.open { display: block; }
+.pc-url-row { display: flex; align-items: center; gap: 6px; }
+.pc-url-input {
+  flex: 1; padding: 7px 10px; border: 1px solid var(--border);
+  border-radius: 3px; font-size: .78rem; background: var(--card);
+  color: var(--text); font-family: inherit; box-sizing: border-box;
+  transition: border-color .15s; min-width: 0;
+}
+.pc-url-input:focus { outline: none; border-color: var(--btn); }
+.pc-url-copy {
+  flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 3px; border: 1px solid var(--border);
+  background: var(--card); color: var(--muted); cursor: pointer;
+  transition: color .14s, background .14s, border-color .14s;
+}
+.pc-url-copy:hover { color: var(--btn); background: #EEF2FF; border-color: var(--btn); }
+.pc-url-hint { font-size: .65rem; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+
+/* ── Platform Search widget ── */
+.srch-widget {
+  padding: 11px 14px 10px;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--card); margin-bottom: 10px;
+}
+.srch-widget-title {
+  display: flex; align-items: center; gap: 7px;
+  font-size: .66rem; font-weight: 700; letter-spacing: .55px;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 9px;
+}
+.srch-btn {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 9px 12px; border-radius: 3px; border: none;
+  font-size: .8rem; font-weight: 600; cursor: pointer; margin-bottom: 6px;
+  transition: background .15s;
+}
+.srch-btn:last-child { margin-bottom: 0; }
+.srch-btn { background: var(--card); border: 1px solid var(--border); color: var(--text); font-size: .83rem; font-weight: 600; transition: background .15s; margin-bottom: 6px; border-radius: 3px; }
+.srch-btn:hover { background: var(--c-50); }
+.srch-btn-pin svg { color: #E60023; flex-shrink: 0; }
+.srch-btn-lens svg { color: var(--muted); flex-shrink: 0; }
+
+/* ── Action box ── */
+.action-box { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+.action-box-title { font-size: .68rem; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); margin-bottom: 11px; display: flex; align-items: center; gap: 7px; }
+.action-box-divider { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
+.act-btn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 12px; border-radius: 3px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: .83rem; font-weight: 600; cursor: pointer; margin-bottom: 6px; transition: background .15s; text-decoration: none; box-sizing: border-box; }
+.act-btn:hover { background: var(--c-50); }
+.act-btn-primary { background: #EEF2FF; color: var(--btn) !important; border-color: transparent; font-weight: 600; }
+.act-btn-primary:hover:not(:disabled) { background: #dce5ff; color: var(--btn-h, #3d52cc) !important; }
+.act-btn-primary:disabled { opacity: .45; cursor: not-allowed; pointer-events: none; }
+
+/* ── SEO mini pane ── */
+.seo-pane-ctx { display: flex; flex-direction: column; gap: 3px; margin-bottom: 14px; }
+.seo-pane-row { display: flex; gap: 6px; font-size: 12px; align-items: baseline; }
+.seo-pane-row label { font-weight: 600; color: var(--muted); min-width: 36px; flex-shrink: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .3px; }
+.seo-pane-row span { color: var(--text); line-height: 1.4; word-break: break-word; font-size: 12px; }
+.seo-mini-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+.seo-mini-table th { text-align: left; padding: 4px 6px; color: var(--muted); font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: .3px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.seo-mini-table td { padding: 6px 6px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.seo-mini-table tr:last-child td { border-bottom: none; }
+.seo-mini-table tr:hover td { background: var(--c-50); }
+.seo-score-badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-weight: 700; font-size: 11px; border: 1px solid var(--border); background: var(--c-50); color: var(--text); }
+.seo-score-badge.high { color: #15803D; border-color: #BBF7D0; background: #F0FDF4; }
+.seo-score-badge.mid  { color: var(--text); }
+.seo-score-badge.low  { color: var(--muted); }
+.seo-kw-name { font-weight: 500; font-size: 12px; }
+.seo-full-link { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); text-decoration: none; font-weight: 600; transition: color .15s; }
+.seo-full-link:hover { color: var(--text); }
+.seo-divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+.seo-loading-mini { display: flex; align-items: center; gap: 8px; padding: 14px 0; color: var(--muted); font-size: 12px; }
+.seo-spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--btn); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+.seo-last-info { font-size: 11px; color: var(--muted); margin-top: 6px; }
+.seo-run-btn { display: flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 3px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: .8rem; font-weight: 600; cursor: pointer; transition: background .15s; white-space: nowrap; }
+.seo-run-btn:hover:not(:disabled) { background: var(--c-100); }
+.seo-run-btn:disabled { opacity: .5; cursor: not-allowed; }
+.seo-run-btn svg { flex-shrink: 0; color: var(--muted); }
+.seo-intent-badge { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: 600; background: var(--c-100); color: var(--muted); border: 1px solid var(--border); }
+.seo-pane-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.seo-notice { font-size: 11px; color: var(--muted); margin-bottom: 10px; }
+.seo-kw-why { font-size: 10px; color: var(--muted); margin-top: 2px; line-height: 1.3; }
+.seo-lt-mini { display: inline-block; font-size: 9px; font-weight: 700; padding: 0 4px; border-radius: 3px; background: var(--c-100); color: var(--muted); border: 1px solid var(--border); margin-left: 4px; vertical-align: middle; }
+.seo-num { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
 /* ── Legal Check sidebar widget ── */
-.lc-widget { padding: 14px 16px 12px; border-bottom: 1px solid var(--border); }
+.lc-widget { padding: 12px 14px 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); margin-bottom: 10px; }
 .lc-widget-title { display:flex; align-items:center; gap:7px; font-size:.68rem; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:var(--muted); margin-bottom:11px; }
 .lc-widget-empty { font-size:.78rem; color:var(--muted); margin-bottom:10px; line-height:1.4; }
-.lc-widget-run-btn { display:flex; align-items:center; justify-content:center; gap:6px; width:100%; padding:7px 10px; border:none; border-radius:8px; background:#EEF2FF; color:var(--btn); font-size:.8rem; font-weight:700; cursor:pointer; transition:background .15s; }
+.lc-widget-run-btn { display:flex; align-items:center; justify-content:center; gap:6px; width:100%; padding:7px 10px; border:none; border-radius:3px; background:#EEF2FF; color:var(--btn); font-size:.8rem; font-weight:700; cursor:pointer; transition:background .15s; }
 .lc-widget-run-btn:hover { background:#dce5ff; }
 .lc-widget-status { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:9px; margin-bottom:10px; }
 .lc-widget-status.green  { background:#F0FDF4; } .lc-widget-status.yellow { background:#FFFBEB; } .lc-widget-status.red { background:#FEF2F2; }
@@ -233,7 +356,7 @@
 .lc-widget-status-label { font-size:.78rem; font-weight:700; line-height:1.2; }
 .lc-widget-status.green .lc-widget-status-label { color:#15803D; } .lc-widget-status.yellow .lc-widget-status-label { color:#B45309; } .lc-widget-status.red .lc-widget-status-label { color:#B91C1C; }
 .lc-widget-score { font-size:.68rem; color:var(--muted); margin-top:1px; }
-.lc-widget-rerun { display:flex; align-items:center; justify-content:center; gap:5px; padding:5px 8px; border:1px solid var(--border); border-radius:7px; background:none; color:var(--muted); font-size:.72rem; cursor:pointer; transition:background .15s,color .15s; white-space:nowrap; flex-shrink:0; }
+.lc-widget-rerun { display:flex; align-items:center; justify-content:center; gap:5px; padding:5px 8px; border:1px solid var(--border); border-radius:3px; background:none; color:var(--muted); font-size:.72rem; cursor:pointer; transition:background .15s,color .15s; white-space:nowrap; flex-shrink:0; }
 .lc-widget-rerun:hover { background:var(--c-100); color:var(--text); }
 .lc-widget-loading { display:flex; align-items:center; gap:8px; font-size:.76rem; color:var(--muted); margin-bottom:8px; }
 .lc-widget-spin { width:14px; height:14px; border:2px solid var(--border); border-top-color:var(--btn); border-radius:50%; animation:lcSpin .7s linear infinite; flex-shrink:0; }
@@ -243,7 +366,7 @@
 .lc-widget-artist { display:flex; align-items:center; gap:6px; padding:5px 0; border-bottom:1px solid var(--c-100); font-size:.78rem; color:var(--text); }
 .lc-widget-artist:last-child { border-bottom:none; padding-bottom:0; }
 .lc-widget-artist-name { flex:1; min-width:0; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.lc-widget-link { display:flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:5px; border:1px solid var(--border); background:var(--card); color:var(--muted); flex-shrink:0; text-decoration:none; font-size:.62rem; font-weight:700; transition:background .12s,color .12s,border-color .12s; }
+.lc-widget-link { display:flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:3px; border:1px solid var(--border); background:var(--card); color:var(--muted); flex-shrink:0; text-decoration:none; font-size:.62rem; font-weight:700; transition:background .12s,color .12s,border-color .12s; }
 .lc-widget-link:hover { background:var(--btn); color:#fff; border-color:var(--btn); }
 .lc-widget-finding { display:flex; align-items:flex-start; gap:6px; padding:5px 0; border-bottom:1px solid var(--c-100); font-size:.75rem; color:var(--text); }
 .lc-widget-finding:last-child { border-bottom:none; padding-bottom:0; }
@@ -263,7 +386,7 @@
 .lc-intro-icon { width:56px; height:56px; margin: 0 auto 16px; display:flex; align-items:center; justify-content:center; background: #EEF2FF; border-radius: 50%; color: var(--btn); }
 .lc-intro-title { font-size:1.05rem; font-weight:700; color:var(--text); margin-bottom:8px; }
 .lc-intro-sub { font-size:.82rem; color:var(--muted); max-width:400px; margin:0 auto 24px; line-height:1.55; }
-.lc-run-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 24px; border:none; border-radius:9px; background:var(--btn); color:#fff; font-size:.9rem; font-weight:700; cursor:pointer; transition:background .15s; }
+.lc-run-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 24px; border:none; border-radius:3px; background:var(--btn); color:#fff; font-size:.9rem; font-weight:700; cursor:pointer; transition:background .15s; }
 .lc-run-btn:hover { background:#4338CA; }
 .lc-run-btn:disabled { opacity:.5; cursor:not-allowed; }
 .lc-loading { display:none; text-align:center; padding:48px 24px; }
@@ -272,16 +395,16 @@
 .lc-loading-text { font-size:.88rem; color:var(--muted); font-weight:600; }
 .lc-results { display:none; }
 .lc-rerun-row { display:flex; justify-content:flex-end; margin-bottom:20px; }
-.lc-rerun-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 16px; border:1px solid var(--border); border-radius:8px; background:var(--card); color:var(--text); font-size:.8rem; font-weight:600; cursor:pointer; transition:background .15s; }
+.lc-rerun-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 16px; border:1px solid var(--border); border-radius:3px; background:var(--card); color:var(--text); font-size:.8rem; font-weight:600; cursor:pointer; transition:background .15s; }
 .lc-rerun-btn:hover { background:var(--c-100); }
 .lc-status-card { border-radius:14px; padding:24px 28px; margin-bottom:20px; display:flex; align-items:flex-start; gap:20px; }
-.lc-status-card.green  { background:#F0FDF4; border:1.5px solid #86EFAC; }
-.lc-status-card.yellow { background:#FFFBEB; border:1.5px solid #FCD34D; }
-.lc-status-card.red    { background:#FEF2F2; border:1.5px solid #FCA5A5; }
+.lc-status-card.green  { background:#F0FDF4;}
+.lc-status-card.yellow { background:#FFFBEB;}
+.lc-status-card.red    { background:#FEF2F2;}
 .lc-status-light { flex-shrink:0; width:58px; height:58px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.75rem; }
-.lc-status-card.green  .lc-status-light { background:#DCFCE7; }
-.lc-status-card.yellow .lc-status-light { background:#FEF9C3; }
-.lc-status-card.red    .lc-status-light { background:#FEE2E2; }
+.lc-status-card.green  .lc-status-light { background:#DCFCE7; color:#16A34A; }
+.lc-status-card.yellow .lc-status-light { background:#FEF9C3; color:#D97706; }
+.lc-status-card.red    .lc-status-light { background:#FEE2E2; color:#DC2626; }
 .lc-status-info { flex:1; min-width:0; }
 .lc-status-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
 .lc-status-label { font-size:1.1rem; font-weight:800; }
@@ -293,8 +416,8 @@
 .lc-status-card.yellow .lc-score-pill { background:#FEF9C3; color:#B45309; }
 .lc-status-card.red    .lc-score-pill { background:#FEE2E2; color:#B91C1C; }
 .lc-status-summary { font-size:.85rem; color:var(--text); line-height:1.65; }
-.lc-section { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:16px; }
-.lc-section-header { display:flex; align-items:center; gap:9px; padding:11px 18px; background:var(--c-50); border-bottom:1px solid var(--border); font-size:.82rem; font-weight:700; color:var(--text); }
+.lc-section { background:var(--card); border:1px solid var(--border); border-radius:8px; overflow:hidden; margin-bottom:16px; }
+.lc-section-header { display:flex; align-items:center; gap:9px; padding:11px 18px; background:var(--card); border-bottom:1px solid var(--border); font-size:.82rem; font-weight:700; color:var(--text); }
 .lc-section-badge { margin-left:auto; font-size:.7rem; font-weight:700; padding:2px 8px; border-radius:10px; background:var(--c-100); color:var(--muted); }
 .lc-section-body { padding:16px 18px; }
 .lc-empty { font-size:.82rem; color:var(--muted); font-style:italic; }
@@ -335,7 +458,7 @@
 .vision-intro-icon { width:52px; height:52px; border-radius:14px; background:#EEF2FF; display:flex; align-items:center; justify-content:center; color:var(--btn); }
 .vision-intro-title { font-size:1rem; font-weight:700; color:var(--text); margin:0; }
 .vision-intro-sub { font-size:.82rem; color:var(--muted); margin:0; line-height:1.5; max-width:360px; }
-.vision-run-btn { display:inline-flex; align-items:center; gap:7px; padding:10px 20px; border-radius:8px; border:none; background:var(--btn); color:#fff; font-weight:700; font-size:.84rem; cursor:pointer; }
+.vision-run-btn { display:inline-flex; align-items:center; gap:7px; padding:10px 20px; border-radius:3px; border:none; background:var(--btn); color:#fff; font-weight:700; font-size:.84rem; cursor:pointer; }
 .vision-run-btn:hover { background:#4338CA; }
 .vision-loading { display:flex; align-items:center; justify-content:center; gap:10px; padding:32px; color:var(--muted); font-size:.88rem; display:none; }
 .vision-error { background:#FEF2F2; border:1px solid #FCA5A5; border-radius:10px; padding:14px 18px; font-size:.84rem; color:#B91C1C; display:none; margin-bottom:16px; }
@@ -397,6 +520,23 @@
         Bild ändern
       </div>
     </div>
+    <!-- URL toggle -->
+    <button class="pc-url-toggle" onclick="togglePcUrl(this)" type="button">
+      <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Per URL laden
+    </button>
+    <div class="pc-url-wrap" id="pcUrlWrap">
+      <div class="pc-url-row">
+        <input class="pc-url-input" id="pcUrlInput" type="url"
+               placeholder="https://cdn.midjourney.com/…"
+               oninput="onPcUrlInput(this.value)" />
+        <button class="pc-url-copy" title="URL kopieren" onclick="copyPcUrl()" type="button">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="pc-url-hint">Externe Bild-URL (z.B. Midjourney, CDN)</div>
+    </div>
+
     <button class="btn-analyze" id="analyzeBtn" disabled onclick="analyzeImage()">
       Produkt analysieren
     </button>
@@ -427,6 +567,10 @@
       <button class="sidebar-item" id="nav-vision" onclick="showPane('vision', this)">
         <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.6"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         Bildsuche
+      </button>
+      <button class="sidebar-item" id="nav-seo" onclick="showPane('seo', this);initSeoPane()">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Search Optimization
       </button>
     </nav>
 
@@ -473,7 +617,6 @@
                 <div class="field-actions-inline">
                   <button class="btn-icon-sm" id="regen-titel" title="Neu generieren" onclick="regenField('titel')">{% include 'icons/regen.svg' %}</button>
                   <button class="btn-icon-sm" id="undo-titel" title="Rückgängig" disabled onclick="undoField('titel')">{% include 'icons/undo.svg' %}</button>
-                  <button class="btn-icon-sm" id="copy-titel" title="Kopieren" onclick="copyField('titel')">{% include 'icons/copy.svg' %}</button>
                 </div>
               </label>
               <input type="text" id="f-titel" placeholder="—" onfocus="savePrev('titel')" />
@@ -484,7 +627,6 @@
                 <div class="field-actions-inline">
                   <button class="btn-icon-sm" id="regen-beschreibung" title="Neu generieren" onclick="regenField('beschreibung')">{% include 'icons/regen.svg' %}</button>
                   <button class="btn-icon-sm" id="undo-beschreibung" title="Rückgängig" disabled onclick="undoField('beschreibung')">{% include 'icons/undo.svg' %}</button>
-                  <button class="btn-icon-sm" id="copy-beschreibung" title="Kopieren" onclick="copyField('beschreibung')">{% include 'icons/copy.svg' %}</button>
                 </div>
               </label>
               <textarea id="f-beschreibung" rows="4" maxlength="500" placeholder="—" onfocus="savePrev('beschreibung')" oninput="updateCharCount()"></textarea>
@@ -496,7 +638,6 @@
                 <div class="field-actions-inline">
                   <button class="btn-icon-sm" id="regen-tags" title="Neu generieren" onclick="regenField('tags')">{% include 'icons/regen.svg' %}</button>
                   <button class="btn-icon-sm" id="undo-tags" title="Rückgängig" disabled onclick="undoField('tags')">{% include 'icons/undo.svg' %}</button>
-                  <button class="btn-icon-sm" id="copy-tags" title="Kopieren" onclick="copyField('tags')">{% include 'icons/copy.svg' %}</button>
                 </div>
               </label>
               <input type="text" id="f-tags" placeholder="nature, landscape, …" onfocus="savePrev('tags')" />
@@ -507,7 +648,6 @@
                 <div class="field-actions-inline">
                   <button class="btn-icon-sm" id="regen-dominante_farben" title="Neu generieren" onclick="regenField('dominante_farben')">{% include 'icons/regen.svg' %}</button>
                   <button class="btn-icon-sm" id="undo-dominante_farben" title="Rückgängig" disabled onclick="undoField('dominante_farben')">{% include 'icons/undo.svg' %}</button>
-                  <button class="btn-icon-sm" id="copy-dominante_farben" title="Kopieren" onclick="copyField('dominante_farben')">{% include 'icons/copy.svg' %}</button>
                 </div>
               </label>
               <input type="text" id="f-dominante_farben" placeholder="Grey, Brown, …" onfocus="savePrev('dominante_farben')" />
@@ -518,7 +658,6 @@
                 <div class="field-actions-inline">
                   <button class="btn-icon-sm" id="regen-kunstart" title="Neu generieren" onclick="regenField('kunstart')">{% include 'icons/regen.svg' %}</button>
                   <button class="btn-icon-sm" id="undo-kunstart" title="Rückgängig" disabled onclick="undoField('kunstart')">{% include 'icons/undo.svg' %}</button>
-                  <button class="btn-icon-sm" id="copy-kunstart" title="Kopieren" onclick="copyField('kunstart')">{% include 'icons/copy.svg' %}</button>
                 </div>
               </label>
               <input type="text" id="f-kunstart" placeholder="—" onfocus="savePrev('kunstart')" />
@@ -529,7 +668,6 @@
                 <div class="field-actions-inline">
                   <button class="btn-icon-sm" id="regen-epoche" title="Neu generieren" onclick="regenField('epoche')">{% include 'icons/regen.svg' %}</button>
                   <button class="btn-icon-sm" id="undo-epoche" title="Rückgängig" disabled onclick="undoField('epoche')">{% include 'icons/undo.svg' %}</button>
-                  <button class="btn-icon-sm" id="copy-epoche" title="Kopieren" onclick="copyField('epoche')">{% include 'icons/copy.svg' %}</button>
                 </div>
               </label>
               <input type="text" id="f-epoche" placeholder="—" onfocus="savePrev('epoche')" />
@@ -593,21 +731,37 @@
     <!-- ── Social Media ── -->
     <div class="settings-pane" id="pane-social">
 
+      <!-- ── Platform Tabs ── -->
+      <div class="sm-tabs">
+        <button class="sm-tab sm-tab-pin" id="sm-tab-btn-pin" onclick="setSocialTab('pin',this)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+          Pinterest
+        </button>
+        <button class="sm-tab" id="sm-tab-btn-ig" onclick="setSocialTab('ig',this)">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.8"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg>
+          Instagram
+        </button>
+        <button class="sm-tab-regen-btn" id="sm-regen-btn" onclick="regenSocialActive(this)" title="Texte generieren">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Texte generieren
+        </button>
+      </div>
+
+      <!-- ── Pinterest pane ── -->
+      <div id="sm-pane-pin">
       <div class="settings-card">
         <div class="settings-card-header">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M12 7c-2.76 0-5 2.24-5 5 0 2.12 1.31 3.94 3.17 4.69-.04-.38-.08-.98.02-1.4.09-.38.6-2.54.6-2.54s-.15-.31-.15-.76c0-.71.41-1.24.92-1.24.44 0 .65.33.65.72 0 .44-.28 1.1-.43 1.71-.12.51.25.93.75.93.9 0 1.59-.95 1.59-2.32 0-1.21-.87-2.06-2.12-2.06-1.44 0-2.29 1.08-2.29 2.2 0 .44.17.9.38 1.16.04.05.05.1.03.15l-.14.58c-.02.09-.08.11-.17.07-.63-.3-1.02-1.22-1.02-1.97 0-1.6 1.16-3.07 3.34-3.07 1.75 0 3.11 1.25 3.11 2.91 0 1.74-1.09 3.13-2.61 3.13-.51 0-.99-.26-1.15-.58l-.31 1.18c-.11.44-.42.99-.63 1.32.47.15.98.22 1.49.22 2.76 0 5-2.24 5-5s-2.24-5-5-5z" fill="currentColor"/></svg>
           Pinterest
-          <button class="btn-icon-sm" style="margin-left:auto;width:auto;padding:4px 10px;border-radius:4px;font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:5px;" onclick="regenSocial('pinterest')" title="Pinterest Texte generieren">
+          <button class="btn-icon-sm" style="margin-left:auto;width:auto;padding:4px 10px;border-radius:3px;font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:5px;" onclick="regenSocialActive(this)" title="Pinterest Texte generieren">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Texte generieren
           </button>
         </div>
         <div class="settings-card-body">
           <div class="settings-grid">
-            <div class="field-with-regen">
-              <label>Bild-URL / Media Source <div class="field-actions-inline"><button class="btn-icon-sm" title="Kopieren" onclick="copyDirect('sm-pin-media-url')">{% include 'icons/copy.svg' %}</button></div></label>
-              <input type="text" id="sm-pin-media-url" placeholder="https://dekoire.com/images/…" />
-            </div>
+            <!-- hidden: Bild-URL always = product thumbnail (set via JS) -->
+            <input type="hidden" id="sm-pin-media-url" />
             <div class="field-with-regen">
               <label>Ziel-URL <div class="field-actions-inline"><button class="btn-icon-sm" title="Kopieren" onclick="copyDirect('sm-pin-ziel-url')">{% include 'icons/copy.svg' %}</button></div></label>
               <input type="text" id="sm-pin-ziel-url" value="{{ pinterest_target_url }}" />
@@ -637,12 +791,15 @@
           </div>
         </div>
       </div>
+      </div><!-- /sm-pane-pin -->
 
+      <!-- ── Instagram pane ── -->
+      <div id="sm-pane-ig" style="display:none;">
       <div class="settings-card">
         <div class="settings-card-header">
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>
           Instagram
-          <button class="btn-icon-sm" style="margin-left:auto;width:auto;padding:4px 10px;border-radius:4px;font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:5px;" onclick="regenSocial('instagram')" title="Instagram Texte generieren">
+          <button class="btn-icon-sm" style="margin-left:auto;width:auto;padding:4px 10px;border-radius:3px;font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:5px;" onclick="regenSocialActive(this)" title="Instagram Texte generieren">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Texte generieren
           </button>
@@ -682,21 +839,39 @@
           </div>
         </div>
       </div>
+      </div><!-- /sm-pane-ig -->
 
     </div><!-- /pane-social -->
 
     <!-- ── Shops ── -->
     <div class="settings-pane" id="pane-shops">
 
-      <!-- Etsy -->
+      <!-- Tab bar -->
+      <div class="sm-tabs">
+        <button class="sm-tab sm-tab-etsy" onclick="setShopTab('etsy',this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3h14v3.5H9v3.5h8v3H9V17h10v3.5H5V3z"/></svg>
+          Etsy
+        </button>
+        <button class="sm-tab" onclick="setShopTab('shopify',this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 7h12l-1.5 13H7.5L6 7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 7c0-1.66 1.34-3 3-3s3 1.34 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M16.5 4.5c.3-.1.6.1.7.4l1.3 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          Shopify
+        </button>
+        <button class="sm-tab" onclick="setShopTab('amazon',this)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L5.5 18h3.2l1.5-4h3.6l1.5 4h3.2L12 2zm0 5l1.3 4.5H10.7L12 7z"/><path d="M5 20.5c3.5 1.8 10.5 1.8 14 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+          Amazon
+        </button>
+        <button class="sm-tab-regen-btn" id="shop-regen-btn" onclick="regenShopActive(this)" title="Texte generieren">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Texte generieren
+        </button>
+      </div>
+
+      <!-- Etsy pane -->
+      <div id="shop-pane-etsy">
       <div class="settings-card">
         <div class="settings-card-header">
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color:#F1641E"><path d="M5 3h14v3.5H9v3.5h8v3H9V17h10v3.5H5V3z"/></svg>
           Etsy
-          <button id="btn-gen-shop-etsy" class="btn-icon-sm" style="margin-left:auto;width:auto;padding:4px 10px;border-radius:4px;font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:5px;" onclick="generateShopSection('etsy')" title="Etsy Texte generieren">
-            <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Texte generieren
-          </button>
         </div>
         <div class="settings-card-body">
           <div class="settings-grid">
@@ -773,16 +948,14 @@
           </div>
         </div>
       </div>
+      </div><!-- /shop-pane-etsy -->
 
-      <!-- Shopify -->
+      <!-- Shopify pane -->
+      <div id="shop-pane-shopify" style="display:none">
       <div class="settings-card">
         <div class="settings-card-header">
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M16 10a4 4 0 0 1-8 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="color:#96BF48"><path d="M6 7h12l-1.5 13H7.5L6 7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 7c0-1.66 1.34-3 3-3s3 1.34 3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M16.5 4.5c.3-.1.6.1.7.4l1.3 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
           Shopify
-          <button id="btn-gen-shop-shopify" class="btn-icon-sm" style="margin-left:auto;width:auto;padding:4px 10px;border-radius:4px;font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:5px;" onclick="generateShopSection('shopify')" title="Shopify Texte generieren">
-            <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Texte generieren
-          </button>
         </div>
         <div class="settings-card-body">
           <div class="settings-grid">
@@ -823,16 +996,14 @@
           </div>
         </div>
       </div>
+      </div><!-- /shop-pane-shopify -->
 
-      <!-- Amazon -->
+      <!-- Amazon pane -->
+      <div id="shop-pane-amazon" style="display:none">
       <div class="settings-card">
         <div class="settings-card-header">
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color:#FF9900"><path d="M12 2L5.5 18h3.2l1.5-4h3.6l1.5 4h3.2L12 2zm0 5l1.3 4.5H10.7L12 7z"/><path d="M5 20.5c3.5 1.8 10.5 1.8 14 0" stroke="#FF9900" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
           Amazon
-          <button id="btn-gen-shop-amazon" class="btn-icon-sm" style="margin-left:auto;width:auto;padding:4px 10px;border-radius:4px;font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:5px;" onclick="generateShopSection('amazon')" title="Amazon Texte generieren">
-            <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Texte generieren
-          </button>
         </div>
         <div class="settings-card-body">
           <div class="settings-grid">
@@ -882,6 +1053,7 @@
           </div>
         </div>
       </div>
+      </div><!-- /shop-pane-amazon -->
 
     </div><!-- /pane-shops -->
 
@@ -954,6 +1126,16 @@
 
     <!-- ══ Legal Risk Check ══ -->
     <div class="settings-pane" id="pane-legal">
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Legal Risk Check
+          <button class="lc-rerun-btn" onclick="runLegalCheck()" style="margin-left:auto;">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Neu prüfen
+          </button>
+        </div>
+        <div class="settings-card-body">
 
       <div id="lc-intro" class="lc-intro">
         <div class="lc-intro-icon">
@@ -975,14 +1157,10 @@
       <div id="lc-error" class="lc-error"></div>
 
       <div id="lc-results" class="lc-results">
-        <div class="lc-rerun-row">
-          <button class="lc-rerun-btn" onclick="runLegalCheck()">
-            <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Neu prüfen
-          </button>
-        </div>
         <div id="lc-status-card" class="lc-status-card green">
-          <div class="lc-status-light" id="lc-status-emoji">🟢</div>
+          <div class="lc-status-light" id="lc-status-icon">
+            <svg width="26" height="26" fill="none" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
           <div class="lc-status-info">
             <div class="lc-status-row">
               <span class="lc-status-label" id="lc-status-label">Geringes Risiko</span>
@@ -1025,7 +1203,8 @@
           <div class="lc-section-body" id="lc-recommendations"><div class="lc-empty">Keine spezifischen Empfehlungen.</div></div>
         </div>
       </div><!-- /lc-results -->
-
+        </div><!-- /settings-card-body -->
+      </div><!-- /settings-card -->
     </div><!-- /pane-legal -->
 
     <!-- ── Bildsuche (Google Vision) ── -->
@@ -1080,10 +1259,116 @@
       </div>
     </div><!-- /pane-vision -->
 
+    <!-- ── Search Optimization (SEO) ── -->
+    <div class="settings-pane" id="pane-seo">
+      <div class="settings-card">
+        <div class="settings-card-header">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Search Optimization
+        </div>
+        <div class="settings-card-body">
+
+          <!-- Top row: context + button -->
+          <div class="seo-pane-top">
+            <div class="seo-pane-ctx" style="flex:1;min-width:0;">
+              <div class="seo-notice" id="seo-unsaved-notice">Nutzt Formulardaten — kein Speichern nötig</div>
+              <div class="seo-pane-row">
+                <label>Titel</label>
+                <span id="seo-ctx-titel">—</span>
+              </div>
+              <div class="seo-pane-row">
+                <label>Tags</label>
+                <span id="seo-ctx-tags">—</span>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+              <div style="display:flex;gap:5px;">
+                <select id="seo-lang-pc" style="padding:5px 8px;border:1px solid var(--border);border-radius:3px;background:var(--card);color:var(--text);font-size:.75rem;cursor:pointer;">
+                  <option value="en">English</option>
+                  <option value="de">Deutsch</option>
+                </select>
+                <select id="seo-count-pc" style="padding:5px 8px;border:1px solid var(--border);border-radius:3px;background:var(--card);color:var(--text);font-size:.75rem;cursor:pointer;">
+                  <option value="10">10 KW</option>
+                  <option value="15">15 KW</option>
+                  <option value="20" selected>20 KW</option>
+                  <option value="25">25 KW</option>
+                  <option value="30">30 KW</option>
+                </select>
+              </div>
+              <button class="seo-run-btn" id="seo-run-btn" onclick="runSeoAnalyse()">
+                <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Analysieren
+              </button>
+            </div>
+          </div>
+
+          <!-- Loading -->
+          <div class="seo-loading-mini" id="seo-loading" style="display:none;">
+            <div class="seo-spinner"></div>
+            Analyse läuft …
+          </div>
+
+          <!-- Results -->
+          <div id="seo-results" style="display:none;">
+            <hr class="seo-divider"/>
+            <div style="overflow-x:auto;">
+              <table class="seo-mini-table">
+                <thead id="seo-mini-thead-pc">
+                  <tr>
+                    <th style="width:36px;cursor:pointer;user-select:none;" data-col="opportunity_score" data-label="Score" onclick="_seoSortBy('opportunity_score')">Score▼</th>
+                    <th style="cursor:pointer;user-select:none;" data-col="keyword" data-label="Keyword" onclick="_seoSortBy('keyword')">Keyword</th>
+                    <th style="width:60px;cursor:pointer;user-select:none;" data-col="volume_tier" data-label="Volumen" onclick="_seoSortBy('volume_tier')">Volumen</th>
+                    <th style="width:46px;cursor:pointer;user-select:none;" data-col="competition" data-label="Wettb." onclick="_seoSortBy('competition')">Wettb.</th>
+                    <th style="width:46px;cursor:pointer;user-select:none;" data-col="cpc_estimate" data-label="CPC" onclick="_seoSortBy('cpc_estimate')">CPC</th>
+                    <th style="width:54px;cursor:pointer;user-select:none;" data-col="intention" data-label="Intent" onclick="_seoSortBy('intention')">Intent</th>
+                  </tr>
+                </thead>
+                <tbody id="seo-mini-tbody"></tbody>
+              </table>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">
+              <div class="seo-last-info" id="seo-last-info" style="display:inline;">Analysiert: <span id="seo-last-date"></span></div>
+              <a href="/seo/keywords" class="seo-full-link" target="_blank" style="margin-left:auto;">
+                Vollständige Analyse
+                <svg width="11" height="11" fill="none" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div><!-- /pane-seo -->
+
   </div><!-- /settings-content -->
 
   <!-- ══ Right action panel ══ -->
   <aside class="action-panel">
+
+    <!-- ── Action box ── -->
+    <div class="action-box">
+      <div class="action-box-title">
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Aktionen
+      </div>
+      <button id="actionSaveBtn" class="act-btn act-btn-primary" onclick="saveProduct()" disabled>
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M17 21v-8H7v8M7 3v5h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Speichern
+      </button>
+      <a id="actionEditBtn" href="#" class="act-btn" style="display:none;" target="_blank">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Produkt bearbeiten
+      </a>
+      <hr class="action-box-divider">
+      <button class="srch-btn srch-btn-pin" onclick="searchPinterest()" title="Pinterest Bildsuche">
+        <svg width="14" height="14" viewBox="0 0 496 512"><path fill="currentColor" d="M496 256c0 137-111 248-248 248-25.6 0-50.2-3.9-73.4-11.1 10.1-16.5 25.2-43.5 30.8-65 3-11.6 15.4-59 15.4-59 8.1 15.4 31.7 28.5 56.8 28.5 74.8 0 128.7-68.8 128.7-154.3 0-81.9-66.9-143.2-152.9-143.2-107 0-163.9 71.8-163.9 150.1 0 36.4 19.4 81.7 50.3 96.1 4.7 2.2 7.2 1.2 8.3-3.3.8-3.4 5-20.3 6.9-28.1.6-2.5.3-4.7-1.7-7.1-10.1-12.5-18.3-35.3-18.3-56.6 0-54.7 41.4-107.6 112-107.6 60.9 0 103.6 41.5 103.6 100.9 0 67.1-33.9 113.6-78 113.6-24.3 0-42.6-20.1-36.7-44.8 7-29.5 20.5-61.3 20.5-82.6 0-19-10.2-34.9-31.4-34.9-24.9 0-44.9 25.7-44.9 60.2 0 22 7.4 36.8 7.4 36.8s-24.5 103.8-29 123.2c-5 21.4-3 51.6-.9 71.2C65.4 450.9 0 361.1 0 256 0 119 111 8 248 8s248 111 248 248z"/></svg>
+        Pinterest Bildsuche
+      </button>
+      <button class="srch-btn srch-btn-lens" onclick="searchGoogleLens()" title="Google Lens Bildsuche">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7.5" stroke="currentColor" stroke-width="1.8"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M11 8v6M8 11h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        Google Lens (Bildsuche)
+      </button>
+    </div>
 
     <!-- ── Legal Check Widget ── -->
     <div class="lc-widget" id="lcWidget">
@@ -1138,20 +1423,6 @@
       </div>
     </div><!-- /lc-widget -->
 
-    <div class="action-panel-title">
-      <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Aktionen
-    </div>
-    <div class="action-btn-wrap">
-      <button id="actionSaveBtn" class="btn btn-primary action-btn" onclick="saveProduct()" disabled>
-        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M17 21v-8H7v8M7 3v5h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        Speichern
-      </button>
-      <a id="actionEditBtn" href="#" class="btn action-btn action-btn-secondary" style="display:none;" target="_blank">
-        <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Produkt bearbeiten
-      </a>
-    </div>
   </aside>
 
 </div><!-- /settings-layout -->
@@ -1173,10 +1444,135 @@
 const PINTEREST_TARGET_URL = {{ pinterest_target_url | tojson }};
 
 function showPane(name, btn) {
-  document.querySelectorAll('.settings-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.settings-pane').forEach(p => {
+    p.classList.remove('active');
+    p.style.display = '';   // clear any inline display set by analyzeImage()
+  });
   document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
   document.getElementById('pane-' + name)?.classList.add('active');
   btn?.classList.add('active');
+}
+
+/* ── Social platform tab switcher ── */
+let _smTab = 'pin';
+function setSocialTab(tab, el) {
+  _smTab = tab;
+  document.querySelectorAll('.sm-tab').forEach(b => b.classList.remove('sm-tab-pin','sm-tab-ig'));
+  el.classList.add('sm-tab-' + tab);
+  document.getElementById('sm-pane-pin').style.display = tab === 'pin' ? '' : 'none';
+  document.getElementById('sm-pane-ig').style.display  = tab === 'ig'  ? '' : 'none';
+}
+
+let _shopTab = 'etsy';
+function setShopTab(tab, el) {
+  _shopTab = tab;
+  document.querySelectorAll('#pane-shops .sm-tab').forEach(b => b.classList.remove('sm-tab-etsy','sm-tab-shopify','sm-tab-amazon'));
+  el.classList.add('sm-tab-' + tab);
+  ['etsy','shopify','amazon'].forEach(t => {
+    const p = document.getElementById('shop-pane-' + t);
+    if (p) p.style.display = t === tab ? '' : 'none';
+  });
+}
+function regenShopActive(btn) {
+  generateShopSection(_shopTab, btn);
+}
+
+function regenSocialActive(btn) {
+  // Trigger all individual regen buttons in the active pane
+  const pane = document.getElementById(_smTab === 'pin' ? 'sm-pane-pin' : 'sm-pane-ig');
+  if (!pane) return;
+  if (btn) { btn.classList.add('spinning'); }
+  const regenBtns = pane.querySelectorAll('[data-action="regen"]');
+  if (!regenBtns.length) {
+    if (btn) btn.classList.remove('spinning');
+    if (typeof showToast === 'function') showToast('Bitte zuerst Analyse durchführen', false);
+    return;
+  }
+  // Click each regen button sequentially
+  let i = 0;
+  function next() {
+    if (i < regenBtns.length) { regenBtns[i++].click(); setTimeout(next, 200); }
+    else if (btn) btn.classList.remove('spinning');
+  }
+  next();
+}
+
+/* ── URL image helpers ── */
+function togglePcUrl(btn) {
+  const wrap = document.getElementById('pcUrlWrap');
+  const open = wrap.classList.toggle('open');
+  btn.style.color = open ? 'var(--btn)' : '';
+  if (!open) {
+    document.getElementById('pcUrlInput').value = '';
+    if (typeof setImageUrl === 'function') setImageUrl('');
+  }
+}
+function onPcUrlInput(val) {
+  if (typeof setImageUrl === 'function') setImageUrl(val.trim());
+  _syncPinMediaUrl(val.trim());
+}
+function copyPcUrl() {
+  const val = document.getElementById('pcUrlInput').value.trim();
+  if (!val) return;
+  navigator.clipboard.writeText(val).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = val; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+  });
+}
+
+/* ── Platform Search ── */
+async function searchPinterest() {
+  const dekoire_id = (document.getElementById('id-neu')?.value || '').trim();
+  const btn = document.querySelector('.srch-btn-pin');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+  try {
+    let imgUrl = '';
+    if (dekoire_id) {
+      // Always upload thumbnail to Supabase first → guaranteed public URL Pinterest can access
+      const res  = await fetch('/api/googlelens-upload', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dekoire_id }),
+      });
+      const data = await res.json();
+      if (!data.error) imgUrl = data.url;
+    }
+    // Fallback: use currentImageUrl if product not yet saved
+    if (!imgUrl && typeof currentImageUrl !== 'undefined' && currentImageUrl) {
+      imgUrl = currentImageUrl;
+    }
+    if (!imgUrl) { showToast('Bitte zuerst Bild analysieren und Produkt speichern', 'info'); return; }
+    window.open('https://www.pinterest.com/search/lens/?imageurl=' + encodeURIComponent(imgUrl), '_blank');
+  } catch(e) {
+    showToast('Fehler: ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+  }
+}
+
+async function searchGoogleLens() {
+  // dekoire_id is set in id-neu after analysis; only available after product is saved
+  const dekoire_id = (document.getElementById('id-neu')?.value || '').trim();
+  if (!dekoire_id) { showToast('Produkt zuerst speichern um Google Lens zu nutzen', 'info'); return; }
+
+  const btn = document.querySelector('.srch-btn-lens');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+
+  try {
+    const res  = await fetch('/api/googlelens-upload', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ dekoire_id }),
+    });
+    const data = await res.json();
+    if (data.error) { showToast(data.error, 'error'); return; }
+    window.open('https://lens.google.com/uploadbyurl?url=' + encodeURIComponent(data.url), '_blank');
+  } catch (err) {
+    showToast('Fehler: ' + err.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+  }
 }
 
 function toggleUserMenu() {
@@ -1359,25 +1755,48 @@ async function lcwRunCreate() {
   }
 }
 
+/* ── Keep sm-pin-media-url in sync with the active product image ── */
+function _syncPinMediaUrl(url) {
+  const el = document.getElementById('sm-pin-media-url');
+  if (el && url) el.value = url;
+}
+
 /* ── Auto-run hook: triggered by app.js after analyzeImage() completes ── */
 window._afterAnalyze = function(_analysisData, file) {
+  // Sync Pinterest hidden image URL after analysis (currentImageUrl may now be set by app.js)
+  setTimeout(() => {
+    const url = (typeof currentImageUrl !== 'undefined' && currentImageUrl)
+      ? currentImageUrl
+      : (typeof currentFile !== 'undefined' && currentFile ? URL.createObjectURL(currentFile) : '');
+    _syncPinMediaUrl(url);
+  }, 100);
   // Show loading state in widget immediately
   document.getElementById('lcw-empty').style.display   = 'none';
   document.getElementById('lcw-loading').style.display = 'block';
   document.getElementById('lcw-results').style.display = 'none';
 
-  // Kick off legal check — uses currentFile which is the just-uploaded image
   const fieldData = {
     titel:        (document.getElementById('f-titel')?.value        || '').trim(),
     beschreibung: (document.getElementById('f-beschreibung')?.value || '').trim(),
     tags:         (document.getElementById('f-tags')?.value         || '').trim(),
   };
 
-  const fd = new FormData();
-  fd.append('data', JSON.stringify(fieldData));
-  if (file) fd.append('image', file);
+  // URL mode: send JSON with image_url; file mode: send multipart FormData
+  let legalFetch;
+  if (!file && typeof currentImageUrl !== 'undefined' && currentImageUrl) {
+    legalFetch = fetch('/api/product/new/legal-check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...fieldData, image_url: currentImageUrl }),
+    });
+  } else {
+    const fd = new FormData();
+    fd.append('data', JSON.stringify(fieldData));
+    if (file) fd.append('image', file);
+    legalFetch = fetch('/api/product/new/legal-check', { method:'POST', body: fd });
+  }
 
-  fetch('/api/product/new/legal-check', { method:'POST', body: fd })
+  legalFetch
     .then(r => r.json())
     .then(data => {
       if (data.error) throw new Error(data.error);
@@ -1404,11 +1823,9 @@ function _lcRenderResults(d) {
   const status  = (d.status || 'yellow').toLowerCase();
   const score   = d.score ?? 50;
   const labels  = { green:'Geringes Risiko', yellow:'Erhöhtes Risiko', red:'Hohes Risiko' };
-  const emojis  = { green:'🟢', yellow:'🟡', red:'🔴' };
 
   const card = document.getElementById('lc-status-card');
   card.className = 'lc-status-card ' + status;
-  document.getElementById('lc-status-emoji').textContent   = emojis[status]  || '🟡';
   document.getElementById('lc-status-label').textContent   = labels[status]  || 'Risiko unklar';
   document.getElementById('lc-score-pill').textContent     = `Score: ${score} / 100`;
   document.getElementById('lc-status-summary').textContent = d.summary || '';
@@ -1442,9 +1859,8 @@ function _lcRenderResults(d) {
     afEl.innerHTML = af.map(a => {
       const initials = (a.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
       const deathInfo = a.deathYear ? `† ${a.deathYear}` : 'Todesjahr unbekannt';
-      const q = encodeURIComponent((a.name||'') + ' Künstler');
-      const gLink = `<a href="https://www.google.com/search?q=${q}" target="_blank" class="lc-search-link">Google ↗</a>`;
-      const wLink = `<a href="https://de.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(a.name||'')}" target="_blank" class="lc-search-link">Wikipedia ↗</a>`;
+      const gLink = `<a href="https://www.google.com/search?q=${encodeURIComponent(a.name||'')}" target="_blank" class="lc-search-link">Google ↗</a>`;
+      const wLink = `<a href="https://en.wikipedia.org/wiki/${encodeURIComponent((a.name||'').replace(/\s+/g,'_'))}" target="_blank" class="lc-search-link">Wikipedia ↗</a>`;
       return `<div class="lc-artist">
         <div class="lc-artist-avatar">${initials}</div>
         <div class="lc-artist-info">
@@ -1475,10 +1891,16 @@ function _lcRenderResults(d) {
       : '<div class="lc-empty">Keine auffälligen Bildähnlichkeiten erkannt.</div>';
   } else {
     ifEl.innerHTML = iF.map(f => {
-      const showLinks = f.type === 'artist_style' || f.type === 'specific_artwork';
-      const q = encodeURIComponent(f.reference || '');
-      const links = showLinks
-        ? ` <a href="https://www.google.com/search?q=${q}" target="_blank" class="lc-search-link">Google ↗</a> <a href="https://de.wikipedia.org/wiki/Special:Search?search=${q}" target="_blank" class="lc-search-link">Wikipedia ↗</a>`
+      const showLinks = f.type === 'artist_style' || f.type === 'specific_artwork' || f.type === 'brand_visual';
+      const ref = f.reference || '';
+      const gQuery = f.type === 'specific_artwork'
+        ? encodeURIComponent(ref + ' Gemälde Kunstwerk')
+        : f.type === 'brand_visual'
+        ? encodeURIComponent(ref + ' Marke Trademark')
+        : encodeURIComponent(ref); // artist_style → just the artist name
+      const wSlug  = encodeURIComponent(ref.replace(/\s+/g,'_'));
+      const links  = showLinks
+        ? ` <a href="https://www.google.com/search?q=${gQuery}" target="_blank" class="lc-search-link">Google ↗</a> <a href="https://en.wikipedia.org/wiki/${wSlug}" target="_blank" class="lc-search-link">Wikipedia ↗</a>`
         : '';
       return `<div class="lc-img-finding">
         <div class="lc-img-ref-row">
@@ -1528,7 +1950,7 @@ function _lcwRenderWidget(d) {
   document.getElementById('lcw-sec-artists').style.display = af.length ? 'block' : 'none';
   document.getElementById('lcw-artists').innerHTML = af.map(a => {
     const name = _esc(a.name || '?');
-    const gUrl = `https://www.google.com/search?q=${encodeURIComponent((a.name||'')+' artist copyright')}`;
+    const gUrl = `https://www.google.com/search?q=${encodeURIComponent(a.name||'')}`;
     const wUrl = `https://en.wikipedia.org/wiki/${encodeURIComponent((a.name||'').replace(/\s+/g,'_'))}`;
     const dy   = a.deathYear ? ` <span style="font-size:.65rem;color:var(--muted);font-weight:400;">† ${a.deathYear}</span>` : '';
     return `<div class="lc-widget-artist">
@@ -1544,9 +1966,13 @@ function _lcwRenderWidget(d) {
   const imgIcons = { artist_style:'🎨', specific_artwork:'🖼', brand_visual:'™', product_similarity:'📦', text_in_image:'🔤' };
   document.getElementById('lcw-image').innerHTML = iF.map(f => {
     const ref  = _esc(f.reference || '–');
-    const gUrl = `https://www.google.com/search?q=${encodeURIComponent(f.reference||'')}`;
-    const wikiLink = (f.type==='artist_style'||f.type==='specific_artwork')
-      ? `<a href="https://en.wikipedia.org/wiki/${encodeURIComponent((f.reference||'').replace(/\s+/g,'_'))}" target="_blank" rel="noopener noreferrer" class="lc-widget-link" style="width:auto;padding:0 6px;font-size:.62rem;">Wikipedia ↗</a>`
+    const rawRef = f.reference || '';
+    const ifGq = f.type === 'specific_artwork' ? encodeURIComponent(rawRef + ' Kunstwerk')
+               : f.type === 'brand_visual'     ? encodeURIComponent(rawRef + ' Marke')
+               : encodeURIComponent(rawRef);
+    const gUrl = `https://www.google.com/search?q=${ifGq}`;
+    const wikiLink = (f.type==='artist_style'||f.type==='specific_artwork'||f.type==='brand_visual')
+      ? `<a href="https://en.wikipedia.org/wiki/${encodeURIComponent(rawRef.replace(/\s+/g,'_'))}" target="_blank" rel="noopener noreferrer" class="lc-widget-link" style="width:auto;padding:0 6px;font-size:.62rem;">Wikipedia ↗</a>`
       : '';
     return `<div class="lc-widget-finding">
       <span class="lc-widget-finding-icon">${imgIcons[f.type]||'•'}</span>
@@ -1653,6 +2079,152 @@ function _renderVisionResults(d) {
     pgSec.style.display = '';
   } else { pgSec.style.display = 'none'; }
 }
+</script>
+
+<script>
+/* ── SEO Keyword Intelligence (produkt_create) ── */
+(function() {
+  /* For create mode, there's no dekoire_id yet — we use form fields as context.
+     If the product was just saved (LAST_SAVED_DEKOIRE is set by saveProduct), we pass it. */
+  let _seoDekoireId = null;  // set after first save in saveProduct callback (optional)
+
+  window.initSeoPane = function() {
+    /* Populate context display from current form values */
+    const titel = document.getElementById('f-titel')?.value || '—';
+    const tags  = document.getElementById('f-tags')?.value  || '—';
+    document.getElementById('seo-ctx-titel').textContent = titel;
+    document.getElementById('seo-ctx-tags').textContent  = tags.length > 60 ? tags.slice(0,60) + '…' : tags;
+  };
+
+  window.runSeoAnalyse = async function() {
+    const btn = document.getElementById('seo-run-btn');
+    btn.disabled = true;
+    document.getElementById('seo-loading').style.display  = '';
+    document.getElementById('seo-results').style.display  = 'none';
+    document.getElementById('seo-last-info').style.display = 'none';
+
+    /* Refresh context display */
+    const titel = document.getElementById('f-titel')?.value       || '';
+    const desc  = document.getElementById('f-beschreibung')?.value || '';
+    const tags  = document.getElementById('f-tags')?.value         || '';
+    if (titel) document.getElementById('seo-ctx-titel').textContent = titel;
+    if (tags)  document.getElementById('seo-ctx-tags').textContent  = tags.length > 60 ? tags.slice(0,60) + '…' : tags;
+
+    try {
+      /* Build multipart if we have a currentFile (image), otherwise JSON */
+      let res;
+      if (typeof currentFile !== 'undefined' && currentFile) {
+        const fd = new FormData();
+        fd.append('image', currentFile);
+        fd.append('title',       titel);
+        fd.append('description', desc);
+        fd.append('tags',        tags);
+        fd.append('language',    document.getElementById('seo-lang-pc')?.value || 'en');
+        fd.append('count',       document.getElementById('seo-count-pc')?.value || '20');
+        if (_seoDekoireId) fd.append('dekoire_id', _seoDekoireId);
+        res = await fetch('/api/seo/analyse', { method: 'POST', body: fd });
+      } else {
+        const imageUrl = typeof currentImageUrl !== 'undefined' ? (currentImageUrl || '') : '';
+        const payload  = {
+          title:       titel,
+          description: desc,
+          tags:        tags,
+          image_url:   imageUrl,
+          language:    document.getElementById('seo-lang-pc')?.value || 'en',
+          count:       parseInt(document.getElementById('seo-count-pc')?.value || '20', 10)
+        };
+        if (_seoDekoireId) payload.dekoire_id = _seoDekoireId;
+        res = await fetch('/api/seo/analyse', {
+          method:  'POST',
+          headers: {'Content-Type': 'application/json'},
+          body:    JSON.stringify(payload)
+        });
+      }
+
+      const data = await res.json();
+      if (data && data.keywords) {
+        _renderSeoMini(data.keywords, data.analysed_at);
+      } else {
+        alert('SEO Fehler: ' + (data.error || 'Unbekannte Antwort'));
+        document.getElementById('seo-loading').style.display = 'none';
+      }
+    } catch(e) {
+      alert('Netzwerkfehler: ' + e.message);
+      document.getElementById('seo-loading').style.display = 'none';
+    } finally {
+      btn.disabled = false;
+    }
+  };
+
+  let _seoKwAll = [], _seoSortCol = 'opportunity_score', _seoSortAsc = false;
+
+  function _renderSeoMini(keywords, date) {
+    _seoKwAll   = keywords;
+    _seoSortCol = 'opportunity_score';
+    _seoSortAsc = false;
+    _doRenderSeoRows();
+    _updateSeoHeaders();
+    document.getElementById('seo-loading').style.display = 'none';
+    document.getElementById('seo-results').style.display = '';
+    if (date) {
+      const d = new Date(date);
+      document.getElementById('seo-last-date').textContent = d.toLocaleString('de-DE', {
+        day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
+      });
+      document.getElementById('seo-last-info').style.display = '';
+    }
+  }
+
+  function _seoSortBy(col) {
+    if (_seoSortCol === col) _seoSortAsc = !_seoSortAsc;
+    else { _seoSortCol = col; _seoSortAsc = false; }
+    _doRenderSeoRows();
+    _updateSeoHeaders();
+  }
+
+  function _updateSeoHeaders() {
+    document.querySelectorAll('#seo-mini-thead-pc th[data-col]').forEach(th => {
+      const col = th.dataset.col;
+      th.textContent = th.dataset.label + (col === _seoSortCol ? (' ' + (_seoSortAsc ? '▲' : '▼')) : '');
+    });
+  }
+
+  function _doRenderSeoRows() {
+    const intentLabels = { informational:'Info', transactional:'Kauf', navigational:'Nav', commercial:'Komm.' };
+    const volLabels    = { very_high:'100k+', high:'10k–100k', medium:'1k–10k', low:'100–1k', very_low:'<100' };
+    const volOrder     = { very_high:5, high:4, medium:3, low:2, very_low:1 };
+
+    const kws = [..._seoKwAll].sort((a, b) => {
+      let va = _seoSortCol === 'volume_tier' ? (volOrder[a.volume_tier] ?? 0) : (a[_seoSortCol] ?? 0);
+      let vb = _seoSortCol === 'volume_tier' ? (volOrder[b.volume_tier] ?? 0) : (b[_seoSortCol] ?? 0);
+      if (typeof va === 'string') { va = va.toLowerCase(); vb = String(vb).toLowerCase(); }
+      return _seoSortAsc ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+    });
+
+    document.getElementById('seo-mini-tbody').innerHTML = kws.map(kw => {
+      const score  = kw.opportunity_score ?? 0;
+      const cls    = score >= 70 ? 'high' : score >= 40 ? 'mid' : 'low';
+      const intent = intentLabels[kw.intent || kw.intention] || kw.intention || '—';
+      const vol    = kw.volume_estimate || volLabels[kw.volume_tier] || kw.volume_tier || '—';
+      const comp   = kw.competition != null ? kw.competition + '%' : '—';
+      const cpc    = kw.cpc_estimate != null ? '€' + Number(kw.cpc_estimate).toFixed(2) : '—';
+      const lt     = kw.is_long_tail ? '<span class="seo-lt-mini">LT</span>' : '';
+      const why    = kw.why ? `<div class="seo-kw-why">${_seoEsc(kw.why)}</div>` : '';
+      return `<tr>
+        <td><span class="seo-score-badge ${cls}">${score}</span></td>
+        <td><div class="seo-kw-name">${_seoEsc(kw.keyword)}${lt}</div>${why}</td>
+        <td class="seo-num">${_seoEsc(vol)}</td>
+        <td class="seo-num">${comp}</td>
+        <td class="seo-num">${cpc}</td>
+        <td><span class="seo-intent-badge">${_seoEsc(intent)}</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function _seoEsc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+})();
 </script>
 
 {% include 'includes/footer.html' %}

@@ -40,7 +40,7 @@
 .dashboard-tile {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 8px;
   padding: 28px 22px 24px;
   display: flex;
   flex-direction: column;
@@ -91,7 +91,7 @@
 .tile-icon {
   width: 48px;
   height: 48px;
-  border-radius: 12px;
+  border-radius: 6px;
   background: #EEF2FF;
   display: flex;
   align-items: center;
@@ -153,12 +153,10 @@
 .qv-panel {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 6px;
   padding: 14px 16px;
-  width: 200px;
-  flex-shrink: 0;
-  position: sticky;
-  top: 88px;
+  width: 100%;
+  box-sizing: border-box;
 }
 .qv-panel-title {
   font-size: .65rem;
@@ -176,9 +174,10 @@
   border-bottom: 1px solid var(--border);
 }
 .qv-row:last-child { border-bottom: none; }
+a.qv-row:hover { background: var(--c-100); border-radius: 6px; margin: 0 -4px; padding: 6px 4px; }
 .qv-dot {
   width: 28px; height: 28px;
-  border-radius: 7px;
+  border-radius: 6px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
@@ -220,7 +219,7 @@
 .ext-app-tile {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 14px 14px 12px;
   display: flex;
   flex-direction: column;
@@ -242,7 +241,7 @@
 .ext-app-icon {
   width: 44px;
   height: 44px;
-  border-radius: 10px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -297,6 +296,22 @@
         </button>
       </div>
     </div>
+
+    <!-- ── AI Launcher orb (rightmost) ── -->
+    <div class="ai-launcher" id="aiLauncher">
+      <button class="ai-orb-btn" id="aiOrbBtn" onclick="toggleAILauncher(event)" title="KI Tools" type="button" aria-label="KI Schnellzugriff">
+        <span class="ai-orb-inner" id="aiOrbInner">AI</span>
+      </button>
+      <div class="ai-dropdown" id="aiDropdown">
+        <div class="ai-dropdown-header">
+          <span class="ai-dropdown-title">KI Schnellzugriff</span>
+          <a href="/settings" onclick="closeAILauncher()" class="ai-dropdown-config" title="Verwalten">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="currentColor" stroke-width="1.6"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.6"/></svg>
+          </a>
+        </div>
+        <div class="ai-tiles" id="aiTiles"><!-- rendered by JS --></div>
+      </div>
+    </div>
   </div>
 </header>
 
@@ -328,11 +343,12 @@
     <!-- Produkt anlegen -->
     <a href="/app" class="dashboard-tile" data-tile-id="produkt-anlegen">
       <span class="drag-hint">⠿</span>
-      <div class="tile-icon">
+      <div class="tile-icon" style="background:#EEF2FF;color:#6366F1;">
+        <!-- Camera + sparkle (KI-Analyse & Erstellen) -->
         <svg fill="none" viewBox="0 0 24 24">
-          <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M2 17l10 5 10-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="12" cy="13" r="4" stroke="currentColor" stroke-width="1.7"/>
+          <path d="M17.5 4.5l.7.7M19 3v1M20.5 4.5l-.7.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
         </svg>
       </div>
       <div>
@@ -367,11 +383,11 @@
     <!-- Shops -->
     <a href="/shops" class="dashboard-tile" data-tile-id="shops">
       <span class="drag-hint">⠿</span>
-      <div class="tile-icon" style="background:#F8F9FB;color:#374151;">
+      <div class="tile-icon" style="background:#FFF7ED;color:#EA580C;">
+        <!-- Storefront / Ladenfront -->
         <svg fill="none" viewBox="0 0 24 24">
-          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
-          <path d="M16 10a4 4 0 0 1-8 0" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9 22V12h6v10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
       <div>
@@ -391,10 +407,11 @@
     <!-- Neuer Social Post -->
     <a href="/social/post/create" class="dashboard-tile" data-tile-id="social-post-create">
       <span class="drag-hint">⠿</span>
-      <div class="tile-icon" style="background:#F0FDF4;color:#16a34a;">
+      <div class="tile-icon" style="background:#FFF1F2;color:#E11D48;">
+        <!-- Compose / Stift + Post -->
         <svg fill="none" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.7"/>
-          <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
       <div>
@@ -406,105 +423,108 @@
       </svg>
     </a>
 
-    <!-- Instagram Posts -->
-    <a href="/social/instagram" class="dashboard-tile" data-tile-id="instagram-posts">
+    <!-- Social Media Posts (kombiniert) -->
+    <a href="/social/posts" class="dashboard-tile" data-tile-id="social-posts-all">
       <span class="drag-hint">⠿</span>
-      <div class="tile-icon" style="background:#FFF0F5;color:#E1306C;">
+      <div class="tile-icon" style="background:#EFF6FF;color:#3B82F6;">
+        <!-- Kalender / Feed -->
         <svg fill="none" viewBox="0 0 24 24">
-          <rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.7"/>
-          <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.7"/>
-          <circle cx="17.5" cy="6.5" r="1.3" fill="currentColor"/>
+          <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.7"/>
+          <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </div>
       <div>
-        <div class="tile-label">Instagram</div>
-        <div class="tile-desc">Geplante & abgeschickte Posts verwalten, bearbeiten, neu senden</div>
+        <div class="tile-label">All Social Posts</div>
+        <div class="tile-desc">Pinterest & Instagram — geplante und gesendete Posts verwalten</div>
       </div>
       <svg class="tile-arrow" width="16" height="16" fill="none" viewBox="0 0 24 24">
         <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </a>
 
-    <!-- Pinterest Posts -->
-    <a href="/social/pinterest" class="dashboard-tile" data-tile-id="pinterest-posts">
+    <!-- Legal Risk Analyse -->
+    <a href="/legal/analyse" class="dashboard-tile" data-tile-id="legal-analyse">
       <span class="drag-hint">⠿</span>
-      <div class="tile-icon" style="background:#FFF5F5;color:#E60023;">
+      <div class="tile-icon" style="background:#FFFBEB;color:#D97706;">
+        <!-- Schild mit Häkchen -->
         <svg fill="none" viewBox="0 0 24 24">
-          <path d="M12 2C6.477 2 2 6.477 2 12c0 4.236 2.636 7.855 6.356 9.312-.088-.791-.167-2.005.035-2.868.181-.78 1.172-4.97 1.172-4.97s-.299-.598-.299-1.482c0-1.388.806-2.428 1.808-2.428.853 0 1.267.641 1.267 1.408 0 .858-.546 2.141-.828 3.33-.236.995.499 1.806 1.476 1.806 1.771 0 2.994-2.31 2.994-5.04 0-2.074-1.414-3.63-3.964-3.63-2.888 0-4.695 2.16-4.695 4.58 0 .832.245 1.417.63 1.877.175.207.2.29.136.529l-.191.766c-.061.24-.248.326-.455.237-1.279-.524-1.872-1.935-1.872-3.524 0-2.624 2.228-5.836 6.661-5.836 3.565 0 5.94 2.602 5.94 5.393 0 3.71-2.09 6.511-5.152 6.511-1.034 0-2.009-.561-2.342-1.19l-.637 2.457c-.23.877-.853 1.977-1.272 2.647A9.984 9.984 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
       <div>
-        <div class="tile-label">Pinterest</div>
-        <div class="tile-desc">Geplante & abgeschickte Pins verwalten, bearbeiten, neu senden</div>
+        <div class="tile-label">Legal Risk Analyse</div>
+        <div class="tile-desc">Bild oder URL schnell auf Marken- und Urheberrechtsrisiken prüfen</div>
       </div>
       <svg class="tile-arrow" width="16" height="16" fill="none" viewBox="0 0 24 24">
         <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </a>
 
-    <!-- Social Media Account Push -->
-    <div class="dashboard-tile tile-soon" data-tile-id="account-push">
-      <div class="tile-badge">Bald verfügbar</div>
-      <div class="tile-icon" style="background:#FFF7ED;color:#EA580C;">
+    <!-- SEO Keyword Intelligence -->
+    <a href="/seo/keywords" class="dashboard-tile" data-tile-id="seo-keywords">
+      <span class="drag-hint">⠿</span>
+      <div class="tile-icon" style="background:#FEFCE8;color:#CA8A04;">
+        <!-- Lupe + Trend-Pfeil -->
         <svg fill="none" viewBox="0 0 24 24">
-          <path d="M22 2L11 13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.7"/>
+          <path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M8 13l2.5-3 2 2 2.5-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
       <div>
-        <div class="tile-label">Account Push</div>
-        <div class="tile-desc">Posts direkt auf Social Media Accounts veröffentlichen</div>
+        <div class="tile-label">SEO Keyword Intelligence</div>
+        <div class="tile-desc">20 KI-generierte Keywords mit Opportunity Score aus Bild oder Text</div>
       </div>
-    </div>
+      <svg class="tile-arrow" width="16" height="16" fill="none" viewBox="0 0 24 24">
+        <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
 
   </div>
 
-  {% if external_apps %}
-  <div class="dashboard-section-label" style="margin-top:32px;">External Apps</div>
-  <div class="ext-app-grid" data-grid-id="extapps" id="dashExtAppGrid">
-    {% for eapp in external_apps %}
-    <a href="{{ eapp.url }}" target="_blank" rel="noopener noreferrer"
-       class="ext-app-tile" title="{{ eapp.name }}" data-tile-id="ext-{{ eapp.id }}">
+  <div class="dashboard-section-label" style="margin-top:32px;">Apps</div>
+  <div class="dashboard-grid" data-grid-id="apps">
+    <a href="/apps" class="dashboard-tile" data-tile-id="apps-hub">
       <span class="drag-hint">⠿</span>
-      <div class="ext-app-icon" style="background:{{ eapp.bg_color or '#EEF2FF' }};">
-        {% if eapp.icon_type == 'preset' and eapp.icon_preset in icon_svgs %}
-          <span style="color:{{ eapp.icon_color or '#FFFFFF' }};display:flex;align-items:center;">{{ icon_svgs[eapp.icon_preset] | safe }}</span>
-        {% elif eapp.icon_type == 'upload' and eapp.icon_url %}
-          <img src="{{ eapp.icon_url }}" alt="{{ eapp.name }}" />
-        {% else %}
-          <img src="https://www.google.com/s2/favicons?domain={{ eapp.domain }}&sz=64" alt="{{ eapp.name }}" onerror="this.style.display='none'" />
-        {% endif %}
+      <div class="tile-icon" style="background:#F5F3FF;color:#7C3AED;">
+        <svg fill="none" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/>
+          <rect x="14" y="3" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/>
+          <rect x="3" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/>
+          <rect x="14" y="14" width="7" height="7" rx="2" stroke="currentColor" stroke-width="1.7"/>
+        </svg>
       </div>
-      <div class="ext-app-name">{{ eapp.name }}</div>
-    </a>
-    {% endfor %}
-    <a href="/settings#external-apps" class="ext-app-tile" title="App hinzufügen"
-       style="border-style:dashed;color:var(--muted);" data-no-drag>
-      <div class="ext-app-icon" style="background:var(--c-100);">
-        <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <div>
+        <div class="tile-label">Apps</div>
+        <div class="tile-desc">Alle verknüpften externen Apps &amp; Favoriten</div>
       </div>
-      <div class="ext-app-name" style="color:var(--muted);">Hinzufügen</div>
+      <svg class="tile-arrow" width="16" height="16" fill="none" viewBox="0 0 24 24">
+        <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
     </a>
   </div>
-  {% endif %}
 
     </div><!-- /dash-main-content -->
 
     <!-- ── Quick View panel (right, sticky) ── -->
-    <div class="qv-panel">
+    <div style="display:flex;flex-direction:column;gap:14px;width:200px;flex-shrink:0;position:sticky;top:88px;align-self:flex-start;">
+    <div class="qv-panel" style="width:100%;position:static;">
       <div class="qv-panel-title">Quick View</div>
       <div class="qv-row">
-        <div class="qv-dot" style="background:#EEF2FF;color:var(--btn);">
-          <svg fill="none" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="qv-dot" style="background:#F0FDF4;color:#16A34A;">
+          <svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg>
         </div>
         <div class="qv-info">
-          <div class="qv-row-label">Produkte</div>
+          <div class="qv-row-label">Bilder</div>
           <div class="qv-row-val" id="qv-val-products-total"><span class="qv-spinner"></span></div>
         </div>
       </div>
       <div class="qv-row">
-        <div class="qv-dot" style="background:#FFF7ED;color:#EA580C;">
-          <svg fill="none" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><line x1="3" y1="6" x2="21" y2="6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16 10a4 4 0 0 1-8 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="qv-dot" style="background:#FFF0EA;color:#F1641E;">
+          <!-- Etsy "E" letterform logo -->
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3h14v3.5H9v3.5h8v3H9V17h10v3.5H5V3z"/></svg>
         </div>
         <div class="qv-info">
           <div class="qv-row-label">Auf Etsy</div>
@@ -512,33 +532,70 @@
         </div>
       </div>
       <div class="qv-row">
-        <div class="qv-dot" style="background:#FFF5F5;color:#E60023;">
-          <svg fill="none" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.236 2.636 7.855 6.356 9.312-.088-.791-.167-2.005.035-2.868.181-.78 1.172-4.97 1.172-4.97s-.299-.598-.299-1.482c0-1.388.806-2.428 1.808-2.428.853 0 1.267.641 1.267 1.408 0 .858-.546 2.141-.828 3.33-.236.995.499 1.806 1.476 1.806 1.771 0 2.994-2.31 2.994-5.04 0-2.074-1.414-3.63-3.964-3.63-2.888 0-4.695 2.16-4.695 4.58 0 .832.245 1.417.63 1.877.175.207.2.29.136.529l-.191.766c-.061.24-.248.326-.455.237-1.279-.524-1.872-1.935-1.872-3.524 0-2.624 2.228-5.836 6.661-5.836 3.565 0 5.94 2.602 5.94 5.393 0 3.71-2.09 6.511-5.152 6.511-1.034 0-2.009-.561-2.342-1.19l-.637 2.457c-.23.877-.853 1.977-1.272 2.647A9.984 9.984 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="qv-dot" style="background:#EFF6FF;color:#3B82F6;">
+          <svg fill="none" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         </div>
         <div class="qv-info">
-          <div class="qv-row-label">Pinterest</div>
-          <div class="qv-row-val" id="qv-val-posts-pinterest"><span class="qv-spinner"></span></div>
-        </div>
-      </div>
-      <div class="qv-row">
-        <div class="qv-dot" style="background:#FFF0F5;color:#E1306C;">
-          <svg fill="none" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="1.8"/><circle cx="17.5" cy="6.5" r="1.3" fill="currentColor"/></svg>
-        </div>
-        <div class="qv-info">
-          <div class="qv-row-label">Instagram</div>
-          <div class="qv-row-val" id="qv-val-posts-instagram"><span class="qv-spinner"></span></div>
-        </div>
-      </div>
-      <div class="qv-row">
-        <div class="qv-dot" style="background:#F5F3FF;color:#7C3AED;">
-          <svg fill="none" viewBox="0 0 24 24"><path d="M12 2a9 9 0 0 1 9 9c0 3.18-1.65 5.97-4.13 7.6L15 21H9l-1.87-2.4A9 9 0 0 1 12 2z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 17v1a3 3 0 0 0 6 0v-1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-        </div>
-        <div class="qv-info">
-          <div class="qv-row-label">Claude API</div>
-          <div class="qv-row-val"><a href="https://console.anthropic.com" target="_blank" rel="noopener" style="font-size:.72rem;color:var(--btn);font-weight:600;text-decoration:none;">Console ↗</a></div>
+          <div class="qv-row-label">Social Posts</div>
+          <div class="qv-row-val" id="qv-val-posts-social"><span class="qv-spinner"></span></div>
         </div>
       </div>
     </div><!-- /qv-panel -->
+
+    {% set fav_apps = external_apps | selectattr('favorite') | list %}
+    {% if fav_apps %}
+    <!-- Favoriten list below QV -->
+    <div class="qv-panel" style="width:100%;position:static;">
+      <div class="qv-panel-title">Favoriten</div>
+      {% for fapp in fav_apps %}
+      <a href="{{ fapp.url }}" target="_blank" rel="noopener noreferrer"
+         class="qv-row" style="text-decoration:none;color:inherit;">
+        <div class="qv-dot" style="background:{{ fapp.bg_color or '#EEF2FF' }};">
+          {% if fapp.icon_type == 'preset' and fapp.icon_preset in icon_svgs %}
+            <span style="color:{{ fapp.icon_color or '#FFFFFF' }};display:flex;align-items:center;width:14px;height:14px;">{{ icon_svgs[fapp.icon_preset] | safe }}</span>
+          {% elif fapp.icon_type == 'upload' and fapp.icon_url %}
+            <img src="{{ fapp.icon_url }}" style="width:14px;height:14px;object-fit:contain;" alt="{{ fapp.name }}" />
+          {% else %}
+            <img src="https://www.google.com/s2/favicons?domain={{ fapp.domain }}&sz=32" style="width:14px;height:14px;" alt="{{ fapp.name }}" onerror="this.style.display='none'" />
+          {% endif %}
+        </div>
+        <div class="qv-info">
+          <div class="qv-row-val" style="font-size:.78rem;font-weight:400;">{{ fapp.name }}</div>
+        </div>
+        <svg width="11" height="11" fill="none" viewBox="0 0 24 24" style="color:var(--muted);flex-shrink:0;">
+          <path d="M7 17L17 7M7 7h10v10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+      {% endfor %}
+      <!-- Shortcuts -->
+      <div style="display:flex;gap:6px;margin-top:10px;padding-top:10px;">
+        <a href="/apps" title="Alle Apps"
+           style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px;border-radius:3px;background:var(--c-50);text-decoration:none;color:var(--muted);font-size:.68rem;font-weight:600;transition:background .15s,color .15s;"
+           onmouseover="this.style.background='#EEF2FF';this.style.color='var(--btn)'"
+           onmouseout="this.style.background='var(--c-50)';this.style.color='var(--muted)'">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/>
+            <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/>
+            <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/>
+            <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.7"/>
+          </svg>
+          Apps
+        </a>
+        <a href="/settings#external-apps" title="App-Einstellungen"
+           style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:6px;border-radius:3px;background:var(--c-50);text-decoration:none;color:var(--muted);font-size:.68rem;font-weight:600;transition:background .15s,color .15s;"
+           onmouseover="this.style.background='#EEF2FF';this.style.color='var(--btn)'"
+           onmouseout="this.style.background='var(--c-50)';this.style.color='var(--muted)'">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24">
+            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" stroke="currentColor" stroke-width="1.7"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" stroke-width="1.7"/>
+          </svg>
+          Verwalten
+        </a>
+      </div>
+    </div>
+    {% endif %}
+
+    </div><!-- /right-col -->
 
   </div><!-- /dash-main-row -->
 
@@ -553,12 +610,15 @@ async function loadQvStats() {
     const d = await fetch('/api/dashboard/stats').then(r => r.json());
     setHtml('products-total', `<span>${dash(d.products_total)}</span>`);
     setHtml('products-etsy',  `<span>${dash(d.products_etsy)}</span>`);
-    const pinOk   = dash(d.posts_pin_ok),   pinFail   = dash(d.posts_pin_fail);
-    const igOk    = dash(d.posts_ig_ok),    igFail    = dash(d.posts_ig_fail);
-    setHtml('posts-pinterest', `<span class="qv-ok">${pinOk}</span><span class="qv-sep"> / </span><span class="qv-err">${pinFail}</span>`);
-    setHtml('posts-instagram', `<span class="qv-ok">${igOk}</span><span class="qv-sep"> / </span><span class="qv-err">${igFail}</span>`);
+    const pinOk   = d.posts_pin_ok   ?? 0;
+    const pinFail = d.posts_pin_fail ?? 0;
+    const igOk    = d.posts_ig_ok    ?? 0;
+    const igFail  = d.posts_ig_fail  ?? 0;
+    const totalOk   = (typeof pinOk   === 'number' && typeof igOk   === 'number') ? pinOk   + igOk   : '–';
+    const totalFail = (typeof pinFail === 'number' && typeof igFail === 'number') ? pinFail + igFail : '–';
+    setHtml('posts-social', `<span class="qv-ok">${totalOk}</span><span class="qv-sep"> / </span><span class="qv-err">${totalFail}</span>`);
   } catch(e) {
-    ['products-total','products-etsy','posts-pinterest','posts-instagram'].forEach(id => setHtml(id, '–'));
+    ['products-total','products-etsy','posts-social'].forEach(id => setHtml(id, '–'));
   }
 }
 loadQvStats();
@@ -575,6 +635,67 @@ async function doLogout() {
   await fetch('/auth/logout', {method:'POST'});
   window.location.href = '/login';
 }
+
+/* ── AI Launcher ── */
+function _aiTools() {
+  try { return JSON.parse(localStorage.getItem('ai_tools') || '[]'); } catch { return []; }
+}
+function aiRenderTiles() {
+  const tiles = document.getElementById('aiTiles');
+  if (!tiles) return;
+  const tools = _aiTools();
+  if (!tools.length) {
+    tiles.innerHTML = '<div class="ai-tiles-empty">Keine Tools konfiguriert.<br><a href="/settings">Jetzt hinzufügen →</a></div>';
+    tiles.classList.remove('many');
+    return;
+  }
+  /* 5+ tools → 3-column grid; ≤4 → 2-column grid (gives 2+2 for exactly 4) */
+  tiles.classList.toggle('many', tools.length >= 5);
+  tiles.innerHTML = tools.map(t => `
+    <a href="${t.url}" target="_blank" rel="noopener noreferrer" class="ai-tile" onclick="closeAILauncher()">
+      ${t.favicon
+        ? `<img src="${t.favicon}" alt="" onerror="this.outerHTML='<div class=\\'ai-tile-letter\\'>${(t.name||'?')[0].toUpperCase()}</div>'">`
+        : `<div class="ai-tile-letter">${(t.name||'?')[0].toUpperCase()}</div>`}
+      <span>${t.name}</span>
+    </a>
+  `).join('');
+}
+function toggleAILauncher(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('aiDropdown');
+  const opening = !dd.classList.contains('open');
+  document.getElementById('userDropdown')?.classList.remove('open');
+  if (opening) { aiRenderTiles(); dd.classList.add('open'); }
+  else          { dd.classList.remove('open'); }
+}
+function closeAILauncher() {
+  document.getElementById('aiDropdown')?.classList.remove('open');
+}
+document.addEventListener('click', e => {
+  if (!document.getElementById('aiLauncher')?.contains(e.target)) closeAILauncher();
+});
+/* Apply saved orb appearance */
+(function() {
+  try {
+    const cfg = JSON.parse(localStorage.getItem('ai_orb_config') || '{}');
+    const btn = document.getElementById('aiOrbBtn');
+    const inner = document.getElementById('aiOrbInner');
+    if (!btn) return;
+    const c = cfg.colors;
+    if (c && c.length === 4) {
+      btn.style.background = `linear-gradient(135deg,${c[0]},${c[1]},${c[2]},${c[3]})`;
+      btn.style.backgroundSize = '300% 300%';
+    }
+    if (cfg.logo_url && inner) {
+      inner.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = cfg.logo_url;
+      img.style.cssText = 'width:18px;height:18px;object-fit:contain;border-radius:2px;pointer-events:none;';
+      img.onerror = () => { inner.textContent = 'AI'; };
+      inner.appendChild(img);
+    }
+  } catch(e) {}
+})();
 
 /* ══ Drag-and-drop tile reorder ══
    – dashboard-grid tiles  → saved in localStorage (static tiles)

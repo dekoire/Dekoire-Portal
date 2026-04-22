@@ -7,7 +7,9 @@
 <link rel="stylesheet" href="/static/style.css"/>
 <style>
 /* ── Page ── */
-.spc-body { max-width: 1060px; margin: 0 auto; padding: 28px 24px 60px; box-sizing: border-box; }
+html { scrollbar-gutter: stable; }
+.spc-body { width: 100%; max-width: 1300px; margin: 0 auto; padding: 28px 24px 60px; box-sizing: border-box; }
+#pane-pin, #pane-ig { width: 100%; }
 
 /* ── Platform tabs ── */
 .spc-tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid var(--border); }
@@ -23,7 +25,7 @@
 .spc-tab.a-ig  { color: #C13584; border-bottom-color: #C13584; }
 
 /* ── Card shell (both panes share same width) ── */
-.spc-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; width: 100%; box-sizing: border-box; }
+.spc-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; width: 100%; box-sizing: border-box; }
 .spc-card-header {
   display: flex; align-items: center; gap: 10px; padding: 12px 20px;
   border-bottom: 1px solid var(--border); background: var(--c-50);
@@ -31,7 +33,7 @@
 .spc-card-title { display: flex; align-items: center; gap: 8px; font-size: .9rem; font-weight: 700; color: var(--text); flex: 1; }
 .spc-btn-gen {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 13px; border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 13px; border: 1px solid var(--border); border-radius: 3px;
   background: var(--card); color: var(--text); font-size: .81rem; font-weight: 600;
   cursor: pointer; transition: background .15s, border-color .15s; white-space: nowrap;
 }
@@ -43,7 +45,7 @@
 /* ── 2-col: fields left, preview right ── */
 .spc-cols { display: flex; gap: 24px; align-items: flex-start; }
 .spc-fields { flex: 1; min-width: 0; }
-.spc-prev-col { width: 252px; flex-shrink: 0; }
+.spc-prev-col { width: 300px; flex-shrink: 0; }
 
 /* ── Fields ── */
 .spc-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 13px; }
@@ -55,24 +57,44 @@
 }
 .spc-req { color: #E60023; font-size: .85rem; line-height: 1; }
 .spc-opt { font-size: .62rem; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; background: var(--c-100); color: var(--muted); padding: 1px 5px; border-radius: 4px; }
+/* Buttons live in the label row — pushed to the right */
+.spc-label-btns { margin-left: auto; display: flex; align-items: center; gap: 3px; }
 .spc-row { display: flex; gap: 6px; align-items: flex-start; }
-.spc-row input, .spc-row textarea, .spc-row select {
-  flex: 1; padding: 8px 11px; border: 1px solid var(--border); border-radius: 8px;
-  font-size: .875rem; background: var(--card); color: var(--text);
-  box-sizing: border-box; font-family: inherit; transition: border-color .15s;
+/* Full-width inputs when no wrapper buttons */
+.spc-field > input,
+.spc-field > textarea,
+.spc-field > select,
+.spc-field > .spc-row {
+  width: 100%; box-sizing: border-box;
 }
-.spc-row input:focus, .spc-row textarea:focus, .spc-row select:focus { outline: none; border-color: var(--btn); }
-.spc-row textarea { resize: vertical; min-height: 76px; }
+.spc-row input, .spc-row textarea, .spc-row select,
+.spc-field > input, .spc-field > textarea, .spc-field > select {
+  flex: 1; min-width: 0; padding: 8px 11px; border: 1px solid var(--border); border-radius: 3px;
+  font-size: .875rem; background: var(--card); color: var(--text);
+  box-sizing: border-box; font-family: inherit; transition: border-color .15s; width: 100%;
+}
+.spc-row input:focus, .spc-row textarea:focus, .spc-row select:focus,
+.spc-field > input:focus, .spc-field > textarea:focus, .spc-field > select:focus { outline: none; border-color: var(--btn); }
+.spc-row textarea, .spc-field > textarea { resize: vertical; min-height: 76px; }
 .spc-hint { font-size: .73rem; color: var(--muted); }
 .spc-regen {
   display: flex; align-items: center; justify-content: center;
-  width: 33px; height: 33px; flex-shrink: 0; margin-top: 1px;
-  border: 1px solid var(--border); border-radius: 7px;
+  width: 26px; height: 26px; flex-shrink: 0;
+  border: 1px solid var(--border); border-radius: 3px;
   background: var(--card); color: var(--muted); cursor: pointer;
   transition: color .15s, border-color .15s, background .15s;
 }
 .spc-regen:hover { color: var(--btn); border-color: var(--btn); background: #EEF2FF; }
 .spc-regen.spin { opacity: .4; pointer-events: none; }
+.spc-copy {
+  display: flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; flex-shrink: 0;
+  border: 1px solid var(--border); border-radius: 3px;
+  background: var(--card); color: var(--muted); cursor: pointer;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.spc-copy:hover { color: var(--btn); border-color: var(--btn); background: #EEF2FF; }
+.spc-copy.copied { color: #16a34a; border-color: #16a34a; }
 
 /* ── Preview (clickable) ── */
 .spc-prev-label { font-size: .67rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 8px; }
@@ -100,8 +122,8 @@
 .ig-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ig-img-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--c-300); }
 .ig-actions { display: flex; align-items: center; gap: 12px; padding: 9px 11px 4px; color: var(--text); }
-.ig-caption  { font-size: .78rem; color: var(--text); padding: 0 11px 3px; line-height: 1.4; }
-.ig-hashtags { font-size: .73rem; color: #1e88e5; padding: 0 11px 9px; line-height: 1.5; }
+.ig-caption  { font-size: .78rem; color: var(--text); padding: 0 11px 3px; line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; }
+.ig-hashtags { font-size: .73rem; color: #1e88e5; padding: 0 11px 9px; line-height: 1.5; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
 /* Upload hover overlay (both platforms) */
 .prev-overlay {
@@ -121,68 +143,160 @@
 }
 .spc-divider::before, .spc-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
-/* ── Product picker ── */
-.prod-picker { display: flex; flex-direction: column; gap: 10px; }
-.prod-search-row { display: flex; gap: 8px; }
-.prod-search {
-  flex: 1; padding: 7px 11px; border: 1px solid var(--border); border-radius: 8px;
-  font-size: .84rem; background: var(--card); color: var(--text); font-family: inherit;
+/* ── Product combobox ── */
+.prod-cb { position: relative; }
+
+/* Trigger button (looks like a select) */
+.prod-cb-trigger {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 7px 10px 7px 8px;
+  border: 1px solid var(--border); border-radius: 3px;
+  background: var(--card); cursor: pointer;
+  transition: border-color .15s;
+  box-sizing: border-box;
 }
-.prod-search:focus { outline: none; border-color: var(--btn); }
-.prod-tiles { display: flex; gap: 8px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
-.prod-tile {
-  flex-shrink: 0; width: 80px; border: 1.5px solid var(--border); border-radius: 10px;
-  overflow: hidden; cursor: pointer; transition: border-color .15s, box-shadow .15s;
-  background: var(--card);
+.prod-cb-trigger:hover { border-color: var(--c-300); }
+.prod-cb.open .prod-cb-trigger { border-color: var(--btn); border-radius: 3px 3px 0 0; }
+.prod-cb-val { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+.prod-cb-placeholder { font-size: .83rem; color: var(--muted); }
+.prod-cb-sel-img {
+  width: 28px; height: 28px; border-radius: 5px; object-fit: cover;
+  flex-shrink: 0; background: var(--c-100); display: none;
 }
-.prod-tile:hover { border-color: var(--btn); box-shadow: 0 2px 10px rgba(0,0,0,.1); }
-.prod-tile.selected { border-color: var(--btn); box-shadow: 0 0 0 2px #818CF840; }
-.prod-tile img { width: 100%; height: 64px; object-fit: cover; display: block; background: var(--c-100); }
-.prod-tile-name { font-size: .67rem; font-weight: 600; color: var(--text); padding: 4px 5px 5px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.prod-tile-empty { width: 80px; flex-shrink: 0; padding: 12px 8px; text-align: center; font-size: .7rem; color: var(--muted); }
-.prod-sel-badge {
-  display: inline-flex; align-items: center; gap: 7px;
-  background: #EEF2FF; border: 1px solid var(--btn); border-radius: 7px;
-  padding: 4px 10px 4px 6px; font-size: .78rem; color: var(--btn); font-weight: 600;
+.prod-cb-sel-name {
+  font-size: .83rem; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: none;
 }
-.prod-sel-badge img { width: 22px; height: 22px; border-radius: 4px; object-fit: cover; }
-.prod-sel-clear { background: none; border: none; color: var(--muted); cursor: pointer; font-size: .9rem; line-height: 1; padding: 0 0 0 4px; }
-.prod-sel-clear:hover { color: #DC2626; }
+.prod-cb-clear {
+  flex-shrink: 0; background: none; border: none; color: var(--muted);
+  cursor: pointer; padding: 0 2px; font-size: .85rem; line-height: 1;
+  display: none;
+}
+.prod-cb-clear:hover { color: #DC2626; }
+.prod-cb-arrow {
+  flex-shrink: 0; color: var(--muted);
+  transition: transform .18s;
+}
+.prod-cb.open .prod-cb-arrow { transform: rotate(180deg); }
+
+/* Dropdown panel */
+.prod-cb-drop {
+  position: absolute; left: 0; right: 0; top: 100%;
+  background: var(--card); border: 1px solid var(--btn);
+  border-top: none; border-radius: 0 0 3px 3px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.1);
+  z-index: 200; display: none;
+  overflow: hidden;
+}
+.prod-cb.open .prod-cb-drop { display: block; }
+
+/* Search inside dropdown */
+.prod-cb-search-wrap {
+  padding: 7px 8px 5px; border-bottom: 1px solid var(--border);
+}
+.prod-cb-search {
+  width: 100%; padding: 6px 10px; border: 1px solid var(--border);
+  border-radius: 3px; font-size: .82rem; background: var(--c-50);
+  color: var(--text); font-family: inherit; box-sizing: border-box;
+}
+.prod-cb-search:focus { outline: none; border-color: var(--btn); }
+
+/* Item list */
+.prod-cb-list { max-height: 232px; overflow-y: auto; padding: 4px 0; }
+.prod-cb-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 6px 10px; cursor: pointer;
+  transition: background .1s;
+}
+.prod-cb-item:hover { background: var(--c-50); }
+.prod-cb-item.selected { background: #EEF2FF; }
+.prod-cb-item img {
+  width: 38px; height: 38px; border-radius: 6px; object-fit: cover;
+  flex-shrink: 0; background: var(--c-100); border: 1px solid var(--border);
+}
+.prod-cb-item-info { flex: 1; min-width: 0; }
+.prod-cb-item-name {
+  font-size: .82rem; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.prod-cb-item-id {
+  font-size: .68rem; color: var(--muted); margin-top: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.prod-cb-empty {
+  padding: 14px 12px; font-size: .78rem; color: var(--muted);
+  text-align: center; font-style: italic;
+}
+
+/* ── Color pickers (Pinterest) ── */
+.spc-color-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.spc-color-item { display: flex; align-items: center; gap: 5px; }
+.spc-color-input {
+  width: 32px; height: 32px; padding: 2px; border: 1px solid var(--border);
+  border-radius: 3px; cursor: pointer; background: none; flex-shrink: 0;
+}
+.spc-color-hex {
+  width: 74px; padding: 5px 7px; border: 1px solid var(--border); border-radius: 3px;
+  font-size: .78rem; font-family: monospace; background: var(--card); color: var(--text);
+  transition: border-color .15s;
+}
+.spc-color-hex:focus { outline: none; border-color: var(--btn); }
+.spc-color-sep { font-size: .7rem; color: var(--muted); }
 
 /* ── Bilder-Generator ── */
 .imggen-wrap { margin-top: 4px; }
 .imggen-btn {
   display: inline-flex; align-items: center; gap: 7px;
-  padding: 7px 14px; border: 1px solid var(--border); border-radius: 8px;
+  padding: 7px 14px; border: 1px solid var(--border); border-radius: 3px;
   background: var(--card); color: var(--text); font-size: .82rem; font-weight: 600;
   text-decoration: none; transition: background .15s, border-color .15s;
 }
 .imggen-btn:hover { background: var(--c-100); border-color: var(--c-300); }
 .imggen-fav { width: 15px; height: 15px; border-radius: 3px; object-fit: contain; }
 
-/* ── Schedule + Post button (bottom) ── */
-.spc-footer { border-top: 1px solid var(--border); margin-top: 20px; padding-top: 16px; display: flex; flex-direction: column; gap: 12px; }
-.spc-sched-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* ── Page layout: main + sticky action panel ── */
+.spc-layout { display: flex; gap: 20px; align-items: flex-start; }
+.spc-main   { flex: 1; min-width: 0; }
+.spc-action-panel {
+  width: 210px; flex-shrink: 0;
+  position: sticky; top: 76px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.spc-ap-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 14px 16px;
+  display: flex; flex-direction: column; gap: 11px;
+}
+.spc-ap-plat {
+  display: flex; align-items: center; gap: 7px;
+  font-size: .68rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .5px; color: var(--muted);
+  padding-bottom: 10px; border-bottom: 1px solid var(--border);
+}
+
+/* ── Schedule + Post button ── */
+.spc-sched-row { display: flex; flex-direction: column; gap: 6px; }
 .spc-sched-lbl {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 13px; border: 1px solid var(--border); border-radius: 8px;
-  cursor: pointer; font-size: .84rem; font-weight: 500; color: var(--muted);
+  padding: 7px 11px; border: 1px solid var(--border); border-radius: 3px;
+  cursor: pointer; font-size: .82rem; font-weight: 500; color: var(--muted);
   transition: border-color .15s, color .15s, background .15s; user-select: none;
+  width: 100%; box-sizing: border-box;
 }
 .spc-sched-lbl input { display: none; }
 .spc-sched-lbl.on { border-color: var(--btn); color: var(--btn); background: #EEF2FF; font-weight: 600; }
-.spc-dt { padding: 7px 11px; border: 1px solid var(--border); border-radius: 8px; font-size: .84rem; background: var(--card); color: var(--text); font-family: inherit; }
+.spc-dt { padding: 7px 9px; border: 1px solid var(--border); border-radius: 3px; font-size: .78rem; background: var(--card); color: var(--text); font-family: inherit; width: 100%; box-sizing: border-box; }
 .spc-post-btn {
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  width: 100%; padding: 11px; border: none; border-radius: 9px;
-  font-size: .9rem; font-weight: 700; color: #fff; cursor: pointer;
+  width: 100%; padding: 11px; border: none; border-radius: 3px;
+  font-size: .88rem; font-weight: 700; color: #fff; cursor: pointer;
   transition: background .15s; letter-spacing: .2px;
 }
 .spc-post-btn.pin-c { background: #E60023; }
 .spc-post-btn.pin-c:hover { background: #bf001d; }
 .spc-post-btn.ig-c  { background: #C13584; }
 .spc-post-btn.ig-c:hover  { background: #9c2a6b; }
-.spc-status { font-size: .84rem; min-height: 20px; }
+.spc-status { font-size: .8rem; min-height: 18px; line-height: 1.4; }
 </style>
 </head>
 <body>
@@ -204,6 +318,9 @@
     </button>
   </div>
 
+  <div class="spc-layout">
+  <div class="spc-main">
+
   <!-- ══ Pinterest Card ══ -->
   <div id="pane-pin">
     <div class="spc-card">
@@ -213,7 +330,7 @@
           Pinterest Pin
         </div>
         <button class="spc-btn-gen" onclick="generateWithAI()">
-          <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
           Texte generieren
         </button>
       </div>
@@ -226,53 +343,110 @@
           <!-- Fields -->
           <div class="spc-fields">
 
+            <!-- Product combobox — top of fields -->
             <div class="spc-field">
-              <label>Board <span class="spc-req">*</span></label>
+              <label>Produkt <span class="spc-opt">optional</span></label>
+              <div class="prod-cb" id="pin-cb">
+                <div class="prod-cb-trigger" onclick="cbToggle('pin')">
+                  <div class="prod-cb-val" id="pin-cb-val">
+                    <img class="prod-cb-sel-img" id="pin-cb-img" src="" alt=""/>
+                    <span class="prod-cb-sel-name" id="pin-cb-name"></span>
+                    <span class="prod-cb-placeholder" id="pin-cb-ph">Produkt zuordnen…</span>
+                  </div>
+                  <button class="prod-cb-clear" id="pin-cb-clr" onclick="cbClear(event,'pin')" title="Auswahl entfernen">✕</button>
+                  <svg class="prod-cb-arrow" width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="prod-cb-drop">
+                  <div class="prod-cb-search-wrap">
+                    <input class="prod-cb-search" id="pin-cb-q" placeholder="Name eingeben…" oninput="cbFilter('pin')" autocomplete="off"/>
+                  </div>
+                  <div class="prod-cb-list" id="pin-cb-list"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="spc-field">
+              <label>Board <span class="spc-req">*</span>
+                <span class="spc-label-btns">
+                  <button type="button" class="spc-regen" title="Boards laden" onclick="loadBoards(true)">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  </button>
+                </span>
+              </label>
               <div class="spc-row">
                 <select id="spc-board-sel" onchange="boardChange(this)"><option value="">— Board auswählen —</option></select>
-                <button type="button" class="spc-regen" title="Boards laden" onclick="loadBoards(true)">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-                </button>
               </div>
               <span class="spc-hint" id="board-hint">Boards werden geladen…</span>
               <input type="hidden" id="spc-board-id"/>
             </div>
 
             <div class="spc-field">
-              <label>Titel <span class="spc-req">*</span></label>
-              <div class="spc-row">
-                <input type="text" id="pin-title" placeholder="Pin-Titel…" oninput="previewPin()"/>
-                <button class="spc-regen" title="KI" onclick="rf('pin_titel','pin-title',previewPin,this)">
-                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </button>
-              </div>
+              <label>Titel <span class="spc-req">*</span>
+                <span class="spc-label-btns">
+                  <button class="spc-regen" title="Neu generieren" onclick="rf('pin_titel','pin-title',previewPin,this)">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  </button>
+                  <button type="button" class="spc-copy" title="Kopieren" onclick="copyField('pin-title')">
+                    <svg width="11" height="11" fill="none" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                  </button>
+                </span>
+              </label>
+              <input type="text" id="pin-title" placeholder="Pin-Titel…" oninput="previewPin()"/>
             </div>
 
             <div class="spc-field">
-              <label>Beschreibung <span class="spc-opt">optional</span></label>
-              <div class="spc-row">
-                <textarea id="pin-desc" rows="3" placeholder="Beschreibung…" oninput="previewPin()"></textarea>
-                <button class="spc-regen" title="KI" onclick="rf('pin_beschreibung','pin-desc',previewPin,this)">
-                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </button>
-              </div>
+              <label>Beschreibung <span class="spc-opt">optional</span>
+                <span class="spc-label-btns">
+                  <button class="spc-regen" title="Neu generieren" onclick="rf('pin_beschreibung','pin-desc',previewPin,this)">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  </button>
+                  <button type="button" class="spc-copy" title="Kopieren" onclick="copyField('pin-desc')">
+                    <svg width="11" height="11" fill="none" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                  </button>
+                </span>
+              </label>
+              <textarea id="pin-desc" rows="3" placeholder="Beschreibung…" oninput="previewPin()"></textarea>
             </div>
 
             <div class="spc-field">
-              <label>Ziel-URL <span class="spc-opt">optional</span></label>
-              <div class="spc-row">
-                <input type="text" id="pin-url" placeholder="https://…" oninput="previewPin()"/>
-              </div>
+              <label>Ziel-URL <span class="spc-opt">optional</span>
+                <span class="spc-label-btns">
+                  <button type="button" class="spc-copy" title="Kopieren" onclick="copyField('pin-url')">
+                    <svg width="11" height="11" fill="none" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                  </button>
+                </span>
+              </label>
+              <input type="text" id="pin-url" placeholder="https://…" value="{{ pinterest_target_url }}" oninput="previewPin()"/>
             </div>
 
             <div class="spc-field">
-              <label>Alt-Text <span class="spc-opt">optional</span></label>
-              <div class="spc-row">
-                <input type="text" id="pin-alt" placeholder="Bildbeschreibung…"/>
-                <button class="spc-regen" title="KI" onclick="rf('pin_alt_text','pin-alt',null,this)">
-                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </button>
+              <label>Alt-Text <span class="spc-opt">optional</span>
+                <span class="spc-label-btns">
+                  <button class="spc-regen" title="Neu generieren" onclick="rf('pin_alt_text','pin-alt',null,this)">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  </button>
+                  <button type="button" class="spc-copy" title="Kopieren" onclick="copyField('pin-alt')">
+                    <svg width="11" height="11" fill="none" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                  </button>
+                </span>
+              </label>
+              <input type="text" id="pin-alt" placeholder="Bildbeschreibung…"/>
+            </div>
+
+            <div class="spc-field">
+              <label>Primärfarben <span class="spc-opt">optional</span></label>
+              <div class="spc-color-row">
+                <div class="spc-color-item">
+                  <input type="color" class="spc-color-input" id="pin-color1" value="#E60023" oninput="$('pin-hex1').value=this.value"/>
+                  <input type="text" class="spc-color-hex" id="pin-hex1" value="#E60023" maxlength="7" placeholder="#000000" oninput="syncColor(this,'pin-color1')"/>
+                </div>
+                <span class="spc-color-sep">+</span>
+                <div class="spc-color-item">
+                  <input type="color" class="spc-color-input" id="pin-color2" value="#FFFFFF" oninput="$('pin-hex2').value=this.value"/>
+                  <input type="text" class="spc-color-hex" id="pin-hex2" value="#FFFFFF" maxlength="7" placeholder="#ffffff" oninput="syncColor(this,'pin-color2')"/>
+                </div>
               </div>
+              <span class="spc-hint">Dominante Farbe wird an Pinterest übergeben</span>
             </div>
 
             {% if image_gen_url %}
@@ -317,37 +491,6 @@
           </div>
         </div><!-- /spc-cols -->
 
-        <!-- Product picker -->
-        <div class="spc-divider">Produkt zuordnen <span class="spc-opt">optional</span></div>
-        <div class="prod-picker">
-          <div id="pin-prod-sel" style="display:none;"></div>
-          <div class="prod-search-row">
-            <input type="text" class="prod-search" id="pin-prod-q" placeholder="Produkt suchen…" oninput="prodFilter('pin')" onfocus="prodOpen('pin')" onblur="setTimeout(()=>prodClose('pin'),200)"/>
-          </div>
-          <div class="prod-tiles" id="pin-prod-tiles"></div>
-        </div>
-
-        <!-- Footer: schedule + post button -->
-        <div class="spc-footer">
-          <div class="spc-sched-row">
-            <label class="spc-sched-lbl on" id="sn-pin">
-              <input type="radio" name="sc-pin" value="now" checked onchange="schedT('pin','now')"/>
-              <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Jetzt posten
-            </label>
-            <label class="spc-sched-lbl" id="sl-pin">
-              <input type="radio" name="sc-pin" value="later" onchange="schedT('pin','later')"/>
-              <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-              Später posten
-            </label>
-            <input type="datetime-local" id="dt-pin" class="spc-dt" style="display:none;"/>
-          </div>
-          <button class="spc-post-btn pin-c" onclick="doPost('pin')">
-            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Pin posten
-          </button>
-          <div id="st-pin" class="spc-status"></div>
-        </div>
       </div>
     </div>
   </div><!-- /pane-pin -->
@@ -361,7 +504,7 @@
           Instagram Post
         </div>
         <button class="spc-btn-gen" onclick="generateWithAI()">
-          <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
           Texte generieren
         </button>
       </div>
@@ -373,24 +516,77 @@
           <!-- Fields -->
           <div class="spc-fields">
 
+            <!-- Product combobox — top of fields -->
             <div class="spc-field">
-              <label>Caption <span class="spc-req">*</span></label>
-              <div class="spc-row">
-                <textarea id="ig-caption" rows="4" placeholder="Caption…" oninput="previewIg()"></textarea>
-                <button class="spc-regen" title="KI" onclick="rf('ig_description','ig-caption',previewIg,this)">
-                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </button>
+              <label>Produkt <span class="spc-opt">optional</span></label>
+              <div class="prod-cb" id="ig-cb">
+                <div class="prod-cb-trigger" onclick="cbToggle('ig')">
+                  <div class="prod-cb-val" id="ig-cb-val">
+                    <img class="prod-cb-sel-img" id="ig-cb-img" src="" alt=""/>
+                    <span class="prod-cb-sel-name" id="ig-cb-name"></span>
+                    <span class="prod-cb-placeholder" id="ig-cb-ph">Produkt zuordnen…</span>
+                  </div>
+                  <button class="prod-cb-clear" id="ig-cb-clr" onclick="cbClear(event,'ig')" title="Auswahl entfernen">✕</button>
+                  <svg class="prod-cb-arrow" width="13" height="13" fill="none" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="prod-cb-drop">
+                  <div class="prod-cb-search-wrap">
+                    <input class="prod-cb-search" id="ig-cb-q" placeholder="Name eingeben…" oninput="cbFilter('ig')" autocomplete="off"/>
+                  </div>
+                  <div class="prod-cb-list" id="ig-cb-list"></div>
+                </div>
               </div>
             </div>
 
             <div class="spc-field">
-              <label>Hashtags <span class="spc-opt">optional</span></label>
-              <div class="spc-row">
-                <textarea id="ig-hashtags" rows="2" placeholder="#tag1 #tag2…" oninput="previewIg()"></textarea>
-                <button class="spc-regen" title="KI" onclick="rf('ig_tags','ig-hashtags',previewIg,this)">
-                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </button>
-              </div>
+              <label>Beschreibung <span class="spc-req">*</span>
+                <span class="spc-label-btns">
+                  <button class="spc-regen" title="Neu generieren" onclick="rf('ig_description','ig-caption',previewIg,this)">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  </button>
+                  <button type="button" class="spc-copy" title="Kopieren" onclick="copyField('ig-caption')">
+                    <svg width="11" height="11" fill="none" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                  </button>
+                </span>
+              </label>
+              <textarea id="ig-caption" rows="4" placeholder="Beschreibung…" oninput="previewIg()"></textarea>
+            </div>
+
+            <div class="spc-field">
+              <label>Hashtags <span class="spc-opt">optional</span>
+                <span class="spc-label-btns">
+                  <button class="spc-regen" title="Neu generieren" onclick="rf('ig_tags','ig-hashtags',previewIg,this)">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                  </button>
+                  <button type="button" class="spc-copy" title="Kopieren" onclick="copyField('ig-hashtags')">
+                    <svg width="11" height="11" fill="none" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                  </button>
+                </span>
+              </label>
+              <textarea id="ig-hashtags" rows="2" placeholder="#tag1 #tag2…" oninput="previewIg()"></textarea>
+            </div>
+
+            <div class="spc-field">
+              <label>Standort <span class="spc-opt">optional</span>
+                <span class="spc-label-btns">
+                  <button type="button" class="spc-copy" title="Kopieren" onclick="copyField('ig-location')">
+                    <svg width="11" height="11" fill="none" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                  </button>
+                </span>
+              </label>
+              <input type="text" id="ig-location" placeholder="Ort / Standort…"/>
+            </div>
+
+            <div class="spc-field">
+              <label>User markieren <span class="spc-opt">optional</span>
+                <span class="spc-label-btns">
+                  <button type="button" class="spc-copy" title="Kopieren" onclick="copyField('ig-usertags')">
+                    <svg width="11" height="11" fill="none" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                  </button>
+                </span>
+              </label>
+              <input type="text" id="ig-usertags" placeholder="@user1 @user2…"/>
+              <span class="spc-hint">Mehrere Nutzer mit Leerzeichen trennen</span>
             </div>
 
             {% if image_gen_url %}
@@ -434,40 +630,49 @@
           </div>
         </div><!-- /spc-cols -->
 
-        <!-- Product picker -->
-        <div class="spc-divider">Produkt zuordnen <span class="spc-opt">optional</span></div>
-        <div class="prod-picker">
-          <div id="ig-prod-sel" style="display:none;"></div>
-          <div class="prod-search-row">
-            <input type="text" class="prod-search" id="ig-prod-q" placeholder="Produkt suchen…" oninput="prodFilter('ig')" onfocus="prodOpen('ig')" onblur="setTimeout(()=>prodClose('ig'),200)"/>
-          </div>
-          <div class="prod-tiles" id="ig-prod-tiles"></div>
-        </div>
-
-        <!-- Footer -->
-        <div class="spc-footer">
-          <div class="spc-sched-row">
-            <label class="spc-sched-lbl on" id="sn-ig">
-              <input type="radio" name="sc-ig" value="now" checked onchange="schedT('ig','now')"/>
-              <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Jetzt posten
-            </label>
-            <label class="spc-sched-lbl" id="sl-ig">
-              <input type="radio" name="sc-ig" value="later" onchange="schedT('ig','later')"/>
-              <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-              Später posten
-            </label>
-            <input type="datetime-local" id="dt-ig" class="spc-dt" style="display:none;"/>
-          </div>
-          <button class="spc-post-btn ig-c" onclick="doPost('ig')">
-            <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Post posten
-          </button>
-          <div id="st-ig" class="spc-status"></div>
-        </div>
       </div>
     </div>
   </div><!-- /pane-ig -->
+
+  </div><!-- /spc-main -->
+
+  <!-- ── Sticky Action Panel ── -->
+  <aside class="spc-action-panel">
+    <div class="spc-ap-card">
+
+      <!-- Platform indicator -->
+      <div class="spc-ap-plat" id="ap-plat-label">
+        <svg id="ap-plat-icon-pin" width="13" height="13" viewBox="0 0 24 24" fill="#E60023"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+        <svg id="ap-plat-icon-ig" width="13" height="13" fill="none" viewBox="0 0 24 24" style="display:none"><rect x="2" y="2" width="20" height="20" rx="5" stroke="#C13584" stroke-width="1.7"/><circle cx="12" cy="12" r="5" stroke="#C13584" stroke-width="1.7"/><circle cx="17.5" cy="6.5" r="1.2" fill="#C13584"/></svg>
+        <span id="ap-plat-text">Pinterest</span>
+      </div>
+
+      <!-- Schedule -->
+      <div class="spc-sched-row">
+        <label class="spc-sched-lbl on" id="ap-sn" onclick="apSched('now')">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Jetzt posten
+        </label>
+        <label class="spc-sched-lbl" id="ap-sl" onclick="apSched('later')">
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Später posten
+        </label>
+        <input type="datetime-local" id="ap-dt" class="spc-dt" style="display:none;"/>
+      </div>
+
+      <div id="ap-status" class="spc-status"></div>
+      
+      <!-- Post button — changes with active tab -->
+      <button class="spc-post-btn pin-c" id="ap-post-btn" onclick="doPostActive()">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span id="ap-post-label">Pin posten</span>
+      </button>
+
+      
+    </div>
+  </aside>
+
+  </div><!-- /spc-layout -->
 
 </div><!-- /spc-body -->
 
@@ -482,7 +687,6 @@ const _img = (imgId,emId,src)=>{
   if(src){i.src=src;i.style.display='';e.style.display='none';}
   else{i.style.display='none';e.style.display='';}
 };
-const st=(p,msg,color)=>{ const e=$(p);if(e){e.style.color=color||'var(--muted)';e.innerHTML=msg;} };
 
 let _plat   = 'pin';
 let _boards = [];
@@ -492,6 +696,7 @@ let _blob   = { pin:null, ig:null };
 let _prods  = [];
 let _prodsOk = false;
 let _selProd = { pin:null, ig:null };
+let _sched   = { pin:'now', ig:'now' };
 
 // ── Platform ──
 function setPlatform(p, btn) {
@@ -500,14 +705,31 @@ function setPlatform(p, btn) {
   btn.className = 'spc-tab a-' + _plat;
   $('pane-pin').style.display = _plat==='pin' ? '' : 'none';
   $('pane-ig').style.display  = _plat==='ig'  ? '' : 'none';
+  // Sync action panel
+  $('ap-plat-icon-pin').style.display = _plat==='pin' ? '' : 'none';
+  $('ap-plat-icon-ig').style.display  = _plat==='ig'  ? '' : 'none';
+  $('ap-plat-text').textContent = _plat==='pin' ? 'Pinterest' : 'Instagram';
+  const postBtn = $('ap-post-btn');
+  postBtn.className = 'spc-post-btn ' + (_plat==='pin' ? 'pin-c' : 'ig-c');
+  $('ap-post-label').textContent = _plat==='pin' ? 'Pin posten' : 'Post posten';
+  // Restore schedule state for this platform
+  const isLater = _sched[_plat] === 'later';
+  $('ap-sn')?.classList.toggle('on', !isLater);
+  $('ap-sl')?.classList.toggle('on', isLater);
+  if($('ap-dt')) $('ap-dt').style.display = isLater ? '' : 'none';
+  $('ap-status').innerHTML = '';
 }
 
-// ── Schedule ──
-function schedT(p, v) {
-  $('sn-'+p)?.classList.toggle('on', v==='now');
-  $('sl-'+p)?.classList.toggle('on', v==='later');
-  const dt=$('dt-'+p); if(dt) dt.style.display=v==='later'?'':'none';
+// ── Schedule (action panel) ──
+function apSched(v) {
+  _sched[_plat] = v;
+  $('ap-sn')?.classList.toggle('on', v==='now');
+  $('ap-sl')?.classList.toggle('on', v==='later');
+  if($('ap-dt')) $('ap-dt').style.display = v==='later' ? '' : 'none';
 }
+
+// ── Post active platform ──
+function doPostActive() { doPost(_plat); }
 
 // ── Boards ──
 async function loadBoards(force) {
@@ -530,14 +752,86 @@ function boardChange(sel) {
   _t('pin-prev-board',name||'Board');
 }
 
+// ── Color picker sync ──
+function syncColor(hexInp, colorId) {
+  const v = hexInp.value.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) { const c=$(colorId); if(c) c.value=v; }
+}
+
+// ── Dominant color extraction (canvas, client-side) ──
+function extractDominantColors(blobUrl, count = 2) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous'; // needed for external URLs; blob URLs ignore it
+    img.onload = () => {
+      try {
+        const SIZE = 100; // scale down for speed
+        const canvas = document.createElement('canvas');
+        canvas.width = SIZE; canvas.height = SIZE;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, SIZE, SIZE);
+        const { data } = ctx.getImageData(0, 0, SIZE, SIZE);
+
+        // Bucket each pixel: round R,G,B to nearest 24 to group similar colors
+        const map = {};
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i+3] < 128) continue; // skip transparent/near-transparent
+          const r = Math.round(data[i]   / 24) * 24;
+          const g = Math.round(data[i+1] / 24) * 24;
+          const b = Math.round(data[i+2] / 24) * 24;
+          const k = `${r},${g},${b}`;
+          map[k] = (map[k] || 0) + 1;
+        }
+
+        // Sort by frequency (most common first)
+        const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
+
+        // Pick top `count` colors that are visually distinct from each other
+        const picks = [];
+        for (const [key] of sorted) {
+          if (picks.length >= count) break;
+          const [r, g, b] = key.split(',').map(Number);
+          const distinct = picks.every(([pr, pg, pb]) =>
+            Math.abs(r - pr) + Math.abs(g - pg) + Math.abs(b - pb) > 90
+          );
+          if (picks.length === 0 || distinct) picks.push([r, g, b]);
+        }
+
+        const toHex = (r, g, b) =>
+          '#' + [r, g, b].map(v => Math.min(255, v).toString(16).padStart(2, '0')).join('');
+        resolve(picks.map(([r, g, b]) => toHex(r, g, b)));
+      } catch (_) { resolve([]); }
+    };
+    img.onerror = () => resolve([]);
+    img.src = blobUrl;
+  });
+}
+
+function applyPinColors(colors) {
+  if (colors[0]) {
+    _s('pin-hex1', colors[0]);
+    const c1 = $('pin-color1'); if (c1) c1.value = colors[0];
+  }
+  if (colors[1]) {
+    _s('pin-hex2', colors[1]);
+    const c2 = $('pin-color2'); if (c2) c2.value = colors[1];
+  }
+}
+
 // ── File upload ──
 function spUpload(inp, p) {
-  const files=Array.from(inp.files).slice(0,4);
-  _files[p]=files;
-  if(files.length){
-    _blob[p]=URL.createObjectURL(files[0]);
-    if(p==='pin') _img('pin-prev-img','pin-prev-empty',_blob.pin);
-    if(p==='ig')  _img('ig-prev-img','ig-prev-empty',_blob.ig);
+  const files = Array.from(inp.files).slice(0, 4);
+  _files[p] = files;
+  if (files.length) {
+    _blob[p] = URL.createObjectURL(files[0]);
+    if (p === 'pin') {
+      _img('pin-prev-img', 'pin-prev-empty', _blob.pin);
+      // Auto-detect dominant colors for the Pinterest color fields
+      extractDominantColors(_blob.pin).then(applyPinColors);
+    }
+    if (p === 'ig') _img('ig-prev-img', 'ig-prev-empty', _blob.ig);
+    // Auto-generate texts for the active platform after image upload
+    generateWithAI();
   }
 }
 
@@ -551,98 +845,301 @@ function previewPin() {
 }
 function previewIg() {
   _img('ig-prev-img','ig-prev-empty',_blob.ig||'');
-  const c=_v('ig-caption'),el=$('ig-prev-cap');
-  if(el)el.innerHTML='<strong>dekoire</strong> '+(c||'Caption…');
-  _t('ig-prev-tags',_v('ig-hashtags'));
+  const c = _v('ig-caption'), el = $('ig-prev-cap');
+  if (el) {
+    const MAX = 120;
+    const text = c || 'Caption…';
+    const truncated = text.length > MAX ? text.slice(0, MAX).trimEnd() + '… <span style="color:var(--muted);cursor:pointer;" onclick="this.parentElement.innerHTML=\'<strong>dekoire</strong> \'+document.getElementById(\'ig-caption\').value">mehr</span>' : text;
+    el.innerHTML = '<strong>dekoire</strong> ' + truncated;
+  }
+  // Hashtags: show max 3 lines
+  const tags = _v('ig-hashtags');
+  const el2 = $('ig-prev-tags');
+  if (el2) {
+    const tagList = tags.trim().split(/\s+/).filter(Boolean);
+    el2.textContent = tagList.slice(0, 8).join(' ') + (tagList.length > 8 ? ' …' : '');
+  }
 }
 
-// ── Products ──
+// ── Product combobox ──
 async function loadProds() {
-  if(_prodsOk)return;
+  if (_prodsOk) return;
   try {
-    _prods=await fetch('/api/products/list').then(r=>r.json());
-    _prodsOk=true;
-    renderProdTiles('pin'); renderProdTiles('ig');
-  } catch(_){}
+    const raw = await fetch('/api/products/list').then(r => r.json());
+    if (!Array.isArray(raw)) {
+      console.error('loadProds: unexpected response', raw);
+      return;
+    }
+    _prods = raw;
+    _prodsOk = true;
+    cbRender('pin'); cbRender('ig');
+  } catch(e) {
+    console.error('loadProds failed:', e);
+  }
 }
-function prodOpen(p) { loadProds(); renderProdTiles(p); }
-function prodClose(p) { /* keep tiles visible */ }
-function prodFilter(p) {
-  renderProdTiles(p, $(`${p}-prod-q`)?.value?.toLowerCase()||'');
+
+function cbRender(p, q = '') {
+  const list = document.getElementById(p + '-cb-list');
+  if (!list) return;
+  const lq = q.toLowerCase();
+  const items = lq
+    ? _prods.filter(x =>
+        (x.titel || '').toLowerCase().includes(lq) ||
+        (x.dekoire_id || '').toLowerCase().includes(lq))
+    : _prods.slice(0, 5);
+
+  if (!items.length) {
+    list.innerHTML = `<div class="prod-cb-empty">${lq ? 'Keine Treffer' : 'Keine Produkte vorhanden'}</div>`;
+    return;
+  }
+  // Store rows by index so onclick can reference them safely (avoids JSON.stringify UUID quoting issues)
+  list._cbItems = items;
+  list.innerHTML = items.map((r, i) => {
+    const sel  = _selProd[p]?.id === r.id ? ' selected' : '';
+    const name = _esc(r.titel || r.dekoire_id || '–');
+    const sid  = _esc(r.dekoire_id || '');
+    const img  = r.image_url ? `<img src="${_esc(r.image_url)}" onerror="this.style.opacity='.25'" alt=""/>` : `<img alt="" style="opacity:.2"/>`;
+    return `<div class="prod-cb-item${sel}" data-cb-p="${p}" data-cb-i="${i}">
+      ${img}
+      <div class="prod-cb-item-info">
+        <div class="prod-cb-item-name">${name}</div>
+        <div class="prod-cb-item-id">${sid}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Attach mousedown via JS (no inline handler quoting issues)
+  list.querySelectorAll('.prod-cb-item').forEach((el, i) => {
+    el.addEventListener('mousedown', e => {
+      e.preventDefault();
+      cbSelect(p, items[i].id);
+    });
+  });
 }
-function renderProdTiles(p, q='') {
-  const el=$(p+'-prod-tiles'); if(!el)return;
-  let list=q ? _prods.filter(x=>(x.titel||'').toLowerCase().includes(q)||(x.dekoire_id||'').toLowerCase().includes(q)) : _prods;
-  list=list.slice(0,7);
-  if(!list.length){el.innerHTML='<div class="prod-tile-empty">Keine Produkte</div>';return;}
-  el.innerHTML=list.map(r=>`
-    <div class="prod-tile${_selProd[p]?.id===r.id?' selected':''}" onmousedown="selProd('${p}',${JSON.stringify(r.id)})">
-      <img src="${r.image_url||''}" onerror="this.style.opacity='.3'" alt=""/>
-      <div class="prod-tile-name">${r.titel||r.dekoire_id||'–'}</div>
-    </div>`).join('');
+
+function _esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function cbToggle(p) {
+  const cb  = $(p + '-cb');
+  const inp = $(p + '-cb-q');
+  if (!cb) return;
+  const opening = !cb.classList.contains('open');
+  // Close all open comboboxes first
+  document.querySelectorAll('.prod-cb.open').forEach(el => el.classList.remove('open'));
+  if (opening) {
+    cb.classList.add('open');
+    cbRender(p, '');
+    if (inp) { inp.value = ''; inp.focus(); }
+  }
 }
-function selProd(p, id) {
-  const r=_prods.find(x=>x.id===id); if(!r)return;
-  _selProd[p]=r;
-  // fill fields
-  if(p==='pin'){
-    _s('pin-title',r.pin_titel||r.titel||'');
-    _s('pin-desc', r.pin_beschreibung||'');
-    _s('pin-url',  r.pin_ziel_url||'');
-    _s('pin-alt',  r.pin_alt_text||'');
-    if(!_blob.pin&&r.image_url){_blob.pin=r.image_url;_img('pin-prev-img','pin-prev-empty',r.image_url);}
-    // pre-select board
-    if(r.pin_board_id){
-      _s('spc-board-id',r.pin_board_id);
-      const sel=$('spc-board-sel');
-      if(sel){for(const o of sel.options){if(o.value===r.pin_board_id){o.selected=true;break;}}}
-      const h=$('board-hint');if(h){h.textContent='✓ '+r.pin_board;h.style.color='#16a34a';}
-      _t('pin-prev-board',r.pin_board||'Board');
+
+function cbFilter(p) {
+  cbRender(p, $(p + '-cb-q')?.value || '');
+}
+
+function cbSelect(p, id) {
+  const r = _prods.find(x => x.id === id || String(x.id) === String(id));
+  if (!r) return;
+  _selProd[p] = r;
+
+  if (p === 'pin') {
+    // Always clear + refill fields from the newly selected product
+    _s('pin-title', r.pin_titel || r.titel || '');
+    _s('pin-desc',  r.pin_beschreibung || '');
+    _s('pin-url',   r.pin_ziel_url || '');
+    _s('pin-alt',   r.pin_alt_text || '');
+
+    // Update image unless the user manually uploaded a file
+    const pinImg = r.pin_media_url || r.image_url;
+    if (pinImg && !_files.pin.length) {
+      _blob.pin = pinImg;
+      _img('pin-prev-img', 'pin-prev-empty', pinImg);
+      extractDominantColors(pinImg).then(colors => { if (colors.length) applyPinColors(colors); });
+    }
+
+    if (r.pin_board_id) {
+      _s('spc-board-id', r.pin_board_id);
+      const sel = $('spc-board-sel');
+      if (sel) { for (const o of sel.options) { if (o.value === r.pin_board_id) { o.selected = true; break; } } }
+      const h = $('board-hint'); if (h) { h.textContent = '✓ ' + r.pin_board; h.style.color = '#16a34a'; }
+      _t('pin-prev-board', r.pin_board || 'Board');
     }
     previewPin();
   } else {
-    _s('ig-caption',  r.ig_description||'');
-    _s('ig-hashtags', r.ig_tags||'');
-    if(!_blob.ig&&r.image_url){_blob.ig=r.image_url;_img('ig-prev-img','ig-prev-empty',r.image_url);}
+    // Always clear + refill
+    _s('ig-caption',  r.ig_description || '');
+    _s('ig-hashtags', r.ig_tags || '');
+    const igImg = r.image_url;
+    if (igImg && !_files.ig.length) { _blob.ig = igImg; _img('ig-prev-img', 'ig-prev-empty', igImg); }
     previewIg();
   }
-  // badge
-  const badge=$(p+'-prod-sel');
-  if(badge){
-    badge.style.display='';
-    badge.innerHTML=`<span class="prod-sel-badge">
-      ${r.image_url?`<img src="${r.image_url}" alt=""/>`:''}
-      ${r.titel||r.dekoire_id||'–'}
-      <button class="prod-sel-clear" onclick="clearProd('${p}')" title="Zuordnung entfernen">✕</button>
-    </span>`;
-  }
-  renderProdTiles(p);
+
+  // Update trigger display
+  cbSetDisplay(p, r);
+
+  // Close dropdown
+  const cb = $(p + '-cb');
+  if (cb) cb.classList.remove('open');
+
+  // Generate any still-empty text fields with AI
+  generateMissing(p, r.titel || r.dekoire_id || '');
 }
-function clearProd(p) {
-  _selProd[p]=null;
-  const b=$(p+'-prod-sel');if(b)b.style.display='none';
-  if(p==='pin'){_s('pin-title','');_s('pin-desc','');_s('pin-url','');_s('pin-alt','');previewPin();}
-  else{_s('ig-caption','');_s('ig-hashtags','');previewIg();}
-  renderProdTiles(p);
+
+function cbSetDisplay(p, r) {
+  const img  = $(p + '-cb-img');
+  const name = $(p + '-cb-name');
+  const ph   = $(p + '-cb-ph');
+  const clr  = $(p + '-cb-clr');
+  if (r) {
+    if (img)  { img.src = r.image_url || ''; img.style.display = r.image_url ? '' : 'none'; }
+    if (name) { name.textContent = r.titel || r.dekoire_id || '–'; name.style.display = ''; }
+    if (ph)   ph.style.display = 'none';
+    if (clr)  clr.style.display = '';
+  } else {
+    if (img)  { img.src = ''; img.style.display = 'none'; }
+    if (name) { name.style.display = 'none'; }
+    if (ph)   ph.style.display = '';
+    if (clr)  clr.style.display = 'none';
+  }
+}
+
+function cbClear(e, p) {
+  e.stopPropagation();
+  _selProd[p] = null;
+  _blob[p] = null;
+  cbSetDisplay(p, null);
+  if (p === 'pin') { _s('pin-title',''); _s('pin-desc',''); _s('pin-url','{{ pinterest_target_url }}'); _s('pin-alt',''); previewPin(); }
+  else             { _s('ig-caption',''); _s('ig-hashtags',''); _s('ig-location',''); _s('ig-usertags',''); previewIg(); }
+  cbRender(p);
+}
+
+// Close combobox when clicking outside
+document.addEventListener('mousedown', e => {
+  document.querySelectorAll('.prod-cb.open').forEach(cb => {
+    if (!cb.contains(e.target)) cb.classList.remove('open');
+  });
+});
+
+// ── Copy field ──
+async function copyField(id) {
+  const el = $(id);
+  const val = el?.value ?? el?.textContent ?? '';
+  try {
+    await navigator.clipboard.writeText(val.trim());
+    const btn = document.querySelector(`[onclick="copyField('${id}')"]`);
+    if (btn) { btn.classList.add('copied'); setTimeout(()=>btn.classList.remove('copied'), 1500); }
+  } catch(_) {}
+}
+
+// ── Toast for AI errors ──
+function _aiToast(msg) {
+  let t = document.getElementById('_ai-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = '_ai-toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:10px 18px;border-radius:8px;font-size:.82rem;font-weight:500;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.2);display:flex;align-items:center;gap:8px;';
+    document.body.appendChild(t);
+  }
+  t.innerHTML = `<svg width="14" height="14" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="#f87171" stroke-width="2"/><path d="M12 8v4M12 16h.01" stroke="#f87171" stroke-width="2" stroke-linecap="round"/></svg> ${msg}`;
+  t.style.display = 'flex';
+  clearTimeout(t._to);
+  t._to = setTimeout(() => { t.style.display = 'none'; }, 5000);
 }
 
 // ── Per-field regen ──
 async function rf(field,inputId,afterFn,btn) {
   if(btn)btn.classList.add('spin');
   try {
-    const r=await fetch('/api/social/generate-field',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({field,title:_v('pin-title')||_v('ig-caption')||''})});
-    const d=await r.json();
-    if(d.value){_s(inputId,d.value);if(afterFn)afterFn();}
-  }catch(_){}
-  finally{if(btn)btn.classList.remove('spin');}
+    const title = _v('pin-title') || _v('ig-caption') || '';
+    const r = await fetch('/api/social/generate-field', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({field, title})
+    });
+    const d = await r.json();
+    if (d.error) { _aiToast(d.error); }
+    else if (d.value) { _s(inputId, d.value); if(afterFn) afterFn(); }
+  } catch(e) {
+    _aiToast('Verbindungsfehler – KI nicht erreichbar');
+  } finally {
+    if(btn) btn.classList.remove('spin');
+  }
 }
 
-// ── Full AI gen ──
+// ── Generate only missing (empty) fields after product selection ──
+async function generateMissing(p, titleCtx) {
+  // Collect which fields are still empty
+  const todo = [];
+  if (p === 'pin') {
+    if (!_v('pin-title')) todo.push({key:'pin_titel',       id:'pin-title'});
+    if (!_v('pin-desc'))  todo.push({key:'pin_beschreibung', id:'pin-desc'});
+    if (!_v('pin-alt'))   todo.push({key:'pin_alt_text',    id:'pin-alt'});
+  } else {
+    if (!_v('ig-caption'))  todo.push({key:'ig_description', id:'ig-caption'});
+    if (!_v('ig-hashtags')) todo.push({key:'ig_tags',        id:'ig-hashtags'});
+  }
+  if (!todo.length) return; // All fields already filled – nothing to do
+
+  const apSt = $('ap-status');
+  const setStatus = (msg,color) => { if(apSt){apSt.style.color=color||'var(--muted)';apSt.innerHTML=msg;} };
+  setStatus('✨ Fehlende Texte werden generiert…','var(--muted)');
+
+  try {
+    const allPin = p==='pin' && todo.length===3;
+    const allIg  = p==='ig'  && todo.length===2;
+
+    if (allPin || allIg) {
+      // All fields missing → single bulk call
+      const field = allPin ? 'pin_all' : 'ig_all';
+      const d = await fetch('/api/social/generate-field',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({field, title: titleCtx, context:{}})
+      }).then(r=>r.json());
+      if (p==='pin') {
+        if (d.pin_titel)        _s('pin-title', d.pin_titel);
+        if (d.pin_beschreibung) _s('pin-desc',  d.pin_beschreibung);
+        if (d.pin_alt_text)     _s('pin-alt',   d.pin_alt_text);
+        previewPin();
+      } else {
+        if (d.ig_description) _s('ig-caption',  d.ig_description);
+        if (d.ig_tags)        _s('ig-hashtags', d.ig_tags);
+        previewIg();
+      }
+    } else {
+      // Only some fields missing → individual calls
+      for (const {key, id} of todo) {
+        const d = await fetch('/api/social/generate-field',{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({field: key, title: titleCtx})
+        }).then(r=>r.json());
+        if (d.value) _s(id, d.value);
+      }
+      if (p==='pin') previewPin(); else previewIg();
+    }
+    setStatus('✓ Texte ergänzt','#16a34a');
+    setTimeout(()=>{if(apSt)apSt.innerHTML='';},3000);
+  } catch(e) {
+    setStatus('❌ '+e.message,'#DC2626');
+  }
+}
+
+// ── Full AI gen (regenerate ALL fields, replaces existing) ──
 async function generateWithAI() {
   const p=_plat;
-  st('st-'+p,'✨ Generiert…','var(--muted)');
+  const apSt=$('ap-status');
+  const setStatus=(msg,color)=>{if(apSt){apSt.style.color=color||'var(--muted)';apSt.innerHTML=msg;}};
+  setStatus('✨ Generiert…','var(--muted)');
+  // Use selected product title or current field value as AI context
+  const titleCtx = _selProd[p]?.titel || _selProd[p]?.dekoire_id || _v('pin-title') || _v('ig-caption') || '';
   try {
-    const d=await fetch('/api/social/generate-field',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({field:p==='pin'?'pin_all':'ig_all',context:{}})}).then(r=>r.json());
+    const r = await fetch('/api/social/generate-field', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({field: p==='pin' ? 'pin_all' : 'ig_all', title: titleCtx, context:{}})
+    });
+    const d = await r.json();
+    if (d.error) {
+      setStatus('❌ ' + d.error, '#DC2626');
+      return;
+    }
     if(p==='pin'){
       if(d.pin_titel)        _s('pin-title',d.pin_titel);
       if(d.pin_beschreibung) _s('pin-desc', d.pin_beschreibung);
@@ -653,8 +1150,9 @@ async function generateWithAI() {
       if(d.ig_tags)        _s('ig-hashtags', d.ig_tags);
       previewIg();
     }
-    st('st-'+p,'✓ Texte generiert','#16a34a');
-  } catch(e){st('st-'+p,'❌ '+e.message,'#DC2626');}
+    setStatus('✓ Texte generiert','#16a34a');
+    setTimeout(()=>{if(apSt)apSt.innerHTML='';},4000);
+  } catch(e){ setStatus('❌ Verbindungsfehler: ' + e.message,'#DC2626'); }
 }
 
 // ── Post ──
@@ -662,6 +1160,8 @@ async function doPost(p) {
   const plat=p==='pin'?'pinterest':'instagram';
   const files=_files[p];
   const prodId=_selProd[p]?.id||null;
+  const apSt = $('ap-status');
+  const setStatus = (msg,color) => { if(apSt){apSt.style.color=color||'var(--muted)';apSt.innerHTML=msg;} };
   if(!files.length&&!_blob[p]){alert('Bitte ein Bild auswählen (auf die Vorschau klicken).');return;}
   if(p==='pin'){
     if(!_v('spc-board-id')){alert('Bitte ein Board auswählen.');return;}
@@ -669,9 +1169,9 @@ async function doPost(p) {
   }
   if(p==='ig'&&!_v('ig-caption')){alert('Bitte eine Caption eingeben.');return;}
 
-  const isLater=document.querySelector(`input[name="sc-${p}"]:checked`)?.value==='later';
-  const schedDt=_v('dt-'+p);
-  st('st-'+p,'📤 Postet…','var(--muted)');
+  const isLater = _sched[p] === 'later';
+  const schedDt = _v('ap-dt');
+  setStatus('📤 Postet…','var(--muted)');
 
   const fd=new FormData();
   fd.append('platform',plat);
@@ -691,24 +1191,29 @@ async function doPost(p) {
     fd.append('board_id',        _v('spc-board-id'));
     fd.append('pin_link',        _v('pin-url'));
     fd.append('alt_text',        _v('pin-alt'));
+    const c1=_v('pin-hex1'); if(c1) fd.append('dominant_color', c1);
+    const c2=_v('pin-hex2'); if(c2) fd.append('accent_color', c2);
   } else {
-    fd.append('caption',  _v('ig-caption'));
-    fd.append('hashtags', _v('ig-hashtags'));
+    fd.append('caption',   _v('ig-caption'));
+    fd.append('hashtags',  _v('ig-hashtags'));
+    fd.append('location',  _v('ig-location'));
+    const ut=_v('ig-usertags'); if(ut) fd.append('user_tags', ut);
   }
 
   try {
     const ep=prodId?`/api/product/${prodId}/social/post`:'/api/social/standalone/post';
     const d=await fetch(ep,{method:'POST',body:fd}).then(r=>r.json());
-    if(!d.success){st('st-'+p,'❌ '+(d.error||'Fehler'),'#DC2626');return;}
+    if(!d.success){setStatus('❌ '+(d.error||'Fehler'),'#DC2626');return;}
     const link=d.post_url?` <a href="${d.post_url}" target="_blank" rel="noopener" style="color:#059669;font-weight:600;text-decoration:underline;">→ Zum Post</a>`:'';
-    st('st-'+p,(isLater?'🕐 Geplant!':'✅ Erfolgreich gepostet!')+link,'#059669');
-  } catch(e){st('st-'+p,'❌ '+e.message,'#DC2626');}
+    setStatus((isLater?'🕐 Geplant!':'✅ Erfolgreich gepostet!')+link,'#059669');
+  } catch(e){setStatus('❌ '+e.message,'#DC2626');}
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
   setPlatform('pinterest',$('tab-pin'));
   loadBoards();
-  loadProds();
+  loadProds(); // loads products; cbRender shows last 5 by default in each combobox
+  previewPin();
 });
 </script>
 {% include 'includes/footer.html' %}
